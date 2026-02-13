@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Edremit HEM - Tur 1: Seçim</title>
+    <style>
+        :root { --primary: #1e3a8a; --bg: #0f172a; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .grid-layout { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 20px; width: 100%; max-width: 1200px; padding: 20px; }
+        
+        .hardware-card { 
+            background: white; color: #333; padding: 15px; border-radius: 12px; text-align: center; 
+            cursor: pointer; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            border: 4px solid transparent; position: relative; z-index: 1;
+        }
+        .hardware-card img { width: 100px; height: 100px; object-fit: contain; transition: transform 0.3s; pointer-events: none; }
+        
+        /* Büyütme Efekti */
+        .hardware-card.zoomed { 
+            transform: scale(1.4); 
+            z-index: 100; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5); 
+        }
+
+        .hardware-card.selected { border-color: #fbbf24; background: #fef3c7; }
+        #msg-box { font-size: 1.6rem; font-weight: bold; margin-bottom: 20px; text-align: center; color: #fbbf24; }
+        #next-arrow { display: none; font-size: 5rem; cursor: pointer; color: #fbbf24; text-decoration: none; animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div id="msg-box">Temel 10 donanımı seçmek için tıklayın!</div>
+<div id="tour-1" class="grid-layout"></div>
+<a href="don2.html" id="next-arrow">➜</a>
+
+<script>
+    // Dosyandaki orijinal listeler
+    const required = ["anakart", "işlemci", "ram", "harddisk", "ekran kartı", "kasa", "ekran", "klavye", "mouse", "kulaklık"];
+    const all = [...required, "yazıcı", "tarayıcı", "webcam", "modem", "flash", "kasa_guc_kaynagi", "sata", "dvd", "hoparlör", "mikrofon", "projeksiyon", "direksiyon", "oyun_kolu", "ups", "laptop_sogutucu"];
+
+    let selected = [];
+    const grid = document.getElementById('tour-1');
+
+    // Rastgele karıştırarak ekleme
+    all.sort(() => Math.random() - 0.5).forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'hardware-card';
+        // Resim yollarını dosya ismine göre oluşturur
+        card.innerHTML = `<img src="picture/${item.replace(' ', '')}.jpg"><span>${item.toUpperCase()}</span>`;
+        
+        card.onclick = (e) => {
+            // Tıklayınca Büyütme/Küçültme Kontrolü
+            const isZoomed = card.classList.contains('zoomed');
+            document.querySelectorAll('.hardware-card').forEach(c => c.classList.remove('zoomed'));
+            if(!isZoomed) card.classList.add('zoomed');
+
+            // Seçme ve İşaretleme Mantığı
+            if (card.classList.toggle('selected')) {
+                selected.push(item);
+            } else {
+                selected = selected.filter(i => i !== item);
+            }
+
+            // Doğruluk ve Geçiş Kontrolü
+            if (selected.length === 10) {
+                const isCorrect = required.every(h => selected.includes(h));
+                if (isCorrect) {
+                    document.getElementById('msg-box').innerText = "Harika! Şimdi 2. tura geçebilirsin.";
+                    document.getElementById('msg-box').style.color = "#22c55e";
+                    document.getElementById('next-arrow').style.display = "block";
+                    // Veriyi don2.html için kaydet
+                    localStorage.setItem('selectedHardware', JSON.stringify(selected));
+                } else { 
+                    reset(); 
+                }
+            } else if (selected.length > 10) { 
+                reset(); 
+            }
+        };
+        grid.appendChild(card);
+    });
+
+    function reset() {
+        document.getElementById('msg-box').innerText = "Hatalı seçim! Tekrar dene.";
+        document.getElementById('msg-box').style.color = "#ef4444";
+        setTimeout(() => {
+            selected = [];
+            document.querySelectorAll('.hardware-card').forEach(c => {
+                c.classList.remove('selected', 'zoomed');
+            });
+            document.getElementById('msg-box').innerText = "Temel 10 donanımı seçmek için tıklayın!";
+            document.getElementById('msg-box').style.color = "#fbbf24";
+        }, 1200);
+    }
+</script>
+</body>
+</html>

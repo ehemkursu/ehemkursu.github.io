@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Bilgisayar Terimleri - Kelime Avı</title>
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; user-select: none; }
+        
+        .container { display: flex; gap: 40px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); flex-wrap: wrap; justify-content: center; }
+        
+        #puzzle { display: grid; grid-template-columns: repeat(15, 35px); gap: 2px; background: #dfe6e9; border: 3px solid #dfe6e9; cursor: crosshair; }
+        .cell { width: 35px; height: 35px; background: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; }
+        
+        .cell.selecting { background: #ffeaa7 !important; color: #d63031; }
+        .cell.found { background: var(--success) !important; color: white; }
+
+        .word-sidebar { width: 250px; }
+        .word-list { list-style: none; padding: 0; display: grid; grid-template-columns: 1fr; gap: 5px; }
+        .word-list li { padding: 8px 15px; background: #f8f9fa; border-radius: 5px; color: #636e72; font-weight: 600; font-size: 0.9rem; transition: 0.3s; }
+        .word-list li.found { background: #dff9fb; color: #2ecc71; text-decoration: line-through; opacity: 0.7; }
+        
+        .btn { margin-top: 20px; padding: 12px 25px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+        /* Başarı Oku Stili */
+        #next-arrow { 
+            display: none; font-size: 6rem; color: #fbbf24; 
+            text-decoration: none; margin-top: 20px; 
+            animation: blink 1s infinite; font-weight: bold;
+        }
+        @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div style="text-align:center; margin-bottom:20px;">
+        <h1>💻 Bilgisayar Dünyası Bulmacası</h1>
+        <p>Kelimeleri <b>soldan sağa</b> veya <b>yukarıdan aşağıya</b> sürükleyerek işaretleyin!</p>
+    </div>
+
+    <div class="container">
+        <div id="puzzle"></div>
+        <div class="word-sidebar">
+            <h3>Kelimeler</h3>
+            <ul id="wordListUI" class="word-list"></ul>
+        </div>
+    </div>
+
+    <a href="don.html" id="next-arrow">➜</a>
+
+    <button class="btn" onclick="location.reload()">🔄 Yeni Bulmaca</button>
+
+<script>
+    const words = ["ANAKART", "İŞLEMCİ", "BELLEK", "YAZILIM", "DONANIM", "KLAVYE", "EKRAN", "FARE", "KASA", "İNTERNET", "DOSYA", "KLASÖR", "SÜRÜCÜ", "MODEM", "YAZICI"];
+    const size = 15;
+    const grid = Array(size).fill().map(() => Array(size).fill(''));
+    const wordStatus = {};
+    let foundCount = 0;
+    
+    let isMouseDown = false;
+    let startCell = null;
+    let selectedCells = [];
+
+    // 1. Sadece Yatay (Sağa) ve Dikey (Aşağı) Yerleştirme
+    function placeWords() {
+        const directions = [[0, 1], [1, 0]]; // Sadece Sağa ve Aşağı
+
+        words.forEach(word => {
+            let placed = false;
+            while (!placed) {
+                const [dr, dc] = directions[Math.floor(Math.random() * directions.length)];
+                const r = Math.floor(Math.random() * size);
+                const c = Math.floor(Math.random() * size);
+
+                if (canPlace(word, r, c, dr, dc)) {
+                    for (let i = 0; i < word.length; i++) {
+                        grid[r + i * dr][c + i * dc] = word[i];
+                    }
+                    placed = true;
+                }
+            }
+        });
+
+        const alphabet = "ABCÇDEFGĞHİIJKLMNOÖPRSŞTUÜVYZ";
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                if (grid[r][c] === '') grid[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
+            }
+        }
+    }
+
+    function canPlace(word, r, c, dr, dc) {
+        for (let i = 0; i < word.length; i++) {
+            const nr = r + i * dr;
+            const nc = c + i * dc;
+            if (nr < 0 || nr >= size || nc < 0 || nc >= size) return false;
+            if (grid[nr][nc] !== '' && grid[nr][nc] !== word[i]) return false;
+        }
+        return true;
+    }
+
+    // 2. Arayüz Oluşturma ve Seçim
+    function initUI() {
+        const puzzle = document.getElementById('puzzle');
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.innerText = grid[r][c];
+                cell.dataset.r = r;
+                cell.dataset.c = c;
+
+                cell.onmousedown = (e) => {
+                    isMouseDown = true;
+                    startCell = { r: r, c: c };
+                    selectedCells = [cell];
+                    cell.classList.add('selecting');
+                };
+
+                cell.onmouseenter = () => {
+                    if (!isMouseDown) return;
+                    clearSelection();
+                    selectLine(startCell, { r: r, c: c });
+                };
+
+                puzzle.appendChild(cell);
+            }
+        }
+
+        words.sort().forEach(word => {
+            const li = document.createElement('li');
+            li.id = "list-" + word;
+            li.innerText = word;
+            document.getElementById('wordListUI').appendChild(li);
+        });
+    }
+
+    function selectLine(start, end) {
+        const dr = end.r - start.r;
+        const dc = end.c - start.c;
+        selectedCells = [];
+        
+        if (Math.abs(dc) > Math.abs(dr)) {
+            if (dc < 0) return; // Geriye seçimi engelle
+            for (let i = 0; i <= dc; i++) {
+                const el = document.querySelector(`.cell[data-r="${start.r}"][data-c="${start.c + i}"]`);
+                if (el) { el.classList.add('selecting'); selectedCells.push(el); }
+            }
+        } else {
+            if (dr < 0) return; // Geriye seçimi engelle
+            for (let i = 0; i <= dr; i++) {
+                const el = document.querySelector(`.cell[data-r="${start.r + i}"][data-c="${start.c}"]`);
+                if (el) { el.classList.add('selecting'); selectedCells.push(el); }
+            }
+        }
+    }
+
+    function clearSelection() {
+        document.querySelectorAll('.cell.selecting').forEach(el => el.classList.remove('selecting'));
+    }
+
+    window.onmouseup = () => {
+        if (!isMouseDown) return;
+        isMouseDown = false;
+        
+        const currentWord = selectedCells.map(el => el.innerText).join('');
+        if (words.includes(currentWord) && !wordStatus[currentWord]) {
+            wordStatus[currentWord] = true;
+            foundCount++;
+            selectedCells.forEach(el => el.classList.add('found'));
+            document.getElementById("list-" + currentWord).classList.add('found');
+            
+            // Başarı Durumu: Tüm kelimeler bulunduğunda
+            if (foundCount === words.length) {
+                document.getElementById('next-arrow').style.display = "inline-block";
+                window.scrollTo(0, document.body.scrollHeight);
+            }
+        }
+        
+        clearSelection();
+        selectedCells = [];
+    };
+
+    placeWords();
+    initUI();
+</script>
+</body>
+</html>

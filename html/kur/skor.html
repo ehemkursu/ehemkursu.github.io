@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Edremit HEM - Maraton v3</title>
+    <style>
+        :root { --primary: #1e3a8a; --error: #dc2626; --success: #16a34a; --bg: #0f172a; --gold: #fbbf24; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; padding: 10px; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        
+        /* Ana Konumlandırma */
+        .main-wrapper { display: flex; gap: 20px; width: 95vw; max-width: 1000px; height: 85vh; align-items: stretch; }
+        
+        /* Oyun Kartı Alanı */
+        .game-area { flex: 2; background: white; color: #333; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 20px 50px rgba(0,0,0,0.5); position: relative; }
+        .img-box { width: 100%; height: 50%; border: 2px solid #e2e8f0; border-radius: 15px; display: flex; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden; margin-bottom: 15px; }
+        #target-img { max-width: 90%; max-height: 90%; object-fit: contain; }
+        
+        /* Seçenekler */
+        .options-grid { width: 100%; display: grid; grid-template-columns: 1fr; gap: 8px; }
+        .opt-btn { padding: 10px; font-size: 1rem; font-weight: 600; border: 2px solid #cbd5e1; border-radius: 8px; background: white; cursor: pointer; transition: 0.2s; }
+        .opt-btn:hover { background: #f1f5f9; border-color: var(--primary); }
+        
+        /* Sağ Panel (Başlık ve Skorlar) */
+        .sidebar { flex: 1; background: #1e293b; border-radius: 20px; padding: 20px; border: 1px solid #334155; display: flex; flex-direction: column; }
+        .maraton-title { color: var(--gold); font-size: 1.4rem; font-weight: 900; text-align: center; margin-bottom: 20px; line-height: 1.2; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        #current-player-display { color: white; font-size: 1.1rem; font-weight: bold; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; margin-bottom: 15px; }
+        
+        .score-list-container { flex-grow: 1; overflow-y: auto; }
+        .score-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #334155; font-size: 0.9rem; color: #cbd5e1; }
+        
+        /* Giriş Ekranı (Overlay) */
+        #entry-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9); z-index: 100; display: flex; justify-content: center; align-items: center; }
+        .entry-box { background: white; color: #333; padding: 40px; border-radius: 20px; text-align: center; width: 350px; }
+        
+        .btn-correct { background: var(--success) !important; color: white !important; }
+        .btn-wrong { background: var(--error) !important; color: white !important; }
+        .footer { position: absolute; bottom: 10px; width: 100%; text-align: center; font-size: 0.7rem; color: #94a3b8; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="entry-overlay">
+    <div class="entry-box">
+        <h2 style="margin-top:0">HOŞ GELDİNİZ</h2>
+        <p>Lütfen isminizi yazın:</p>
+        <input type="text" id="player-name-input" style="padding:10px; width:80%; margin-bottom:20px; border:2px solid #ddd; border-radius:8px; text-align:center;">
+        <br>
+        <button onclick="checkNameAndStart()" style="padding:10px 30px; background:var(--primary); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">BAŞLA</button>
+    </div>
+</div>
+
+<div class="main-wrapper" id="game-ui" style="visibility:hidden">
+    <div class="game-area">
+        <div style="font-weight:bold; color:var(--primary); margin-bottom:10px;">SORU: <span id="q-count">1</span> / 20</div>
+        <div class="img-box"><img id="target-img" src=""></div>
+        <div id="options" class="options-grid"></div>
+        <div style="margin-top:15px; font-weight:bold; color:var(--primary);">PUAN: <span id="score">0</span></div>
+        <div class="footer">Edremit Halk Eğitimi Merkezi - Bilgisayar İşletmenliği</div>
+    </div>
+
+    <div class="sidebar">
+        <div class="maraton-title">BİLGİSAYAR BİLEŞENLERİ MARATONU</div>
+        <div id="current-player-display">Oyuncu: -</div>
+        <h4 style="color:#94a3b8; margin: 10px 0; font-size: 0.8rem; text-transform: uppercase;">Önceki Skorlar</h4>
+        <div class="score-list-container" id="score-history"></div>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { img: "word.jpg", correct: "Yazı Programı", opts: ["Yazı Programı", "Hesap Programı", "Müzik Programı", "Resim Programı", "Video Programı"] },
+        { img: "excel.jpg", correct: "Hesap Programı", opts: ["Web Tarayıcı", "Hesap Programı", "Sunum Programı", "Sistem Dosyası", "Yazı Programı"] },
+        { img: "vlc.jpg", correct: "Video Programı", opts: ["Video Programı", "Resim Programı", "Çizim Aracı", "Dosya Arşivi", "Antivirüs"] },
+        { img: "mp3.png", correct: "Müzik Dosyası", opts: ["Resim Dosyası", "Müzik Dosyası", "Yazı Dosyası", "Video Dosyası", "Yazıcı Sürücüsü"] },
+        { img: "islemci.jpg", correct: "Bilgisayarın Beyni", opts: ["Güç Kaynağı", "İşaret Birimi", "Bilgisayarın Beyni", "Depolama Alanı", "Görüntü Kartı"] },
+        { img: "harddisk.jpg", correct: "Depolama Birimi", opts: ["Ses Birimi", "Bellek Birimi", "Depolama Birimi", "Giriş Birimi", "İşlem Birimi"] },
+        { img: "ekran.jpg", correct: "Görüntü Birimi", opts: ["Yazıcı", "Görüntü Birimi", "Tarayıcı", "Klavye", "Ses Kartı"] },
+        { img: "modem.jpg", correct: "İnternet Donanımı", opts: ["Görüntü Kartı", "Müzik Donanımı", "İnternet Donanımı", "Yazıcı", "Mouse"] },
+        { img: "klavye.jpg", correct: "Veri Giriş Birimi", opts: ["Çıkış Birimi", "Bellek", "Veri Giriş Birimi", "Güç Birimi", "Fan"] },
+        { img: "yazici.jpg", correct: "Printer", opts: ["Giriş Birimi", "İşlemci", "Printer", "Bellek", "Ağ Cihazı"] },
+        { img: "pardus.jpg", correct: "Yerli İşletim Sistemi", opts: ["Yerli İşletim Sistemi", "Ofis Yazılımı", "Sıkıştırma programı", "Video Programı", "Antivirüs programı"] },
+        { img: "windows11.jpg", correct: "İşletim Sistemi", opts: ["Uygulama yazılımı", "İşletim Sistemi", "Donanım", "Arşiv Dosyası", "Resim Dosyası"] },
+        { img: "zip.jpg", correct: "Sıkıştırılmış Dosya", opts: ["Müzik dosyası", "Video dosyası", "Sıkıştırılmış Dosya", "Metin Dosyası", "Resim dosyası"] },
+        { img: "powerpoint.png", correct: "Sunum Programı", opts: ["Hesap Programı", "Yazı Programı", "Sunum Programı", "Müzik programı", "Çizim programı"] },
+        { img: "ram.jpg", correct: "Geçici Bellek", opts: ["Kalıcı Bellek", "Geçici Bellek", "Ekran Belleği", "Sanal Disk", "İşlemci fanı"] },
+        { img: "kasa.jpg", correct: "Bilgisayar Kasası", opts: ["Monitör", "Anakart", "Bilgisayar Kasası", "Yazıcı", "Modem"] },
+        { img: "anakart.jpg", correct: "Anakart", opts: ["Güç Kaynağı", "Anakart", "Bellek Modülü", "Ekran Kartı", "Ekran kartı"] },
+        { img: "mouse.jpg", correct: "İşaretleme Cihazı", opts: ["Yazıcı", "Klavye", "İşaretleme Cihazı", "Kamera", "Kulaklık"] },
+        { img: "hoparlör.jpg", correct: "Ses Çıkış Birimi", opts: ["Mikrofon", "Ses Çıkış Birimi", "Kamera", "Kulaklık", "Ekran"] },
+        { img: "ubuntu.png", correct: "Açık Kaynak Sistem", opts: ["Grafik Programı", "Açık Kaynak Sistem", "Donanım", "Veri Tabanı", "Hesap Makinesi"] }
+    ];
+
+    let playerName = "";
+    let score = 0;
+    let qCounter = 0;
+    let scores = JSON.parse(localStorage.getItem('maratonScores')) || [];
+
+    function checkNameAndStart() {
+        const input = document.getElementById('player-name-input').value.trim();
+        if(!input) { alert("İsim boş bırakılamaz!"); return; }
+        playerName = input;
+        document.getElementById('entry-overlay').style.display = 'none';
+        document.getElementById('game-ui').style.visibility = 'visible';
+        document.getElementById('current-player-display').innerText = "Oyuncu: " + playerName;
+        updateHistory();
+        loadQ();
+    }
+
+    function loadQ() {
+        if(qCounter >= 20) {
+            alert("TEBRİKLER! Maratonu başarıyla tamamladınız. Bulmaca aşamasına geçiliyor.");
+            scores.push({ name: playerName, score: score });
+            localStorage.setItem('maratonScores', JSON.stringify(scores));
+            window.location.href = 'puzzle.html'; // 20 sorudan sonra geçiş
+            return;
+        }
+        
+        const q = questions[qCounter];
+        document.getElementById('target-img').src = "resimler/" + q.img;
+        document.getElementById('q-count').innerText = qCounter + 1;
+        
+        const optBox = document.getElementById('options');
+        optBox.innerHTML = "";
+        
+        [...q.opts].sort(() => Math.random() - 0.5).forEach(opt => {
+            const b = document.createElement('button');
+            b.className = 'opt-btn';
+            b.innerText = opt;
+            b.onclick = () => {
+                if(opt === q.correct) {
+                    b.classList.add('btn-correct');
+                    score += 5;
+                    document.getElementById('score').innerText = score;
+                    qCounter++;
+                    setTimeout(loadQ, 400);
+                } else {
+                    b.classList.add('btn-wrong');
+                    alert("Hatalı! Başa dönülüyor.");
+                    score = 0; qCounter = 0;
+                    document.getElementById('score').innerText = score;
+                    loadQ();
+                }
+            };
+            optBox.appendChild(b);
+        });
+    }
+
+    function updateHistory() {
+        const hist = document.getElementById('score-history');
+        const list = JSON.parse(localStorage.getItem('maratonScores')) || [];
+        hist.innerHTML = list.slice(-15).reverse().map((s, i) => `
+            <div class="score-item">
+                <span>${i+1}. ${s.name}</span>
+                <span><strong>${s.score}</strong></span>
+            </div>
+        `).join('');
+    }
+</script>
+</body>
+</html>

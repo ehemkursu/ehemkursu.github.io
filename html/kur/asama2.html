@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilgisayar İşletmenliği - Kare Bulmaca</title>
+    <style>
+        :root { 
+            --cell-size: 45px; 
+            --active-bg: #ffd600; 
+            --path-bg: #e0f7fa;   
+            --accent: #1565c0;
+        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        
+        .controls { margin-bottom: 20px; }
+        .btn-refresh { 
+            padding: 15px 30px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+            background: #2e7d32; color: white; border: none; border-radius: 50px;
+            transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .btn-refresh:hover { background: #1b5e20; transform: scale(1.05); }
+
+        .game-wrapper { display: flex; gap: 30px; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.15); border: 1px solid #ddd; }
+        
+        #grid { 
+            display: grid; 
+            grid-template-columns: repeat(10, var(--cell-size)); 
+            grid-template-rows: repeat(10, var(--cell-size)); 
+            gap: 1px; background: #333; border: 4px solid #333; 
+        }
+        .cell { width: var(--cell-size); height: var(--cell-size); background: #fff; position: relative; }
+        .cell.black { background: #263238; }
+        .q-num { position: absolute; top: 1px; left: 2px; font-size: 10px; font-weight: bold; color: #d32f2f; z-index: 5; }
+        .cell input { 
+            width: 100%; height: 100%; border: none; text-align: center; 
+            font-size: 1.6rem; font-weight: bold; text-transform: uppercase; 
+            outline: none; background: transparent; color: #1a237e;
+        }
+
+        .highlighted { background-color: var(--path-bg) !important; }
+        .active-focus { background-color: var(--active-bg) !important; }
+
+        #side-panel { width: 380px; display: flex; flex-direction: column; border-left: 2px solid #eee; padding-left: 25px; }
+        .image-box { 
+            width: 100%; height: 230px; border: 3px solid var(--accent); border-radius: 12px; 
+            display: flex; align-items: center; justify-content: center; background: #fff; margin-bottom: 20px; overflow: hidden;
+        }
+        #hint-img { max-width: 90%; max-height: 90%; object-fit: contain; display: none; }
+        
+        /* Büyük ve Koyu Soru Alanı */
+        .question-box { background: #f5f5f5; padding: 25px; border-radius: 12px; border-left: 8px solid var(--accent); box-shadow: inset 0 0 10px rgba(0,0,0,0.05); }
+        #q-title { margin: 0 0 10px 0; font-size: 1.3rem; font-weight: 900; color: #c62828; text-transform: uppercase; }
+        #q-text { margin: 0; font-size: 1.4rem; font-weight: 800; color: #000; line-height: 1.3; }
+
+        .footer { margin-top: auto; font-size: 1rem; color: #444; text-align: center; padding-top: 20px; font-weight: 700; border-top: 2px dashed #ccc; }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <button class="btn-refresh" onclick="loadNewPuzzle()">🔄 Yeni Bulmaca Oluştur</button>
+</div>
+
+<div class="game-wrapper">
+    <div id="grid"></div>
+
+    <div id="side-panel">
+        <div class="image-box">
+            <img id="hint-img" src="" alt="İpucu">
+            <span id="no-img" style="font-weight:bold; color:#999;">Görsel İpucu Burada Görünecek</span>
+        </div>
+        <div class="question-box">
+            <h3 id="q-title">HAZIR MISIN?</h3>
+            <p id="q-text">Başlamak için bir hücreye tıklayın.</p>
+        </div>
+        <div class="footer">Edremit Halk Eğitimi Merkezi <br> Bilgisayar İşletmenliği Kursu</div>
+    </div>
+</div>
+
+<script>
+    const GRID_SIZE = 10;
+    let currentQuestions = [];
+
+    const puzzleSets = [
+        [
+            { n: 1, r: 0, c: 0, d: 'h', word: "İŞLEMCİ", q: "Bilgisayarın beyni olan parçası nedir?", img: "islemci.jpg" },
+            { n: 2, r: 0, c: 0, d: 'v', word: "İNÇ", q: "Hangi donanım (Ekran) için ölçü birimidir?", img: "ekran.jpg" },
+            { n: 3, r: 2, c: 0, d: 'h', word: "ANAKART", q: "İşlemci bilgisayarın hangi parçasına takılır?", img: "anakart.jpg" },
+            { n: 4, r: 0, c: 5, d: 'v', word: "JPG", q: "Hangi tür dosya (Resim) uzantısıdır?", img: "jpg.jpg" },
+            { n: 5, r: 4, c: 2, d: 'h', word: "HARDDİSK", q: "Bilgilerin kalıcı kaydedildiği yer?", img: "harddisk.jpg" },
+            { n: 6, r: 2, c: 4, d: 'v', word: "KLAVYE", q: "Metin girişini sağlayan donanım?", img: "klavye.jpg" },
+            { n: 7, r: 6, c: 0, d: 'h', word: "YAZILIM", q: "Donanımı çalıştıran programlar bütünü?", img: "yazilim.jpg" },
+            { n: 8, r: 4, c: 8, d: 'v', word: "SİSTEM", q: "Her bilgisayarda mutlaka bulunması gereken temel yazılım türü?", img: "pardus.jpg" },
+            { n: 9, r: 8, c: 1, d: 'h', word: "WORD", q: "Bilgisayarda gelişmiş yazı programı?", img: "word.jpg" },
+            { n: 10, r: 7, c: 5, d: 'h', word: "ZİP", q: "Bir dosya sıkıştırılırsa uzantısı ne olur?", img: "zip.jpg" }
+        ],
+        [
+            { n: 1, r: 0, c: 2, d: 'h', word: "EKRANKARTI", q: "Ekrana gelen görüntüyü oluşturan parça?", img: "ekran_karti.jpg" },
+            { n: 2, r: 0, c: 2, d: 'v', word: "EXCEL", q: "Elektronik hesaplama programı?", img: "excel.jpg" },
+            { n: 3, r: 2, c: 1, d: 'h', word: "MP3", q: "Müzik dosyalarının uzantısıdır?", img: "mp3.jpg" },
+            { n: 4, r: 2, c: 6, d: 'v', word: "INTEL", q: "Bilgisayar İşlemcisi üreten bir firma adı?", img: "islemci.jpg" },
+            { n: 5, r: 4, c: 0, d: 'h', word: "DELETE", q: "Bir silme tuşudur?", img: "klavye.jpg" },
+            { n: 6, r: 4, c: 3, d: 'v', word: "DONANIM", q: "Bilgisayarı oluşturan fiziksel parçalara ne denir?", img: "kasa.jpg" },
+            { n: 7, r: 6, c: 3, d: 'h', word: "MODEM", q: "İnternete bağlanmamızı sağlayan cihaz?", img: "modem.jpg" },
+            { n: 8, r: 0, c: 9, d: 'v', word: "TARAYICI", q: "Kağıdı dijitale aktaran cihaz?", img: "yazici.jpg" },
+            { n: 9, r: 8, c: 0, d: 'h', word: "PİL", q: "Tarih/saat değişiyorsa hangi parçadan şüphelenilmeli?", img: "anakart.jpg" },
+            { n: 10, r: 5, c: 7, d: 'v', word: "SHIFT", q: "& işareti hangi tuş ile çıkar?", img: "klavye.jpg" }
+        ]
+    ];
+
+    const gridEl = document.getElementById('grid');
+    const hintImg = document.getElementById('hint-img');
+    const qText = document.getElementById('q-text');
+    const qTitle = document.getElementById('q-title');
+    const noImg = document.getElementById('no-img');
+
+    function loadNewPuzzle() {
+        const randomIndex = Math.floor(Math.random() * puzzleSets.length);
+        currentQuestions = puzzleSets[randomIndex];
+        gridEl.innerHTML = "";
+        hintImg.style.display = "none";
+        noImg.style.display = "block";
+        qTitle.innerText = "YENİ BULMACA";
+        qText.innerText = "Bir kutuya tıklayın.";
+        createGrid();
+    }
+
+    function createGrid() {
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell black';
+                cell.id = `cell-${r}-${c}`;
+                const input = document.createElement('input');
+                input.maxLength = 1;
+                input.addEventListener('focus', () => highlightPath(r, c));
+                input.addEventListener('keydown', (e) => handleNav(e, r, c));
+                cell.appendChild(input);
+                gridEl.appendChild(cell);
+            }
+        }
+        renderQuestions();
+    }
+
+    function renderQuestions() {
+        currentQuestions.forEach(item => {
+            const startCell = document.getElementById(`cell-${item.r}-${item.c}`);
+            if(!startCell.querySelector('.q-num')) {
+                const span = document.createElement('span');
+                span.className = 'q-num';
+                span.innerText = item.n;
+                startCell.appendChild(span);
+            }
+            for(let i=0; i < item.word.length; i++) {
+                let r = item.d === 'h' ? item.r : item.r + i;
+                let c = item.d === 'h' ? item.c + i : item.c;
+                if(r < GRID_SIZE && c < GRID_SIZE) {
+                    document.getElementById(`cell-${r}-${c}`).classList.remove('black');
+                }
+            }
+        });
+    }
+
+    function highlightPath(r, c) {
+        document.querySelectorAll('.cell').forEach(el => el.classList.remove('highlighted', 'active-focus'));
+        const activeQ = currentQuestions.find(q => {
+            for(let i=0; i<q.word.length; i++){
+                let curR = q.d === 'h' ? q.r : q.r + i;
+                let curC = q.d === 'h' ? q.c + i : q.c;
+                if(curR === r && curC === c) return true;
+            }
+            return false;
+        });
+
+        if(activeQ) {
+            for(let i=0; i<activeQ.word.length; i++){
+                let curR = activeQ.d === 'h' ? activeQ.r : activeQ.r + i;
+                let curC = activeQ.d === 'h' ? activeQ.c + i : activeQ.c;
+                document.getElementById(`cell-${curR}-${curC}`).classList.add('highlighted');
+            }
+            document.getElementById(`cell-${r}-${c}`).classList.add('active-focus');
+            hintImg.src = `resimler/${activeQ.img}`;
+            hintImg.style.display = "block";
+            noImg.style.display = "none";
+            qTitle.innerText = `SORU ${activeQ.n}`;
+            qText.innerText = activeQ.q;
+        }
+    }
+
+    function handleNav(e, r, c) {
+        let nr = r, nc = c;
+        if (e.key === "ArrowRight") nc++;
+        else if (e.key === "ArrowLeft") nc--;
+        else if (e.key === "ArrowDown") nr++;
+        else if (e.key === "ArrowUp") nr--;
+        else if (e.key === "Enter") nc++;
+        else if (e.key === "Backspace" && e.target.value === "") nc--;
+        else return;
+
+        const next = document.querySelector(`#cell-${nr}-${nc} input`);
+        if (next && !next.parentElement.classList.contains('black')) {
+            next.focus();
+        }
+    }
+
+    loadNewPuzzle();
+</script>
+
+</body>
+</html>

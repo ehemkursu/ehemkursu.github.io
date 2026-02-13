@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Edremit HEM - Final Aşaması</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root { --bg: #0f172a; --panel: #1e293b; --accent: #fbbf24; --text: #f8fafc; --success: #10b981; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; overflow-x: hidden; }
+        
+        .container { width: 95%; max-width: 1100px; text-align: center; }
+        h1 { color: var(--accent); margin-bottom: 5px; }
+        .info-msg { background: #064e3b; color: #a7f3d0; padding: 10px 25px; border-radius: 50px; display: inline-block; margin-bottom: 25px; font-weight: bold; }
+
+        /* Program Grupları */
+        .nav-bar { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; background: var(--panel); padding: 15px; border-radius: 15px; margin-bottom: 20px; }
+        .group-btn { padding: 10px 15px; border: none; border-radius: 8px; background: #334155; color: white; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        .group-btn.active { background: var(--accent); color: #0f172a; }
+
+        /* Program Listesi */
+        .program-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-bottom: 30px; min-height: 200px; }
+        .prog-item { background: white; color: #333; padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid var(--accent); }
+        .prog-item span { font-weight: bold; }
+        .price-tag { font-size: 0.8rem; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        .free { background: #dcfce7; color: #166534; }
+        .paid { background: #fee2e2; color: #991b1b; }
+
+        /* Seçim Alanı: Laptop/Desktop */
+        #final-choice { display: none; background: white; color: #333; padding: 40px; border-radius: 20px; animation: slideUp 0.5s; }
+        .choice-btn { padding: 20px 40px; font-size: 1.5rem; margin: 10px; cursor: pointer; border: 3px solid var(--primary); border-radius: 15px; background: white; transition: 0.3s; }
+        .choice-btn:hover { background: var(--primary); color: white; transform: scale(1.05); }
+
+        /* Final Görseli */
+        #final-result { display: none; position: fixed; inset: 0; background: var(--bg); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        #final-img { width: 80vw; max-height: 70vh; object-fit: contain; border-radius: 20px; box-shadow: 0 0 50px rgba(251, 191, 36, 0.3); }
+        .hayırlı-olsun { font-size: 6rem; font-weight: 900; color: var(--accent); text-shadow: 0 0 20px rgba(0,0,0,0.5); margin-top: 20px; }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container" id="main-content">
+    <h1>4. TUR: YAZILIM VE TESLİMAT</h1>
+    <div class="info-msg" id="os-welcome">İşletim Sistemini Yüklediniz. Şimdi Programları Seçebilirsiniz.</div>
+
+    <div class="nav-bar">
+        <button class="group-btn" onclick="showProgs('yazi', this)">YAZI</button>
+        <button class="group-btn" onclick="showProgs('hesap', this)">HESAP</button>
+        <button class="group-btn" onclick="showProgs('sunum', this)">SUNUM</button>
+        <button class="group-btn" onclick="showProgs('antivirus', this)">ANTİVİRÜS</button>
+        <button class="group-btn" onclick="showProgs('muzik', this)">MÜZİK</button>
+        <button class="group-btn" onclick="showProgs('internet', this)">İNTERNET</button>
+        <button class="group-btn" onclick="showProgs('muhasebe', this)">MUHASEBE</button>
+    </div>
+
+    <div id="prog-display" class="program-list"></div>
+
+    <button id="devam-btn" onclick="showComputerChoice()" style="padding:15px 40px; background:var(--success); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:1.2rem;">DEVAM ET ➜</button>
+
+    <div id="final-choice">
+        <h2 style="color:var(--primary)">Hangi Bilgisayarı İstiyorsunuz?</h2>
+        <button class="choice-btn" onclick="finish('laptop')">💻 DİZÜSTÜ (LAPTOP)</button>
+        <button class="choice-btn" onclick="finish('desktop')">🖥️ MASAÜSTÜ (DESKTOP)</button>
+    </div>
+</div>
+
+<div id="final-result">
+    <img id="final-img" src="">
+    <div class="hayırlı-olsun">HAYIRLI OLSUN</div>
+    <button onclick="location.reload()" style="margin-top:20px; background:none; border:1px solid white; color:white; cursor:pointer; padding:5px 15px; border-radius:5px;">Başa Dön</button>
+</div>
+
+<script>
+    // Başlangıç Ayarları
+    const os = localStorage.getItem('selectedOS') || "Windows";
+    document.getElementById('os-welcome').innerText = `${os} Yüklendi. Şimdi Programları Seçebilirsiniz.`;
+
+    const data = {
+        yazi: [{n:"MS Word", p:"Ücretli"}, {n:"LibreOffice Writer", p:"Ücretsiz"}, {n:"Google Dokümanlar", p:"Ücretsiz"}],
+        hesap: [{n:"MS Excel", p:"Ücretli"}, {n:"LibreOffice Calc", p:"Ücretsiz"}, {n:"Google E-Tablolar", p:"Ücretsiz"}],
+        sunum: [{n:"PowerPoint", p:"Ücretli"}, {n:"Canva", p:"Ücretsiz/Ücretli"}, {n:"Prezi", p:"Ücretli"}],
+        antivirus: [{n:"Kaspersky", p:"Ücretli"}, {n:"Windows Defender", p:"Ücretsiz"}, {n:"Eset NOD32", p:"Ücretli"}],
+        muzik: [{n:"Spotify", p:"Ücretsiz/Ücretli"}, {n:"AIMP", p:"Ücretsiz"}, {n:"VLC Media Player", p:"Ücretsiz"}],
+        internet: [{n:"Google Chrome", p:"Ücretsiz"}, {n:"Firefox", p:"Ücretsiz"}, {n:"Opera", p:"Ücretsiz"}],
+        muhasebe: [{n:"Logo Yazılım", p:"Ücretli"}, {n:"Mikro", p:"Ücretli"}, {n:"Paraşüt", p:"Ücretli"}]
+    };
+
+    function showProgs(cat, btn) {
+        document.querySelectorAll('.group-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const display = document.getElementById('prog-display');
+        display.innerHTML = data[cat].map(p => `
+            <div class="prog-item">
+                <input type="checkbox">
+                <span>${p.n}</span>
+                <span class="price-tag ${p.p === 'Ücretsiz' ? 'free' : 'paid'}">${p.p}</span>
+            </div>
+        `).join('');
+    }
+
+    function showComputerChoice() {
+        document.getElementById('prog-display').style.display = 'none';
+        document.getElementById('devam-btn').style.display = 'none';
+        document.querySelector('.nav-bar').style.display = 'none';
+        document.getElementById('final-choice').style.display = 'block';
+    }
+
+    function finish(type) {
+        const resultDiv = document.getElementById('final-result');
+        const img = document.getElementById('final-img');
+        
+        // picture klasöründeki görselleri yükle
+        img.src = `picture/${type}.jpg`;
+        resultDiv.style.display = 'flex';
+
+        // Konfeti Yağmuru
+        var end = Date.now() + (5 * 1000);
+        (function frame() {
+            confetti({ particleCount: 10, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#fbbf24', '#ffffff'] });
+            confetti({ particleCount: 10, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#fbbf24', '#ffffff'] });
+            if (Date.now() < end) requestAnimationFrame(frame);
+        }());
+    }
+
+    // İlk kategori otomatik açılsın
+    showProgs('yazi', document.querySelector('.group-btn'));
+</script>
+</body>
+</html>
