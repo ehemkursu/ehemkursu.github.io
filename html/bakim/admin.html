@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Sınav Paneli v13.0 (Büyük Resimler)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 950px; margin: 0 auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-top: 0; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* ADIM OLUŞTURUCU */
+        .step-builder { background: #e8f6f3; padding: 20px; border-radius: 8px; border: 1px solid #d1f2eb; margin-bottom: 20px; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        input[type="text"] { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; }
+        
+        button { cursor: pointer; border: none; padding: 10px 15px; border-radius: 6px; font-weight: bold; transition: 0.2s; font-size: 14px; }
+        .btn-text { background: #34495e; color: white; }
+        .btn-img { background: #e67e22; color: white; }
+        .btn-save { background: #27ae60; color: white; width: 100%; font-size: 16px; padding: 15px; }
+        .btn-gen { background: #2980b9; color: white; width: 100%; margin-top: 30px; padding: 20px; font-size: 18px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-gen:hover { background: #1f6391; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+
+        /* LİSTE GÖRÜNÜMÜ */
+        #current-steps-list { display: flex; flex-direction: column; gap: 5px; margin-top: 10px; padding: 10px; background: white; border: 1px solid #ddd; border-radius: 6px; min-height: 50px; }
+        .step-tag { background: #fff; border-bottom: 1px solid #eee; padding: 8px; display: flex; align-items: center; gap: 10px; }
+        .step-num { background: #34495e; color: white; width: 25px; height: 25px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        .step-tag img { height: 30px; border-radius: 3px; border: 1px solid #ccc; }
+        .del-step { color: #c0392b; cursor: pointer; font-weight: bold; margin-left: auto; padding: 5px; }
+
+        #list-area { margin-top: 30px; border-top: 2px solid #eee; padding-top: 20px; }
+        .q-item { background: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; margin-bottom: 10px; border-radius: 8px; border-left: 5px solid #bdc3c7; position: relative; }
+        .btn-del-q { position: absolute; right: 10px; top: 10px; background: #e74c3c; color: white; font-size: 12px; padding: 5px 10px; }
+
+        /* YEDEKLEME ALANI */
+        .backup-area { margin-top: 40px; padding: 20px; background: #eceff1; border-radius: 8px; border: 1px solid #cfd8dc; display: flex; justify-content: space-between; align-items: center; }
+        .btn-backup { background: #607d8b; color: white; }
+        .btn-restore { background: #607d8b; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>
+        <span>🛠️ Sınav Paneli</span>
+        <span style="font-size:14px; font-weight:normal; background:#e1f5fe; color:#0277bd; padding:5px 15px; border-radius:20px;">💾 Veriler Korunuyor</span>
+    </h2>
+    
+    <label style="font-weight:bold; display:block; margin-bottom:5px;">Soru Metni:</label>
+    <input type="text" id="qText" placeholder="Örn: Denetim Masası nasıl açılır?" style="width:100%; box-sizing:border-box; margin-bottom:20px;">
+
+    <div class="step-builder">
+        <label style="font-weight:bold; color:#16a085; display:block; margin-bottom:10px;">Cevap Adımlarını Oluşturun:</label>
+        
+        <div class="input-group">
+            <input type="text" id="stepTextInput" placeholder="Metin adımı yazın (Örn: Başlat)">
+            <button class="btn-text" onclick="addTextStep()">+ Metin Ekle</button>
+            
+            <input type="file" id="stepImgInput" accept="image/*" style="display:none;" onchange="addImageStep(this)">
+            <button class="btn-img" onclick="document.getElementById('stepImgInput').click()">📷 Resim Ekle</button>
+        </div>
+
+        <div id="current-steps-list">
+            <div style="text-align:center; color:#999; padding:10px;">Henüz adım eklenmedi.</div>
+        </div>
+        <div style="text-align:right; margin-top:5px;">
+            <button onclick="clearCurrentSteps()" style="background:none; color:#c0392b; font-size:12px; text-decoration:underline; cursor:pointer;">Temizle</button>
+        </div>
+    </div>
+
+    <button class="btn-save" onclick="saveQuestion()">Soruyu Listeye Kaydet</button>
+
+    <div id="list-area"></div>
+
+    <button class="btn-gen" onclick="generateExamFile()">
+        <span>🚀</span> YENİ SINAV DOSYASINI OLUŞTUR (İNDİR)
+    </button>
+
+    <div class="backup-area">
+        <div>
+            <strong>Veri Yedekleme:</strong><br>
+            <small style="color:#555">Sorularınızı kaybetmemek için düzenli yedek alınız.</small>
+        </div>
+        <div>
+            <button class="btn-backup" onclick="backupQuestions()">⬇️ Yedeği Farklı Kaydet</button>
+            <button class="btn-restore" onclick="document.getElementById('restoreInput').click()">⬆️ Yedeği Yükle</button>
+            <input type="file" id="restoreInput" accept=".json" style="display:none;" onchange="restoreQuestions(this)">
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- VERİ YÖNETİMİ ---
+    // NOT: Anahtarı 'examData_v7' olarak bıraktık ki eski verileriniz silinmesin.
+    let questions = JSON.parse(localStorage.getItem('examData_v7')) || [];
+    let currentSteps = []; 
+
+    renderList();
+    renderCurrentSteps();
+
+    // --- ADIM EKLEME ---
+    function addTextStep() {
+        const txt = document.getElementById('stepTextInput').value.trim();
+        if(!txt) return alert("Metin yazınız.");
+        currentSteps.push(txt);
+        document.getElementById('stepTextInput').value = "";
+        renderCurrentSteps();
+    }
+
+    function addImageStep(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    // GÜNCELLEME: Yeni resimlerin kalitesini 300px'e çıkardık.
+                    const maxSize = 300; 
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) { if (width > maxSize) { height *= maxSize / width; width = maxSize; } } 
+                    else { if (height > maxSize) { width *= maxSize / height; height = maxSize; } }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    currentSteps.push(canvas.toDataURL('image/jpeg', 0.8));
+                    renderCurrentSteps();
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+        input.value = "";
+    }
+
+    function renderCurrentSteps() {
+        const div = document.getElementById('current-steps-list');
+        div.innerHTML = "";
+        if(currentSteps.length === 0) {
+            div.innerHTML = '<div style="text-align:center; color:#999; padding:10px;">Henüz adım eklenmedi.</div>';
+            return;
+        }
+        currentSteps.forEach((step, index) => {
+            let content = step.startsWith('data:image') ? `<img src="${step}"> (Resim)` : step;
+            div.innerHTML += `
+                <div class="step-tag">
+                    <div class="step-num">${index+1}</div>
+                    <div>${content}</div>
+                    <div class="del-step" onclick="removeStep(${index})">SİL ✖</div>
+                </div>`;
+        });
+    }
+
+    function removeStep(index) { currentSteps.splice(index, 1); renderCurrentSteps(); }
+    function clearCurrentSteps() { currentSteps = []; renderCurrentSteps(); }
+
+    // --- KAYIT ---
+    function saveQuestion() {
+        const txt = document.getElementById('qText').value.trim();
+        if(!txt || currentSteps.length === 0) return alert("Soru ve en az bir adım giriniz.");
+        questions.push({ text: txt, steps: [...currentSteps] });
+        document.getElementById('qText').value = "";
+        clearCurrentSteps();
+        saveToLocal();
+        renderList();
+    }
+
+    function deleteQuestion(index) {
+        if(confirm("Silmek istiyor musunuz?")) {
+            questions.splice(index, 1);
+            saveToLocal();
+            renderList();
+        }
+    }
+
+    function saveToLocal() { localStorage.setItem('examData_v7', JSON.stringify(questions)); }
+
+    function renderList() {
+        const area = document.getElementById('list-area');
+        area.innerHTML = `<h3>Soru Listesi (${questions.length})</h3>`;
+        questions.forEach((q, i) => {
+            let stepsPreview = "";
+            q.steps.forEach((s, idx) => {
+                let content = s.startsWith('data:image') ? `<img src="${s}" style="height:20px; vertical-align:middle;">` : s;
+                stepsPreview += `<span style="background:#fff; border:1px solid #ccc; padding:2px 6px; border-radius:4px; margin-right:5px; font-size:12px;"><b>${idx+1}.</b> ${content}</span>`;
+            });
+            area.innerHTML += `
+                <div class="q-item">
+                    <button class="btn-del-q" onclick="deleteQuestion(${i})">Sil</button>
+                    <div><strong>${i+1}.</strong> ${q.text}</div>
+                    <div style="margin-top:5px;">${stepsPreview}</div>
+                </div>`;
+        });
+    }
+
+    // --- YEDEKLEME SİSTEMİ ---
+    async function backupQuestions() {
+        if(questions.length === 0) return alert("Yedeklenecek soru yok.");
+        const dataStr = JSON.stringify(questions, null, 2);
+        const fileName = "soru_bankasi_yedek_" + new Date().toISOString().slice(0,10) + ".json";
+
+        try {
+            if (window.showSaveFilePicker) {
+                const handle = await window.showSaveFilePicker({ 
+                    suggestedName: fileName, 
+                    types: [{ description: 'JSON Verisi', accept: {'application/json': ['.json']} }] 
+                });
+                const writable = await handle.createWritable();
+                await writable.write(dataStr);
+                await writable.close();
+                alert("Yedek başarıyla kaydedildi!");
+            } else { throw "Fallback"; }
+        } catch (e) {
+            const blob = new Blob([dataStr], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    }
+
+    function restoreQuestions(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if(Array.isArray(importedData)) {
+                    if(confirm("Mevcut listenin üzerine " + importedData.length + " adet soru yüklenecek. Onaylıyor musunuz?")) {
+                        questions = importedData;
+                        saveToLocal();
+                        renderList();
+                        alert("Yedek başarıyla yüklendi!");
+                    }
+                } else {
+                    alert("Hatalı dosya formatı!");
+                }
+            } catch(err) {
+                alert("Dosya okunamadı: " + err);
+            }
+        }
+        reader.readAsText(file);
+        input.value = "";
+    }
+
+    // --- DOSYA OLUŞTURMA (Sınav Dosyası) ---
+    async function generateExamFile() {
+        if(questions.length === 0) return alert("Soru yok!");
+        const jsonData = JSON.stringify(questions);
+
+        // GÜNCELLEME: CSS kısmında .zone ve img boyutları artırıldı.
+        const fileContent = `
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EHEM Bilgisayar Uygulaması</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>
+<style>
+    body { font-family: 'Segoe UI', sans-serif; background: #eef2f3; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
+    header { height: 50px; background: #2c3e50; color: white; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); flex-shrink: 0; }
+    #main-layout { display: flex; height: calc(100vh - 50px); overflow: hidden; }
+    .left-panel { flex: 4; background: white; padding: 15px; border-right: 1px solid #ccc; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+    .right-panel { flex: 6; background: #f0f3f4; padding: 15px; overflow-y: auto; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 10px; justify-content: center; }
+    .q-box { background: #d6eaf8; color: #2980b9; padding: 12px; border-radius: 5px; width: 95%; text-align: center; font-weight: bold; margin-bottom: 20px; font-size: 1.1em; border-left: 4px solid #2980b9; }
+    .drop-container { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    
+    /* GÜNCELLEME: Kutu Yüksekliği Artırıldı */
+    .zone { 
+        width: 90%; min-height: 120px; 
+        border: 2px dashed #bdc3c7; background: #f9f9f9; 
+        display: flex; align-items: center; padding-left: 50px; 
+        border-radius: 6px; position: relative; font-weight: bold; 
+        transition: 0.2s; color: #333; box-sizing: border-box;
+    }
+    .zone::before { 
+        content: attr(data-id); position: absolute; left: 0; top: 0; bottom: 0; width: 40px; 
+        background: #7f8c8d; color: white; display: flex; align-items: center; justify-content: center;
+        border-top-left-radius: 4px; border-bottom-left-radius: 4px; font-size: 18px; font-weight: bold;
+    }
+    .zone:empty::after { content: attr(data-id) ". Adım"; color: #ccc; font-style: italic; font-weight: normal; }
+    .zone.correct { background: #eafaf1; border: 2px solid #27ae60; color: #27ae60; }
+    .zone.correct::before { background: #27ae60; } 
+    .zone.wrong { border-color: #e74c3c; background: #fadbd8; animation: shake 0.3s; }
+    
+    /* GÜNCELLEME: Sürüklenen nesne ve resim boyutları artırıldı */
+    .drag-item { 
+        padding: 10px 15px; border: 1px solid #ccc; 
+        border-radius: 6px; cursor: grab; box-shadow: 0 3px 5px rgba(0,0,0,0.1); 
+        display: inline-flex; align-items: center; justify-content: center; 
+        max-width: 100%; height: auto; min-height: 100px; 
+        transition: transform 0.1s; font-weight: 500;
+    }
+    .drag-item:active { cursor: grabbing; opacity: 0.8; }
+    
+    /* GÜNCELLEME: Resim yüksekliği 90px yapıldı */
+    .drag-item img, .zone img { 
+        height: 90px; max-height: 90px; 
+        max-width: 100%; object-fit: contain; margin: 0 5px; 
+        cursor: zoom-in; pointer-events: auto; 
+    }
+
+    .btn { padding: 5px 15px; cursor: pointer; border: none; border-radius: 3px; color: white; font-size: 14px; margin-left: 5px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; background: #95a5a6 !important; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+    #img-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; justify-content: center; align-items: center; cursor: zoom-out; }
+    #img-modal img { max-width: 90%; max-height: 90%; box-shadow: 0 0 20px rgba(255,255,255,0.2); border-radius: 5px; animation: popIn 0.3s ease; }
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    #cert-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:none; justify-content:center; align-items:center; z-index:999; flex-direction:column; }
+    #cert-view { width: 85%; max-width:900px; padding: 40px; background: #fffaf0; text-align: center; border: 20px solid #795548; display: none; box-shadow: 0 0 50px rgba(0,0,0,0.5); z-index: 1001; position: relative;}
+    #input-view { background: white; padding: 30px; border-radius: 8px; text-align: center; width: 300px; }
+    #confetti-canvas { position: fixed; top: 0; left: 0; pointer-events: none; z-index: 1000; display: none; }
+</style>
+</head>
+<body>
+<header>
+    <div style="font-weight:bold;">🖥️ Bilgisayara Bakım İşlemi Uygulaması</div>
+    <div>
+        <button class="btn" style="background:#546e7a" id="btnPrev" onclick="nav(-1)">❮ Geri</button>
+        <span id="pgInfo" style="margin:0 10px; font-size:14px; font-weight:bold;"></span>
+        <button class="btn" style="background:#546e7a" id="btnNext" onclick="nav(1)">İleri ❯</button>
+        <button class="btn" style="background:#d35400" onclick="finish()">Sınavı Bitir</button>
+    </div>
+</header>
+<div id="main-layout">
+    <div class="left-panel">
+        <div id="qBox" class="q-box"></div>
+        <div id="zones" class="drop-container"></div>
+    </div>
+    <div class="right-panel" id="pool"></div>
+</div>
+<div id="img-modal" onclick="this.style.display='none'"><img id="img-modal-content"></div>
+<canvas id="confetti-canvas"></canvas>
+<div id="cert-overlay">
+    <div id="input-view">
+        <h3>Tebrikler!</h3>
+        <p>Adınızı giriniz:</p>
+        <input type="text" id="sName" style="width:90%; padding:8px; margin-bottom:15px; border:1px solid #ccc; border-radius:4px;">
+        <button class="btn" style="background:#27ae60; width:100%; padding:10px;" onclick="genCert()">Sertifika Oluştur</button>
+    </div>
+    <div id="cert-view">
+        <h1 style="color:#c0392b; font-family:'Times New Roman',serif; margin:10px 0; font-size: 50px;">TEBRİKLER</h1>
+        <p style="font-size: 24px; color: #333; line-height: 1.5;">EHEM Bilgisayar İşletmenliği Kursunda<br><strong>"Bilgisayarınızı Tanıyor Musunuz"</strong><br>uygulamasını başarı ile bitirdiniz.</p><br>
+        <p>Sayın,</p>
+        <h2 id="cName" style="font-family:'Brush Script MT',cursive; font-size:45px; color:#1565c0; border-bottom:1px solid #999; display:inline-block; padding:0 30px; min-width: 300px;"></h2>
+        <p id="cDate" style="font-weight:bold; margin-top:40px; color: #555;"></p>
+    </div>
+    <div id="cert-actions" style="margin-top:20px; display:none;">
+        <button class="btn" style="background:#0277bd; padding:10px 20px;" onclick="savePDF()">PDF İndir</button>
+        <button class="btn" style="background:#c62828; padding:10px 20px;" onclick="location.reload()">Kapat</button>
+    </div>
+</div>
+<script>
+    const data = ${jsonData}; 
+    let idx = 0;
+    let state = data.map(() => ({ done: false, placed: [] }));
+    let globalPool = [];
+    const colors = ['#e3f2fd', '#f3e5f5', '#e8f5e9', '#fff3e0', '#ffebee', '#f9fbe7', '#e0f7fa', '#fce4ec'];
+    data.forEach(q => q.steps.forEach(s => globalPool.push(s)));
+
+    function init() { load(0); }
+    function getHTML(c) { return c.startsWith('data:image') ? '<img src="'+c+'" onclick="zoom(this.src); event.stopPropagation();">' : '<span>'+c+'</span>'; }
+    function zoom(s) { document.getElementById('img-modal-content').src = s; document.getElementById('img-modal').style.display = 'flex'; }
+    function getRandomColor() { return colors[Math.floor(Math.random() * colors.length)]; }
+
+    function load(i) {
+        idx = i;
+        const q = data[i];
+        document.getElementById('pgInfo').innerText = (i+1) + " / " + data.length;
+        document.getElementById('btnPrev').disabled = (i===0);
+        document.getElementById('btnNext').disabled = (i===data.length-1);
+        document.getElementById('qBox').innerText = q.text;
+        const zArea = document.getElementById('zones');
+        zArea.innerHTML = "";
+        
+        q.steps.forEach((step, k) => {
+            let z = document.createElement('div');
+            z.className = "zone";
+            z.dataset.idx = k; z.dataset.id = (k+1); z.dataset.ans = step; 
+            if(state[i].placed[k]) {
+                z.innerHTML = getHTML(state[i].placed[k]);
+                z.classList.add('correct');
+            } else if (!state[i].done) {
+                z.ondragover = e => e.preventDefault();
+                z.ondrop = e => drop(e, z, k);
+            }
+            zArea.appendChild(z);
+        });
+
+        const pArea = document.getElementById('pool');
+        pArea.innerHTML = "";
+        if(!state[i].done) {
+            let current = [...q.steps];
+            let distractors = globalPool.filter(x => !current.includes(x)).sort(()=>0.5-Math.random()).slice(0, 8);
+            let combined = [...current, ...distractors].sort(()=>0.5-Math.random());
+            combined.forEach(val => {
+                let d = document.createElement('div');
+                d.className = "drag-item";
+                d.draggable = true;
+                d.innerHTML = getHTML(val);
+                d.style.backgroundColor = getRandomColor();
+                d.id = "d-" + Math.random().toString(36).substr(2,9);
+                d.ondragstart = e => { e.dataTransfer.setData("val", val); e.dataTransfer.setData("eid", d.id); };
+                pArea.appendChild(d);
+            });
+        } else {
+            pArea.innerHTML = "<h3 style='color:green; width:100%; text-align:center;'>✅ Tamamlandı</h3>";
+        }
+    }
+
+    function drop(e, zone, k) {
+        e.preventDefault();
+        let val = e.dataTransfer.getData("val");
+        let eid = e.dataTransfer.getData("eid");
+        let ans = zone.dataset.ans;
+        if(k > 0 && !state[idx].placed[k-1]) { alert("Önce " + k + ". adımı yapınız!"); return; }
+        if(val === ans) {
+            zone.innerHTML = getHTML(val);
+            zone.classList.add('correct');
+            let el = document.getElementById(eid);
+            if(el) el.remove();
+            state[idx].placed[k] = val;
+            if(state[idx].placed.filter(x=>x).length === data[idx].steps.length) {
+                state[idx].done = true;
+                document.getElementById('pool').innerHTML = "<h3 style='color:green; width:100%; text-align:center;'>✅ Doğru!</h3>";
+            }
+        } else {
+            zone.classList.add('wrong');
+            setTimeout(()=>zone.classList.remove('wrong'), 400);
+        }
+    }
+
+    function nav(dir) { 
+        if (dir === 1 && !state[idx].done) { alert("Lütfen önce ekrandaki soruyu tamamlayınız!"); return; }
+        if(idx+dir >= 0 && idx+dir < data.length) load(idx+dir); 
+    }
+
+    function finish() {
+        const incomplete = state.filter(x => !x.done).length;
+        if(incomplete > 0) { alert("Sınavı bitirmek için tüm soruları doğru cevaplamalısınız! (" + incomplete + " soru eksik)"); return; }
+        document.getElementById('cert-overlay').style.display = 'flex';
+        document.getElementById('input-view').style.display = 'block';
+    }
+
+    function genCert() {
+        let n = document.getElementById('sName').value;
+        if(!n) return alert("İsim giriniz");
+        document.getElementById('input-view').style.display = 'none';
+        document.getElementById('cert-view').style.display = 'block';
+        document.getElementById('cert-actions').style.display = 'block';
+        document.getElementById('cName').innerText = n;
+        document.getElementById('cDate').innerText = new Date().toLocaleDateString();
+        startConfetti();
+    }
+
+    function savePDF() {
+        const { jsPDF } = window.jspdf;
+        html2canvas(document.getElementById('cert-view')).then(canvas => {
+            const img = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('l', 'mm', 'a4');
+            const w = pdf.internal.pageSize.getWidth();
+            const h = (canvas.height * w) / canvas.width;
+            pdf.addImage(img, 'PNG', 0, 10, w, h);
+            pdf.save("Sertifika.pdf");
+        });
+    }
+
+    function startConfetti() {
+        const canvas = document.getElementById('confetti-canvas');
+        canvas.style.display = 'block';
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        const particles = [];
+        const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
+        for(let i=0; i<300; i++) {
+            particles.push({
+                x: Math.random() * canvas.width, y: Math.random() * canvas.height - canvas.height,
+                w: Math.random() * 10 + 5, h: Math.random() * 10 + 5,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                dy: Math.random() * 2 + 2, dx: Math.random() * 2 - 1, rotation: Math.random() * 360
+            });
+        }
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                ctx.save(); ctx.translate(p.x + p.w / 2, p.y + p.h / 2); ctx.rotate(p.rotation * Math.PI / 180);
+                ctx.fillStyle = p.color; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+                p.y += p.dy; p.x += p.dx; p.rotation += 2;
+                if(p.y > canvas.height) p.y = -20; 
+                if(p.x > canvas.width || p.x < 0) p.dx *= -1;
+            });
+            requestAnimationFrame(draw);
+        }
+        draw();
+    }
+    
+    window.onload = init;
+<\/script>
+</body>
+</html>`;
+
+        try {
+            if (window.showSaveFilePicker) {
+                const handle = await window.showSaveFilePicker({ suggestedName: 'sinav.html', types: [{ description: 'HTML', accept: {'text/html': ['.html']} }] });
+                const writable = await handle.createWritable();
+                await writable.write(fileContent);
+                await writable.close();
+                alert("Dosya Kaydedildi!");
+            } else { throw "Fallback"; }
+        } catch (e) {
+            const blob = new Blob([fileContent], { type: 'text/html' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'sinav.html'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+    }
+</script>
+
+</body>
+</html>
