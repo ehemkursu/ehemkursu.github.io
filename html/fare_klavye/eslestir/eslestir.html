@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Eğitsel Tasarım Paneli</title>
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --bg: #ecf0f1; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        #loginOverlay { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--primary); display: flex; justify-content: center; align-items: center; z-index: 1000; color: white; flex-direction: column; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--bg); margin-bottom: 20px; padding-bottom: 10px; }
+        .workspace { display: flex; gap: 20px; }
+        .sidebar { width: 250px; background: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #ddd; min-height: 400px; }
+        .image-area { flex-grow: 1; position: relative; background: #dfe6e9; border-radius: 10px; overflow: hidden; line-height: 0; }
+        img { width: 100%; height: auto; display: block; }
+        .marker { position: absolute; width: 30px; height: 30px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); background: rgba(231, 76, 60, 0.8); color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; pointer-events: none; }
+        .item-box { background: var(--accent); color: white; padding: 8px; margin: 5px 0; border-radius: 4px; text-align: center; }
+        .nav-controls { margin-top: 20px; display: flex; justify-content: center; gap: 15px; align-items: center; }
+        button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; }
+        .btn-save { background: var(--success); color: white; }
+        .btn-nav { background: var(--primary); color: white; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div id="loginOverlay">
+    <h1>Öğretmen Girişi</h1>
+    <input type="password" id="passInput" style="padding:10px; margin:10px;">
+    <button onclick="checkPassword()" class="btn-nav">Giriş Yap</button>
+</div>
+
+<div class="container hidden" id="mainApp">
+    <div class="header">
+        <h2 id="roundTitle">1. Tur Tasarımı</h2>
+        <div>
+            <input type="file" id="imageLoader" class="hidden" accept="image/*">
+            <button onclick="document.getElementById('imageLoader').click()" class="btn-nav">Resim Seç</button>
+            <button onclick="saveAsHtml()" class="btn-save">Bu Turu Dosya Olarak Kaydet</button>
+        </div>
+    </div>
+
+    <div class="workspace">
+        <div class="sidebar">
+            <h4>Seçenek Listesi</h4>
+            <div id="itemList"></div>
+        </div>
+        <div class="image-area" id="canvas">
+            <p id="hint" style="line-height: normal; padding: 20px;">Önce resim seçin, sonra işaretlemek için resme tıklayın.</p>
+            <img id="bgImage" class="hidden">
+        </div>
+    </div>
+
+    <div class="nav-controls">
+        <button onclick="changeRound(-1)" class="btn-nav">Önceki Tur</button>
+        <b id="pageInfo">Tur: 1</b>
+        <button onclick="changeRound(1)" class="btn-nav">Sonraki Tur</button>
+    </div>
+</div>
+
+<script>
+    let currentRound = 1;
+    let roundsData = { 1: { image: null, markers: [] } };
+
+    function checkPassword() {
+        if(document.getElementById('passInput').value === "ehem") {
+            document.getElementById('loginOverlay').remove();
+            document.getElementById('mainApp').classList.remove('hidden');
+        } else { alert("Şifre yanlış!"); }
+    }
+
+    document.getElementById('imageLoader').addEventListener('change', function(e) {
+        const reader = new FileReader();
+        reader.onload = (ev) => { 
+            roundsData[currentRound].image = ev.target.result; 
+            updateUI(); 
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    });
+
+    document.getElementById('canvas').addEventListener('click', function(e) {
+        if(!roundsData[currentRound].image || e.target.id !== 'bgImage') return;
+        const rect = e.target.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        const label = prompt("Etiket adı:");
+        if(label) {
+            roundsData[currentRound].markers.push({ x, y, label });
+            updateUI();
+        }
+    });
+
+    function updateUI() {
+        const canvas = document.getElementById('canvas');
+        const img = document.getElementById('bgImage');
+        document.querySelectorAll('.marker').forEach(m => m.remove());
+        document.getElementById('itemList').innerHTML = '';
+        
+        if(roundsData[currentRound].image) {
+            img.src = roundsData[currentRound].image;
+            img.classList.remove('hidden');
+            document.getElementById('hint').classList.add('hidden');
+            roundsData[currentRound].markers.forEach(m => {
+                const div = document.createElement('div');
+                div.className = 'marker';
+                div.style.left = m.x + '%'; div.style.top = m.y + '%';
+                div.innerText = '!';
+                canvas.appendChild(div);
+                document.getElementById('itemList').innerHTML += `<div class="item-box">${m.label}</div>`;
+            });
+        }
+        document.getElementById('pageInfo').innerText = "Tur: " + currentRound;
+    }
+
+    function changeRound(n) {
+        currentRound = Math.max(1, currentRound + n);
+        if(!roundsData[currentRound]) roundsData[currentRound] = { image: null, markers: [] };
+        updateUI();
+    }
+
+    function saveAsHtml() {
+        const data = roundsData[currentRound];
+        if(!data.image) return alert("Resim yok!");
+
+        const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>${currentRound}. Tur</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f4; display: flex; flex-direction: column; align-items: center; }
+        .main { display: flex; gap: 20px; margin-top: 20px; background: white; padding: 20px; border-radius: 10px; }
+        .img-container { position: relative; line-height: 0; border: 2px solid #ccc; }
+        img { max-width: 800px; height: auto; }
+        .target { position: absolute; width: 40px; height: 40px; border: 3px dashed #3498db; border-radius: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.5); display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .target.done { border: 3px solid #27ae60; background: #2ecc71; color: white; }
+        .item { background: #3498db; color: white; padding: 10px; margin: 10px 0; border-radius: 5px; cursor: move; text-align: center; }
+        #nextBtn { display: none; margin-top: 20px; padding: 15px 30px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <h2>${currentRound}. Tur: Sürükle ve Doğru Yere Bırak</h2>
+    <div class="main">
+        <div style="width: 200px;">
+            ${data.markers.map(m => `<div class="item" draggable="true" ondragstart="evStart(event, '${m.label}')">${m.label}</div>`).sort(() => Math.random() - 0.5).join('')}
+        </div>
+        <div class="img-container">
+            <img src="${data.image}">
+            ${data.markers.map((m, i) => `<div class="target" style="left:${m.x}%; top:${m.y}%" ondragover="event.preventDefault()" ondrop="evDrop(event, '${m.label}')">?</div>`).join('')}
+        </div>
+    </div>
+    <button id="nextBtn" onclick="location.href='${currentRound + 1}.tur.html'">Tebrikler! ${currentRound + 1}. Tura Geç →</button>
+
+    <script>
+        let score = 0;
+        const total = ${data.markers.length};
+        function evStart(e, label) { e.dataTransfer.setData("text", label); }
+        function evDrop(e, label) {
+            e.preventDefault();
+            const data = e.dataTransfer.getData("text");
+            if(data === label && !e.target.classList.contains('done')) {
+                e.target.classList.add('done');
+                e.target.innerText = "✓";
+                score++;
+                if(score === total) document.getElementById('nextBtn').style.display = "block";
+            }
+        }
+    <\/script>
+</body>
+</html>`;
+
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = currentRound + ".tur.html";
+        a.click();
+    }
+</script>
+</body>
+</html>
