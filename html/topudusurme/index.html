@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Donanım Avcısı - Pro Sürüm</title>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: white;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            /* Arka plan sığdırma ve ortalama */
+            background-image: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), url('pc.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        #gameCanvas {
+            background-color: rgba(30, 41, 59, 0.7);
+            border: 4px solid #ef4444; 
+            border-radius: 15px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.6);
+            display: none;
+        }
+
+        .start-ui { text-align: center; z-index: 100; }
+        .btn-giant {
+            background: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
+            color: white;
+            padding: 35px 70px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 15px 35px rgba(239, 68, 68, 0.4);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+        .btn-giant:hover { transform: scale(1.05); }
+
+        .score-board {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #fbbf24;
+            display: none;
+            text-shadow: 2px 2px 4px black;
+        }
+
+        #statusMsg {
+            position: absolute;
+            text-align: center;
+            display: none;
+            background: rgba(0,0,0,0.95);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #ef4444;
+            z-index: 110;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="startScreen" class="start-ui">
+        <button class="btn-giant" onclick="startGame()">OYUNA BAŞLA</button>
+        <p style="margin-top:15px; color:#ef4444;">Veya <b>BOŞLUK</b> Tuşuna Bas</p>
+    </div>
+
+    <div id="statusMsg">
+        <h1 id="resTitle" style="font-size: 3.5rem; margin: 0;">EYVAH!</h1>
+        <p style="font-size: 1.2rem;">Yeniden denemek için <b>BOŞLUK</b> tuşuna basın.</p>
+    </div>
+
+    <div id="scoreLabel" class="score-board">SKOR: <span id="scoreVal">0</span></div>
+    <canvas id="gameCanvas" width="960" height="550"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const startScreen = document.getElementById("startScreen");
+        const statusMsg = document.getElementById("statusMsg");
+        const scoreLabel = document.getElementById("scoreLabel");
+        const scoreVal = document.getElementById("scoreVal");
+
+        let score = 0;
+        let isRunning = false;
+        let particles = [];
+        
+        // Çubuk ve Top Ayarları
+        const paddleHeight = 15;
+        const paddleWidth = 200; 
+        let paddleX = (canvas.width - paddleWidth) / 2;
+        let ballRadius = 9;
+        let x, y, dx, dy, ballColor;
+
+        const words = [
+            "işlemci", "anakart", "ram", "harddisk", "ekran kartı", "ekran", 
+            "klavye", "fare", "kasa", "hoparlör", "kulaklık", "yazıcı", 
+            "kamera", "ssd", "soğutucu", "modem", "bellek", "mikrofon"
+        ];
+        
+        const brickRowCount = 3;
+        const brickColumnCount = 6;
+        const brickWidth = 140; 
+        const brickHeight = 45;
+        const brickPadding = 15;
+        const brickOffsetTop = 50;
+        const brickOffsetLeft = (canvas.width - ((brickWidth + brickPadding) * brickColumnCount - brickPadding)) / 2;
+
+        let bricks = [];
+
+        function initBricks() {
+            let idx = 0;
+            for (let c = 0; c < brickColumnCount; c++) {
+                bricks[c] = [];
+                for (let r = 0; r < brickRowCount; r++) {
+                    bricks[c][r] = { x: 0, y: 0, status: 1, word: words[idx] || "donanım" };
+                    idx++;
+                }
+            }
+        }
+
+        // Parçacık Sınıfı
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 5 + 2;
+                this.speedX = Math.random() * 6 - 3;
+                this.speedY = Math.random() * 6 - 3;
+                this.alpha = 1;
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                this.alpha -= 0.02;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = "#ef4444";
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+                ctx.restore();
+            }
+        }
+
+        function createParticles(x, y) {
+            for (let i = 0; i < 8; i++) {
+                particles.push(new Particle(x, y));
+            }
+        }
+
+        let rightPressed = false;
+        let leftPressed = false;
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Right" || e.key === "ArrowRight") rightPressed = true;
+            if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = true;
+            if (e.code === "Space" && !isRunning) startGame();
+        });
+
+        document.addEventListener("keyup", (e) => {
+            if (e.key === "Right" || e.key === "ArrowRight") rightPressed = false;
+            if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = false;
+        });
+
+        function startGame() {
+            isRunning = true;
+            score = 0;
+            scoreVal.innerText = score;
+            x = canvas.width / 2;
+            y = canvas.height - 35;
+            dx = 4;
+            dy = -4;
+            ballColor = "#ffffff";
+            particles = [];
+            paddleX = (canvas.width - paddleWidth) / 2;
+
+            initBricks();
+            startScreen.style.display = "none";
+            statusMsg.style.display = "none";
+            canvas.style.display = "block";
+            scoreLabel.style.display = "block";
+            draw();
+        }
+
+        function collisionDetection() {
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    let b = bricks[c][r];
+                    if (b.status === 1) {
+                        if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
+                            dy = -dy;
+                            b.status = 0;
+                            score += 10;
+                            scoreVal.innerText = score;
+                            createParticles(b.x + brickWidth/2, b.y + brickHeight/2);
+                            
+                            if (score === words.length * 10) {
+                                endGame("KAZANDIN!", "#4ade80");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawBall() {
+            // Dinamik Renk Değişimi: Skor arttıkça top kızarır
+            let heat = Math.min(score * 1.4, 255);
+            ctx.beginPath();
+            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgb(255, ${255 - heat}, ${255 - heat})`;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawPaddle() {
+            ctx.beginPath();
+            ctx.rect(paddleX, canvas.height - paddleHeight - 10, paddleWidth, paddleHeight);
+            ctx.fillStyle = "#ef4444"; 
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function drawBricks() {
+            for (let c = 0; c < brickColumnCount; c++) {
+                for (let r = 0; r < brickRowCount; r++) {
+                    if (bricks[c][r].status === 1) {
+                        let brickX = (c * (brickWidth + brickPadding)) + brickOffsetLeft;
+                        let brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
+                        bricks[c][r].x = brickX;
+                        bricks[c][r].y = brickY;
+                        
+                        ctx.beginPath();
+                        ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                        ctx.fillStyle = "rgba(51, 65, 85, 0.9)";
+                        ctx.fill();
+                        ctx.strokeStyle = "#ef4444";
+                        ctx.lineWidth = 2;
+                        ctx.stroke();
+                        ctx.closePath();
+
+                        ctx.font = "bold 13px Arial";
+                        ctx.fillStyle = "#ffffff";
+                        ctx.textAlign = "center";
+                        ctx.fillText(bricks[c][r].word.toLocaleUpperCase('tr-TR'), brickX + brickWidth/2, brickY + brickHeight/1.6);
+                    }
+                }
+            }
+        }
+
+        function handleParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].alpha <= 0) {
+                    particles.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        function endGame(msg, color) {
+            document.getElementById("resTitle").innerText = msg;
+            document.getElementById("resTitle").style.color = color;
+            isRunning = false;
+            statusMsg.style.display = "block";
+        }
+
+        function draw() {
+            if (!isRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBricks();
+            drawBall();
+            drawPaddle();
+            handleParticles();
+            collisionDetection();
+
+            if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) dx = -dx;
+            if (y + dy < ballRadius) dy = -dy;
+            else if (y + dy > canvas.height - ballRadius - 10) {
+                if (x > paddleX && x < paddleX + paddleWidth) {
+                    dy = -dy;
+                    // Dinamik Hız: Çubuğa her vurduğunda %2 hızlanır
+                    dx *= 1.02;
+                    dy *= 1.02;
+                } else {
+                    endGame("EYVAH!", "#ef4444");
+                    return;
+                }
+            }
+
+            if (rightPressed && paddleX < canvas.width - paddleWidth) paddleX += 10;
+            if (leftPressed && paddleX > 0) paddleX -= 10;
+
+            x += dx;
+            y += dy;
+            requestAnimationFrame(draw);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+body {
+    background-color: #1a1a2e;
+    color: white;
+    font-family: 'Arial', sans-serif;
+    overflow: hidden;
+}
+
+#gameCanvas {
+    background-color: #16213e;
+    border: 5px solid #0f3460;
+    border-radius: 12px;
+    display: block;
+    margin: 0 auto;
+}
+
+/* İstediğiniz Büyük Başlat Butonu Tasarımı */
+.btn-main-start {
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+    color: white;
+    padding: 30px 60px;
+    font-size: 2.5rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    box-shadow: 0 10px 25px rgba(255, 75, 43, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 50px auto;
+}
+
+.btn-main-start span {
+    font-size: 1rem;
+    font-weight: normal;
+    margin-top: 10px;
+    opacity: 0.9;
+}
+
+.btn-main-start:hover {
+    transform: scale(1.05);
+    box-shadow: 0 15px 35px rgba(255, 75, 43, 0.6);
+}
