@@ -1,0 +1,298 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EHEM Bilgisayar Uygulaması</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+    body { font-family: 'Segoe UI', sans-serif; background: #eef2f3; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; user-select: none; }
+    
+    header { height: 50px; background: #2c3e50; color: white; padding: 0 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); flex-shrink: 0; }
+    
+    #main-layout { display: flex; height: calc(100vh - 50px); overflow: hidden; }
+    
+    /* SOL PANEL */
+    .left-panel { flex: 4; background: white; padding: 15px; border-right: 1px solid #ccc; overflow-y: auto; display: flex; flex-direction: column; align-items: center; }
+    
+    /* SAĞ PANEL */
+    .right-panel { flex: 6; background: #92f5cf; padding: 15px; overflow-y: auto; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 10px; justify-content: center; }
+
+    .q-box { background: #d6eaf8; color: #2980b9; padding: 12px; border-radius: 5px; width: 95%; text-align: center; font-weight: bold; margin-bottom: 20px; font-size: 1.1em; border-left: 4px solid #2980b9; }
+    
+    .drop-container { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    
+    /* KUTU STİLLERİ */
+    .zone { 
+        width: 90%; min-height: 55px; 
+        border: 2px dashed #bdc3c7; background: #92f5cf; 
+        display: flex; align-items: center; padding-left: 50px; 
+        border-radius: 6px; position: relative; font-weight: bold; 
+        transition: 0.2s; color: #333; box-sizing: border-box;
+    }
+    .zone::before { 
+        content: attr(data-id); 
+        position: absolute; left: 0; top: 0; bottom: 0; width: 40px; 
+        background: #7f8c8d; color: white; 
+        display: flex; align-items: center; justify-content: center;
+        border-top-left-radius: 4px; border-bottom-left-radius: 4px;
+        font-size: 18px; font-weight: bold;
+    }
+    .zone:empty::after { content: attr(data-id) ". Adım"; color: #ccc; font-style: italic; font-weight: normal; }
+
+    .zone.correct { background: #eafaf1; border: 2px solid #27ae60; color: #27ae60; }
+    .zone.correct::before { background: #27ae60; } 
+    .zone.wrong { border-color: #e74c3c; background: #fadbd8; animation: shake 0.3s; }
+    
+    /* SÜRÜKLENEN NESNE - RENK DESTEĞİ */
+    .drag-item { 
+        padding: 8px 12px; border: 1px solid #ccc; 
+        border-radius: 6px; cursor: grab; box-shadow: 0 3px 5px rgba(0,0,0,0.1); 
+        display: inline-flex; align-items: center; justify-content: center; 
+        max-width: 100%; height: auto; min-height: 45px; font-size: 24px;
+        transition: transform 0.1s; font-weight: 500;
+        /* Renk JS ile atanacak */
+    }
+    .drag-item:active { cursor: grabbing; opacity: 0.8; }
+    
+    .drag-item img, .zone img { 
+        max-height: 40px; max-width: 100%; object-fit: contain; 
+        margin: 0 5px; cursor: zoom-in; pointer-events: auto;
+    }
+
+    .btn { padding: 5px 15px; cursor: pointer; border: none; border-radius: 3px; color: white; font-size: 14px; margin-left: 5px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; background: #95a5a6 !important; }
+    
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+    
+    #img-modal {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85); z-index: 2000;
+        display: none; justify-content: center; align-items: center;
+        cursor: zoom-out;
+    }
+    #img-modal img {
+        max-width: 90%; max-height: 90%;
+        box-shadow: 0 0 20px rgba(255,255,255,0.2);
+        border-radius: 5px;
+        animation: popIn 0.3s ease;
+    }
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    #cert-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); display:none; justify-content:center; align-items:center; z-index:999; flex-direction:column; }
+    #cert-view { width: 85%; max-width:900px; padding: 40px; background: #fffaf0; text-align: center; border: 20px solid #795548; display: none; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+    #input-view { background: white; padding: 30px; border-radius: 8px; text-align: center; width: 300px; }
+</style>
+</head>
+<body>
+
+<header>
+    <div style="font-weight:bold;">🖥️ BİLGİSAYARINIZI TANIYOR MUSUNUZ?_____________________Doğru seçeneği sürükleyiniz__________________________edremithem__________</div>
+    <div>
+        <button class="btn" style="background:#546e7a" id="btnPrev" onclick="nav(-1)">❮ Geri</button>
+        <span id="pgInfo" style="margin:0 10px; font-size:14px; font-weight:bold;"></span>
+        <button class="btn" style="background:#546e7a" id="btnNext" onclick="nav(1)">İleri ❯</button>
+        <button class="btn" style="background:#d35400" onclick="finish()">Sınavı Bitir</button>
+    </div>
+</header>
+
+<div id="main-layout">
+    <div class="left-panel">
+        <div id="qBox" class="q-box"></div>
+        <div id="zones" class="drop-container"></div>
+    </div>
+    <div class="right-panel" id="pool"></div>
+</div>
+
+<div id="img-modal" onclick="this.style.display='none'">
+    <img id="img-modal-content">
+</div>
+
+<div id="cert-overlay">
+    <div id="input-view">
+        <h3>Tebrikler!</h3>
+        <p>Adınızı giriniz:</p>
+        <input type="text" id="sName" style="width:90%; padding:8px; margin-bottom:15px; border:1px solid #ccc; border-radius:4px;">
+        <button class="btn" style="background:#27ae60; width:100%; padding:10px;" onclick="genCert()">Sertifika Oluştur</button>
+    </div>
+    <div id="cert-view">
+        <h1 style="color:#c0392b; font-family:'Times New Roman',serif; margin:10px 0; font-size: 50px;">TEBRİKLER</h1>
+        <p style="font-size: 24px; color: #333; line-height: 1.5;">
+            EHEM Bilgisayar İşletmenliği Kursunda<br>
+            <strong>"Bilgisayarınızı Tanıyor Musunuz"</strong><br>
+            uygulamasını başarı ile bitirdiniz.
+        </p>
+        <br>
+        <p>Sayın,</p>
+        <h2 id="cName" style="font-family:'Brush Script MT',cursive; font-size:45px; color:#1565c0; border-bottom:1px solid #999; display:inline-block; padding:0 30px; min-width: 300px;"></h2>
+        
+        <p id="cDate" style="font-weight:bold; margin-top:40px; color: #555;"></p>
+    </div>
+    <div id="cert-actions" style="margin-top:20px; display:none;">
+        <button class="btn" style="background:#0277bd; padding:10px 20px;" onclick="savePDF()">PDF İndir</button>
+        <button class="btn" style="background:#c62828; padding:10px 20px;" onclick="location.reload()">Kapat</button>
+    </div>
+</div>
+
+<script>
+    const data = [{"text":"BİLGİSAYARINIZIN İŞLEMCİSİ NASIL ÖĞRENİLİR?","steps":["Bu bilgisayar sağ tuş","Özellikler"]},{"text":"BİLGİSAYARINIZIN RAM KAPASİTESİ NASIL ÖĞRENİLİR?","steps":["Bu bilgisayar sağ tuş","Özellikler"]},{"text":"BİLGİSAYARINIZIN SİSİTEM TÜRÜNÜ NASIL ÖĞRENİRSİNİZ?","steps":["Bu bilgisayar sağ tuş","Özellikler"]},{"text":"BİLGİSAYARINIZIN SİSTEM TÜRÜ NE OLABİLİR?","steps":["32 Bit","64 Bit"]},{"text":"BİLGİSAYARINIZI OLUŞTURAN DONANIMLARIN LİSTESİNİ NEREDEN GÖREBİLİRİZ?","steps":["Bu bilgisayar sağ tuş","Özellikler","Aygıt yöneticisi"]},{"text":"HARDDİSKİNİZ KAÇ BÖLÜME AYRILDIĞINI NASIL GÖRÜRSÜNÜZ?","steps":["Bu bilgisayara girilir","data:image/jpeg;base64,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"]},{"text":"BİLGİSAYARDA GİZLİ  PAYLAŞIM VAR MI? NEREDEN GÖRÜRÜZ?","steps":["Bu bilgisayar sağ tuş","Yönet","Paylaşılan klasörler"]},{"text":"1024 X 768  BİLGİSAYARIN HANGİ ÖZELLİĞİDİR?","steps":["Ekran çözünürlüğü"]},{"text":"BİLGİSAYARIN EKRAN ÇÖZÜNÜRLÜĞÜ NEREDEN DEĞİŞTİRİLİR?","steps":["Masaüstünde sağ tuş","Görüntü ayarları"]},{"text":"BİLGİSAYARDA KOMUT SİSTEMİNE NASIL GEÇERSİNİZ?","steps":["Başlat","CMD yazılır ENTER"]},{"text":"BİLGİSAYARINIZIN YEREL İP NUMARASINI NASIL ÖĞRENİRSİNİZ?","steps":["Başlat","CMD yazılır ENTER","ipconfig YAZILIR - ENTER"]},{"text":"BİLGİSAYARINIZIN İNTERNET  İP  NUMARASINI NASIL ÖĞRENİRSİNİZ?","steps":["İnternete girilir","ip numaram yazılı ENTER","İlk siteye girilir."]},{"text":"BİLGİSAYARIN KLAVYESİNİ  Q - F  ARASI DEĞİŞTİRME  KISAYOLU NEDİR?","steps":["CTRL+SHIFT"]},{"text":"BİLGİSAYARDA SİLİNEN DOSYA VE KLASÖRLER NEREYE GİDER?","steps":["Geri Dönüşüm Kutusu"]},{"text":"KALICI SİLME KISAYOL TUŞU NEDİR?","steps":["SHIFT+DELETE"]},{"text":"YAPILAN ÇALIŞMAYI KAĞIDA ÇIKARMA CİHAZI NEDİR?","steps":["PRİNTER"]},{"text":"BİLGİSAYARDA YÜKLÜ PROGRAMLARI NERDEN GÖREBİLİRİZ?","steps":["Denetim masası","Programlar ve Özellikler"]},{"text":"BİLGİSAYARIN AYARLARI NEREDEN YAPILIR?","steps":["data:image/jpeg;base64,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"]},{"text":"BİLGİSAYARIN BELLİ BİR SÜREDE KAPANMASI AYARI NEREDEN YAPILIR?","steps":["Denetim masası","Güç seçenekleri"]},{"text":"WİNDOWS GÜNCELLEŞTİRME İŞLEMİNE NE İSİM VERİLİR?","steps":["Windows Update"]}]; 
+    let idx = 0;
+    let state = data.map(() => ({ done: false, placed: [] }));
+    let globalPool = [];
+    
+    // Renk Paleti (Pastel Tonlar)
+    const colors = ['#e3f2fd', '#f3e5f5', '#e8f5e9', '#fff3e0', '#ffebee', '#f9fbe7', '#e0f7fa', '#fce4ec'];
+
+    data.forEach(q => q.steps.forEach(s => globalPool.push(s)));
+
+    function init() { load(0); }
+
+    function getHTML(content) {
+        if(content.startsWith('data:image')) {
+            return '<img src="'+content+'" onclick="zoom(this.src); event.stopPropagation();">';
+        }
+        return '<span>'+content+'</span>';
+    }
+
+    function zoom(src) {
+        document.getElementById('img-modal-content').src = src;
+        document.getElementById('img-modal').style.display = 'flex';
+    }
+
+    function getRandomColor() {
+        return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function load(i) {
+        idx = i;
+        const q = data[i];
+        document.getElementById('pgInfo').innerText = (i+1) + " / " + data.length;
+        
+        // NAVIGASYON KONTROLLERİ
+        document.getElementById('btnPrev').disabled = (i===0);
+        // Soru bitmediyse ve son soru değilse ileri gitmeyi engelle (disable etmesek bile nav fonksiyonu engeller)
+        document.getElementById('btnNext').disabled = (i===data.length-1);
+        
+        document.getElementById('qBox').innerText = q.text;
+
+        const zArea = document.getElementById('zones');
+        zArea.innerHTML = "";
+        
+        q.steps.forEach((step, k) => {
+            let z = document.createElement('div');
+            z.className = "zone";
+            z.dataset.idx = k;
+            z.dataset.id = (k+1); 
+            z.dataset.ans = step; 
+            
+            if(state[i].placed[k]) {
+                z.innerHTML = getHTML(state[i].placed[k]);
+                z.classList.add('correct');
+            } else if (!state[i].done) {
+                z.ondragover = e => e.preventDefault();
+                z.ondrop = e => drop(e, z, k);
+            }
+            zArea.appendChild(z);
+        });
+
+        const pArea = document.getElementById('pool');
+        pArea.innerHTML = "";
+
+        if(!state[i].done) {
+            let current = [...q.steps];
+            let distractors = globalPool.filter(x => !current.includes(x)).sort(()=>0.5-Math.random()).slice(0, 8);
+            let combined = [...current, ...distractors].sort(()=>0.5-Math.random());
+
+            combined.forEach(val => {
+                let d = document.createElement('div');
+                d.className = "drag-item";
+                d.draggable = true;
+                d.innerHTML = getHTML(val);
+                // RASTGELE RENK ATA
+                d.style.backgroundColor = getRandomColor();
+                
+                d.id = "d-" + Math.random().toString(36).substr(2,9);
+                d.ondragstart = e => { e.dataTransfer.setData("val", val); e.dataTransfer.setData("eid", d.id); };
+                pArea.appendChild(d);
+            });
+        } else {
+            pArea.innerHTML = "<h3 style='color:green; width:100%; text-align:center;'>✅ Tamamlandı</h3>";
+        }
+    }
+
+    function drop(e, zone, k) {
+        e.preventDefault();
+        let val = e.dataTransfer.getData("val");
+        let eid = e.dataTransfer.getData("eid");
+        let ans = zone.dataset.ans;
+
+        if(k > 0 && !state[idx].placed[k-1]) { alert("Önce " + k + ". adımı yapınız!"); return; }
+
+        if(val === ans) {
+            zone.innerHTML = getHTML(val);
+            zone.classList.add('correct');
+            let el = document.getElementById(eid);
+            if(el) el.remove();
+            state[idx].placed[k] = val;
+
+            if(state[idx].placed.filter(x=>x).length === data[idx].steps.length) {
+                state[idx].done = true;
+                document.getElementById('pool').innerHTML = "<h3 style='color:green; width:100%; text-align:center;'>✅ Doğru!</h3>";
+                // Otomatik geçiş opsiyonel, manuel geçiş istendiği için kapalı tutulabilir ama kolaylık sağlar.
+                // Burada otomatik geçişi kapattım ki kullanıcı "İleri" butonunu kendi kullansın ve engeli görsün.
+            }
+        } else {
+            zone.classList.add('wrong');
+            setTimeout(()=>zone.classList.remove('wrong'), 400);
+        }
+    }
+
+    function nav(dir) { 
+        // İLERİ GİTME ENGELİ
+        if (dir === 1 && !state[idx].done) {
+            alert("Lütfen önce ekrandaki soruyu tamamlayınız!");
+            return;
+        }
+        if(idx+dir >= 0 && idx+dir < data.length) load(idx+dir); 
+    }
+
+    function finish() {
+        // BİTİRME ENGELİ
+        const incomplete = state.filter(x => !x.done).length;
+        if(incomplete > 0) { 
+            alert("Sınavı bitirmek için tüm soruları doğru cevaplamalısınız! (" + incomplete + " soru eksik)");
+            return; 
+        }
+        
+        document.getElementById('cert-overlay').style.display = 'flex';
+        document.getElementById('input-view').style.display = 'block';
+    }
+
+    function genCert() {
+        let n = document.getElementById('sName').value;
+        if(!n) return alert("İsim giriniz");
+        document.getElementById('input-view').style.display = 'none';
+        document.getElementById('cert-view').style.display = 'block';
+        document.getElementById('cert-actions').style.display = 'block';
+        document.getElementById('cName').innerText = n;
+        document.getElementById('cDate').innerText = new Date().toLocaleDateString();
+    }
+
+    function savePDF() {
+        const { jsPDF } = window.jspdf;
+        html2canvas(document.getElementById('cert-view')).then(canvas => {
+            const img = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('l', 'mm', 'a4');
+            const w = pdf.internal.pageSize.getWidth();
+            const h = (canvas.height * w) / canvas.width;
+            pdf.addImage(img, 'PNG', 0, 10, w, h);
+            pdf.save("Sertifika.pdf");
+        });
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>
