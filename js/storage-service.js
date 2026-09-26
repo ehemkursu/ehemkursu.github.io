@@ -1399,6 +1399,7 @@ class StorageService {
                 email: user.email || '',
                 phone: user.phone || '',
                 avatar: user.avatar || '',
+                classId: user.classId || null,
                 loginTime: new Date().toISOString()
             };
             localStorage.setItem(STORAGE_KEYS.STUDENT_SESSION, JSON.stringify(session));
@@ -1838,18 +1839,8 @@ class StorageService {
                 }
             }
 
-            // 3. Duyurular (Bulutta silinmişse veya null ise yereldeki duyuruları da temizle)
-            const annsRes = await fetch(`${baseUrl}/announcements.json${authParam}`);
-            if (annsRes.ok) {
-                const annsRaw = await annsRes.json();
-                let annList = [];
-                if (Array.isArray(annsRaw)) {
-                    annList = annsRaw.filter(Boolean);
-                } else if (annsRaw && typeof annsRaw === 'object') {
-                    annList = Object.values(annsRaw).filter(Boolean);
-                }
-                localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(annList));
-            }
+            // 3. Duyurular
+            await this.pullAnnouncementsFromFirebase();
 
             // 4. Mesajlar
             await this.pullMessagesFromFirebase();
@@ -1889,8 +1880,14 @@ class StorageService {
         try {
             await this.syncCollectionToFirebase('kursiyerler', this.getAllUsers());
             await this.syncCollectionToFirebase('classes', this.getAllClasses());
-            await this.syncCollectionToFirebase('announcements', this.getAllAnnouncements());
-            await this.syncCollectionToFirebase('messages', this.getAllMessages());
+            
+            const annMap = {};
+            this.getAllAnnouncements().forEach(a => { if (a && a.id) annMap[a.id] = a; });
+            await this.syncCollectionToFirebase('announcements', annMap);
+
+            const msgMap = {};
+            this.getAllMessages().forEach(m => { if (m && m.id) msgMap[m.id] = m; });
+            await this.syncCollectionToFirebase('messages', msgMap);
             const customMods = this.getCustomModules() || (typeof COURSE_MODULES !== 'undefined' ? COURSE_MODULES : null);
             if (customMods && customMods.length > 0) {
                 await this.syncCollectionToFirebase('custom_modules', customMods);
@@ -2101,7 +2098,7 @@ class StorageService {
         this.saveThemeSettings({ theme: themeName });
     }
 
-    // ==================== DUYURU YÖNETİMİ ====================
+    // ==================== DUYURU YÖNETİMİ & BULUT SENKRONİZASYONU ====================
 
     getAllAnnouncements() {
         try {
@@ -2111,36 +2108,113 @@ class StorageService {
     }
 
     saveAllAnnouncements(anns) {
-        const clean = Array.isArray(anns) ? anns : [];
+        const clean = Array.isArray(anns) ? anns.filter(Boolean) : [];
         localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(clean));
-        this.syncCollectionToFirebase('announcements', clean);
+        const annMap = {};
+        clean.forEach(a => {
+            if (a && a.id) annMap[a.id] = a;
+        });
+        this.syncCollectionToFirebase('announcements', annMap);
     }
 
-    addAnnouncement({ title, message, classId = null, type = 'info', expiryDate = null }) {
+    async syncSingleAnnouncementToFirebase(ann) {
+        const cfg = this.getFirebaseConfig();
+        if (!cfg || !cfg.enabled || !cfg.databaseURL || !ann || !ann.id) return { success: false };
+        try {
+            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
+            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
+            const res = await fetch(`${baseUrl}/announcements/${ann.id}.json${authParam}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(ann)
+            });
+            return { success: res.ok };
+        } catch (err) {
+            console.warn(`Firebase announcement ${ann.id} sync hatası:`, err);
+            return { success: false };
+        }
+    }
+
+    async deleteAnnouncementFromFirebase(annId) {
+        const cfg = this.getFirebaseConfig();
+        if (!cfg || !cfg.enabled || !cfg.databaseURL || !annId) return { success: false };
+        try {
+            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
+            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
+            const res = await fetch(`${baseUrl}/announcements/${annId}.json${authParam}`, {
+                method: 'DELETE'
+            });
+            return { success: res.ok };
+        } catch (err) {
+            console.warn(`Firebase announcement ${annId} silme hatası:`, err);
+            return { success: false };
+        }
+    }
+
+    async pullAnnouncementsFromFirebase() {
+        const cfg = this.getFirebaseConfig();
+        if (!cfg || !cfg.enabled || !cfg.databaseURL) return { success: false, list: this.getAllAnnouncements() };
+
+        try {
+            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
+            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
+            const annsRes = await fetch(`${baseUrl}/announcements.json${authParam}`);
+            if (annsRes.ok) {
+                const annsRaw = await annsRes.json();
+                let cloudList = [];
+                if (Array.isArray(annsRaw)) {
+                    cloudList = annsRaw.filter(Boolean);
+                } else if (annsRaw && typeof annsRaw === 'object') {
+                    cloudList = Object.values(annsRaw).filter(Boolean);
+                }
+                // En yeniden en eskiye sırala
+                cloudList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(cloudList));
+                return { success: true, count: cloudList.length, list: cloudList };
+            }
+            return { success: false, list: this.getAllAnnouncements() };
+        } catch (err) {
+            console.warn('Firebase duyurular çekilemedi:', err);
+            return { success: false, list: this.getAllAnnouncements() };
+        }
+    }
+
+    async addAnnouncement({ title, message, classId = null, type = 'info', expiryDate = null }) {
         const anns = this.getAllAnnouncements();
+        const cleanClassId = (!classId || classId === 'all' || classId === 'null') ? null : classId;
         const newAnn = {
             id: 'ann_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
             title: (title || '').trim(),
             message: (message || '').trim(),
-            classId: classId || null,
+            classId: cleanClassId,
             type: type || 'info',
             expiryDate: expiryDate || null,
             createdAt: new Date().toISOString()
         };
-        anns.push(newAnn);
+        anns.unshift(newAnn);
         this.saveAllAnnouncements(anns);
+        await this.syncSingleAnnouncementToFirebase(newAnn);
         return { success: true, announcement: newAnn };
     }
 
-    deleteAnnouncement(annId) {
+    async deleteAnnouncement(annId) {
         let anns = this.getAllAnnouncements();
-        anns = anns.filter(a => a.id !== annId);
+        anns = anns.filter(a => a && a.id !== annId);
         this.saveAllAnnouncements(anns);
+        await this.deleteAnnouncementFromFirebase(annId);
         return { success: true };
     }
 
-    deleteAllAnnouncements() {
+    async deleteAllAnnouncements() {
         this.saveAllAnnouncements([]);
+        const cfg = this.getFirebaseConfig();
+        if (cfg && cfg.enabled && cfg.databaseURL) {
+            try {
+                const baseUrl = cfg.databaseURL.replace(/\/$/, '');
+                const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
+                await fetch(`${baseUrl}/announcements.json${authParam}`, { method: 'DELETE' });
+            } catch (e) {}
+        }
         return { success: true };
     }
 
@@ -2166,7 +2240,7 @@ class StorageService {
 
     /**
      * Belirli bir kursiyer için aktif duyuruları döndürür.
-     * classId null ise "tüm kursiyerler" duyurularını da alır.
+     * classId null veya 'all' ise "tüm kursiyerler" duyurularını da alır.
      * Kursiyerin "Okudum" diyerek kapattığı duyurular hariç tutulur.
      */
     getAnnouncementsForUser(userId) {
@@ -2179,11 +2253,21 @@ class StorageService {
             if (!a || !a.id) return false;
             // Kullanıcı bu duyuruyu okudum diyerek kapattıysa gösterme
             if (dismissed.includes(a.id)) return false;
-            // Süresi dolmuş mu?
-            if (a.expiryDate && new Date(a.expiryDate) < now) return false;
-            // Hedef kontrolü: classId null veya boş ise herkese açıktır
-            if (!a.classId || a.classId === null) return true;
-            return user && user.classId && String(user.classId).trim() === String(a.classId).trim();
+            // Bitiş tarihi kontrolü (Günün sonuna kadar geçerli sayılır: 23:59:59)
+            if (a.expiryDate) {
+                const exp = new Date(a.expiryDate);
+                if (String(a.expiryDate).length === 10) {
+                    exp.setHours(23, 59, 59, 999);
+                }
+                if (exp.getTime() < now.getTime()) return false;
+            }
+            // Hedef kitle: classId boş, null veya 'all' ise herkese açıktır
+            if (!a.classId || a.classId === null || a.classId === 'all' || a.classId === '') return true;
+            
+            // Sınıf kontrolü: Kursiyerin kayıtlı sınıfı ile eşleşiyor mu?
+            const studentClassId = (user && user.classId) || (this.getCurrentStudent() ? this.getCurrentStudent().classId : null);
+            if (!studentClassId) return false;
+            return String(studentClassId).trim() === String(a.classId).trim();
         });
     }
 

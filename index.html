@@ -617,11 +617,22 @@
         document.addEventListener('DOMContentLoaded', () => {
             refreshCustomModules();
             checkAuthAndRender();
+
+            // Duyuruları hemen buluttan çek ve güncelle
+            if (lmsStorage.pullAnnouncementsFromFirebase) {
+                lmsStorage.pullAnnouncementsFromFirebase().then(() => {
+                    const student = lmsStorage.getCurrentStudent();
+                    if (student) renderAnnouncementsBanner(student.id);
+                }).catch(() => {});
+            }
+
             if (lmsStorage.pullFromFirebase) {
                 lmsStorage.pullFromFirebase().then(() => {
                     refreshCustomModules();
                     checkAuthAndRender();
                     syncPortalThemeUI();
+                    const student = lmsStorage.getCurrentStudent();
+                    if (student) renderAnnouncementsBanner(student.id);
                 });
             }
 
@@ -661,6 +672,11 @@
             // Sekmeye dönüldüğünde buluttan en son verileri çek
             window.addEventListener('focus', () => {
                 const student = lmsStorage.getCurrentStudent();
+                if (student && lmsStorage.pullAnnouncementsFromFirebase) {
+                    lmsStorage.pullAnnouncementsFromFirebase().then(() => {
+                        renderAnnouncementsBanner(student.id);
+                    }).catch(() => {});
+                }
                 if (lmsStorage.pullFromFirebase) {
                     lmsStorage.pullFromFirebase().then(() => {
                         refreshCustomModules();
@@ -678,10 +694,20 @@
                 }
             });
 
-            // 4 saniyede bir canlı mesaj kontrolü (buluttan yeni öğretmen yanıtlarını anında çek)
+            // 4 saniyede bir canlı duyuru ve mesaj kontrolü (buluttan yeni duyuruları ve öğretmen yanıtlarını anında çek)
             setInterval(() => {
                 const student = lmsStorage.getCurrentStudent();
                 if (student) {
+                    // Canlı duyuru eşitleme
+                    if (lmsStorage.pullAnnouncementsFromFirebase) {
+                        lmsStorage.pullAnnouncementsFromFirebase().then(() => {
+                            renderAnnouncementsBanner(student.id);
+                        }).catch(() => {});
+                    } else {
+                        renderAnnouncementsBanner(student.id);
+                    }
+
+                    // Canlı mesajlaşma eşitleme
                     if (lmsStorage.pullMessagesFromFirebase) {
                         lmsStorage.pullMessagesFromFirebase().then(() => {
                             updateStudentUnreadBadge(student.id);
@@ -700,7 +726,7 @@
                 }
             }, 4000);
 
-            // 8 saniyede bir buluttan duyuru ve sistem değişikliklerini canlı senkronize et
+            // 15 saniyede bir tam sistem senkronizasyonu
             setInterval(() => {
                 const student = lmsStorage.getCurrentStudent();
                 if (student && lmsStorage.pullFromFirebase) {
@@ -708,7 +734,7 @@
                         renderAnnouncementsBanner(student.id);
                     }).catch(() => {});
                 }
-            }, 8000);
+            }, 15000);
 
             // Alt pencereden veya iframe içinden gelebilecek tamamlama mesajlarını dinle
             window.addEventListener('message', (event) => {
@@ -849,6 +875,12 @@
                 window.location.href = 'admin.html';
             } else {
                 checkAuthAndRender();
+                if (lmsStorage.pullAnnouncementsFromFirebase) {
+                    lmsStorage.pullAnnouncementsFromFirebase().then(() => {
+                        const curStudent = lmsStorage.getCurrentStudent();
+                        if (curStudent) renderAnnouncementsBanner(curStudent.id);
+                    }).catch(() => {});
+                }
             }
         }
 
@@ -1029,11 +1061,15 @@
             banner.innerHTML = anns.map(ann => {
                 const tm = typeMap[ann.type] || typeMap.info;
                 const safeAnnId = (ann.id + '').replace(/'/g, "\\'");
+                const dateStr = ann.createdAt ? new Date(ann.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
                 return `<div id="annCard_${ann.id}" style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;background:${tm.bg};border:1px solid ${tm.border};border-radius:12px;padding:14px 18px;margin-bottom:10px;transition:all 0.25s ease;">
                     <div style="display:flex;align-items:flex-start;gap:12px;flex:1;">
                         <span style="font-size:22px;flex-shrink:0;margin-top:2px;">${tm.icon}</span>
                         <div style="flex:1;">
-                            <div style="font-weight:700;color:white;margin-bottom:4px;font-size:15px;">${ann.title}</div>
+                            <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;">
+                                <span style="font-weight:700;color:white;font-size:15px;">${ann.title}</span>
+                                ${dateStr ? `<span style="font-size:11px;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.25);padding:2px 8px;border-radius:10px;">📅 ${dateStr}</span>` : ''}
+                            </div>
                             <div style="font-size:13px;color:${tm.color};line-height:1.6;">${ann.message.replace(/\n/g,'<br>')}</div>
                         </div>
                     </div>

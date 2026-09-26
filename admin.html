@@ -1104,7 +1104,12 @@
         });
         if (name === 'students')      renderStudentsTable();
         if (name === 'classes')       loadClassesTab();
-        if (name === 'announcements') loadAnnouncementsTab();
+        if (name === 'announcements') {
+            loadAnnouncementsTab();
+            if (lmsStorage.pullAnnouncementsFromFirebase) {
+                lmsStorage.pullAnnouncementsFromFirebase().then(() => loadAnnouncementsTab()).catch(() => {});
+            }
+        }
         if (name === 'messages')      loadMessagesTab();
         if (name === 'menu')          { initInitialModuleOptions(); loadMenuTab(); }
         if (name === 'settings')      loadSettingsTab();
@@ -1755,24 +1760,52 @@
         document.getElementById('annClassGroup').style.display = isClass ? 'block' : 'none';
     }
 
-    function handleSaveAnnouncement(e) {
+    async function handleSaveAnnouncement(e) {
         e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const origBtnText = submitBtn ? submitBtn.innerHTML : '📢 Yayınla';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '⏳ Yayınlanıyor...';
+        }
+
         const title      = document.getElementById('formAnnTitle').value.trim();
         const message    = document.getElementById('formAnnMessage').value.trim();
         const target     = document.getElementById('formAnnTarget').value;
         const classId    = target === 'class' ? (document.getElementById('formAnnClass').value || null) : null;
         const type       = document.getElementById('formAnnType').value;
         const expiryDate = document.getElementById('formAnnExpiry').value || null;
-        if (target === 'class' && !classId) { alert('Lütfen bir sınıf seçin.'); return; }
-        lmsStorage.addAnnouncement({title, message, classId, type, expiryDate});
-        closeModal('announcementFormModal');
-        loadAnnouncementsTab();
+        if (target === 'class' && !classId) {
+            alert('Lütfen bir sınıf seçin.');
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = origBtnText; }
+            return;
+        }
+
+        try {
+            await lmsStorage.addAnnouncement({title, message, classId, type, expiryDate});
+            closeModal('announcementFormModal');
+            loadAnnouncementsTab();
+            alert('✓ Duyuru başarıyla yayınlandı ve tüm kursiyerlerin ekranına iletildi!');
+        } catch (err) {
+            console.error('Duyuru kayıt hatası:', err);
+            alert('Duyuru kaydedilirken hata oluştu: ' + (err.message || err));
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origBtnText;
+            }
+        }
     }
 
-    function deleteAnnouncement(id) {
-        if (!confirm('Bu duyuruyu silmek istiyor musunuz?')) return;
-        lmsStorage.deleteAnnouncement(id);
-        loadAnnouncementsTab();
+    async function deleteAnnouncement(id) {
+        if (!confirm('Bu duyuruyu silmek istediğinize emin misiniz?')) return;
+        try {
+            await lmsStorage.deleteAnnouncement(id);
+            loadAnnouncementsTab();
+        } catch (err) {
+            console.error('Duyuru silme hatası:', err);
+            loadAnnouncementsTab();
+        }
     }
 
     // ==================== KURSİYER MESAJLARI & SORU-CEVAP ====================
