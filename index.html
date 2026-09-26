@@ -90,8 +90,20 @@
         <!-- İlerleme Özet Kartı (Hero) -->
         <section class="progress-hero-card">
             <div class="progress-hero-info">
-                <span class="progress-hero-badge">🚀 ÖĞRENME YOLCULUĞU</span>
-                <h1 class="progress-hero-title">Hoş Geldiniz, <span id="heroStudentName" style="color: var(--accent-blue);">Kursiyer</span>!</h1>
+                <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
+                    <div id="heroAvatarThumb" style="width:48px;height:48px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid var(--accent-blue);box-shadow:0 0 10px rgba(59,130,246,0.3);background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;cursor:pointer;" onclick="openStudentProfileModal()" title="Profil Resmini ve Bilgilerini Düzenle">K</div>
+                    <div>
+                        <span class="progress-hero-badge">🚀 ÖĞRENME YOLCULUĞU</span>
+                        <h1 class="progress-hero-title" style="margin:2px 0 0;">Hoş Geldiniz, <span id="heroStudentName" style="color: var(--accent-blue);">Kursiyer</span>!</h1>
+                    </div>
+                </div>
+
+                <div id="heroContactRow" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+                    <span id="heroEmailDisplay" style="display:none;"></span>
+                    <span id="heroPhoneDisplay" style="display:none;"></span>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="openStudentProfileModal()" style="padding:2px 8px;font-size:11px;border-radius:6px;">✏️ Profilimi Düzenle</button>
+                </div>
+
                 <p class="progress-hero-subtitle" id="heroStatusText">
                     Kursunuz toplam 26 bölümden oluşmaktadır. Her bölümü tamamladıkça bir sonraki bölümün kilidi otomatik olarak açılacaktır.
                 </p>
@@ -370,6 +382,105 @@
         </div>
     </div>
 
+    <!-- MODAL: KURSİYER PROFİL BİLGİLERİ DÜZENLEME -->
+    <div id="studentProfileModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3 style="color: white; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                    <span>👤</span> Profil Bilgilerim
+                </h3>
+                <button class="modal-close" onclick="closeStudentProfileModal()">&times;</button>
+            </div>
+
+            <div id="studentProfileAlert" class="alert-message alert-error" style="display:none;margin-bottom:14px;"></div>
+
+            <form onsubmit="handleSaveStudentProfile(event)">
+                <!-- Profil Resmi (Avatar) Alanı -->
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; margin-bottom:18px; padding:16px; background:rgba(255,255,255,0.02); border:1px solid var(--border-color); border-radius:12px;">
+                    <div style="position:relative; width:88px; height:88px; margin-bottom:10px;">
+                        <div id="profileAvatarPreview" style="width:100%; height:100%; border-radius:50%; overflow:hidden; border:3px solid var(--accent-blue); box-shadow:0 0 15px rgba(59,130,246,0.3); display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, #3b82f6, #6366f1); color:white; font-size:32px; font-weight:700;">
+                            K
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:8px;">
+                        <label class="btn btn-primary btn-sm" style="margin:0; cursor:pointer; font-size:12px; padding:6px 14px;">
+                            📷 Fotoğraf Yükle
+                            <input type="file" id="profileAvatarInput" accept="image/*" style="display:none;" onchange="handleStudentAvatarSelect(event)">
+                        </label>
+                        <button type="button" class="btn btn-ghost btn-sm" id="btnRemoveAvatar" onclick="handleRemoveStudentAvatar()" style="font-size:12px; padding:6px 12px; display:none;">
+                            🗑️ Resmi Kaldır
+                        </button>
+                    </div>
+
+                    <!-- Hızlı Simge / Karakter Seçimi -->
+                    <div style="width:100%; text-align:center; border-top:1px dashed var(--border-color); padding-top:10px; margin-top:4px;">
+                        <span style="font-size:11px; color:var(--text-muted); display:block; margin-bottom:6px;">veya bir simge seçin:</span>
+                        <div style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+                            <button type="button" class="avatar-preset-btn" onclick="selectPresetAvatar('👨‍🎓')">👨‍🎓</button>
+                            <button type="button" class="avatar-preset-btn" onclick="selectPresetAvatar('👩‍🎓')">👩‍🎓</button>
+                            <button type="button" class="avatar-preset-btn" onclick="selectPresetAvatar('💻')">💻</button>
+                            <button type="button" class="avatar-preset-btn" onclick="selectPresetAvatar('🚀')">🚀</button>
+                            <button type="button" class="avatar-preset-btn" onclick="selectPresetAvatar('⚡')">⚡</button>
+                            <button type="button" class="avatar-preset-btn" onclick="selectPresetAvatar('🌟')">🌟</button>
+                            <button type="button" class="avatar-preset-btn" onclick="selectPresetAvatar('🐱')">🐱</button>
+                            <button type="button" class="avatar-preset-btn" onclick="selectPresetAvatar('🦊')">🦊</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Adınız ve Soyadınız *</label>
+                    <input type="text" id="studentProfileFullName" class="form-control" required placeholder="Ad Soyad">
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label class="form-label">E-Posta Adresi</label>
+                        <input type="email" id="studentProfileEmail" class="form-control" placeholder="ornek@eposta.com">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Telefon Numarası</label>
+                        <input type="tel" id="studentProfilePhone" class="form-control" placeholder="0555 123 45 67">
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="form-group">
+                        <label class="form-label">Kullanıcı Adı</label>
+                        <input type="text" id="studentProfileUsername" class="form-control" disabled style="opacity:0.6; cursor:not-allowed;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Kayıtlı Sınıf</label>
+                        <input type="text" id="studentProfileClass" class="form-control" disabled style="opacity:0.6; cursor:not-allowed;">
+                    </div>
+                </div>
+
+                <!-- Şifre Değiştirme (İsteğe Bağlı) -->
+                <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border-color);">
+                    <div style="font-size:12.5px; font-weight:700; color:var(--text-secondary); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+                        <span>🔐</span> Şifre Değiştir <span style="font-size:11px; font-weight:normal; color:var(--text-muted);">(Boş bırakırsanız şifreniz değişmez)</span>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div class="form-group">
+                            <label class="form-label">Yeni Şifre</label>
+                            <input type="password" id="studentProfileNewPass" class="form-control" placeholder="Yeni şifreniz">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Yeni Şifre (Tekrar)</label>
+                            <input type="password" id="studentProfileNewPassConfirm" class="form-control" placeholder="Yeni şifre tekrarı">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                    <button type="button" class="btn btn-ghost" onclick="closeStudentProfileModal()">Vazgeç</button>
+                    <button type="submit" class="btn btn-primary" id="btnSaveStudentProfile">💾 Bilgilerimi Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Scriptler -->
     <script src="js/modules-data.js"></script>
     <script src="js/storage-service.js"></script>
@@ -557,6 +668,17 @@
             });
         });
 
+        function getAvatarHtml(avatar, name, size = 36) {
+            if (avatar && (avatar.startsWith('data:image') || avatar.startsWith('http'))) {
+                return `<img src="${avatar}" alt="${name || 'Kursiyer'}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`;
+            }
+            if (avatar) {
+                return `<span style="font-size:${Math.round(size * 0.55)}px;line-height:1;">${avatar}</span>`;
+            }
+            const initial = (name || 'K').trim()[0].toUpperCase();
+            return `<span style="font-size:${Math.round(size * 0.45)}px;font-weight:700;">${initial}</span>`;
+        }
+
         function checkAuthAndRender() {
             const student = lmsStorage.getCurrentStudent();
             const admin = lmsStorage.getCurrentAdmin();
@@ -577,12 +699,14 @@
                 portalView.style.display = 'block';
                 adminQuickLink.style.display = 'none';
 
+                const avatarMarkup = getAvatarHtml(student.avatar, student.fullName, 36);
+
                 userNavActions.innerHTML = `
-                    <div class="user-profile-pill">
-                        <div class="user-avatar">${(student.fullName || 'K')[0].toUpperCase()}</div>
+                    <div class="user-profile-pill" onclick="openStudentProfileModal()" style="cursor:pointer;" title="Profil Bilgilerimi Düzenle (Fotoğraf, E-Posta, Telefon)">
+                        <div class="user-avatar" id="navUserAvatar" style="overflow:hidden;display:flex;align-items:center;justify-content:center;">${avatarMarkup}</div>
                         <div class="user-details">
                             <div class="user-name">${student.fullName}</div>
-                            <div class="user-role-badge">KURSİYER</div>
+                            <div class="user-role-badge">KURSİYER • ✏️ Profil</div>
                         </div>
                     </div>
                     <button class="nav-msg-btn" id="navStudentMsgBtn" onclick="openStudentMessageModal()" title="Öğretmene Mesaj Gönder / Yanıtları Gör">
@@ -682,6 +806,32 @@
 
         function renderStudentRoadmap(user) {
             document.getElementById('heroStudentName').textContent = user.fullName.split(' ')[0] || user.fullName;
+
+            // Hero Avatar & İletişim Bilgileri
+            const heroAvatarThumb = document.getElementById('heroAvatarThumb');
+            if (heroAvatarThumb) {
+                heroAvatarThumb.innerHTML = getAvatarHtml(user.avatar, user.fullName, 48);
+            }
+
+            const emailDisplay = document.getElementById('heroEmailDisplay');
+            if (emailDisplay) {
+                if (user.email && user.email.trim()) {
+                    emailDisplay.innerHTML = `✉️ ${user.email.trim()}`;
+                    emailDisplay.style.display = 'inline-flex';
+                } else {
+                    emailDisplay.style.display = 'none';
+                }
+            }
+
+            const phoneDisplay = document.getElementById('heroPhoneDisplay');
+            if (phoneDisplay) {
+                if (user.phone && user.phone.trim()) {
+                    phoneDisplay.innerHTML = `📞 ${user.phone.trim()}`;
+                    phoneDisplay.style.display = 'inline-flex';
+                } else {
+                    phoneDisplay.style.display = 'none';
+                }
+            }
 
             const completedSet = new Set(user.completedModuleIds || []);
             const unlockedSet = new Set(user.unlockedModuleIds || [1]);
@@ -1284,6 +1434,187 @@
             } else {
                 alert('Yanıt gönderilemedi: ' + (res.message || 'Bilinmeyen hata'));
             }
+        }
+
+        // ==================== KURSİYER PROFİL YÖNETİMİ ====================
+        let currentStudentProfileAvatar = '';
+
+        function compressImageFile(file, maxWidth = 180, maxHeight = 180, quality = 0.82) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = reject;
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onerror = reject;
+                    img.onload = () => {
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > h) {
+                            if (w > maxWidth) {
+                                h = Math.round((h * maxWidth) / w);
+                                w = maxWidth;
+                            }
+                        } else {
+                            if (h > maxHeight) {
+                                w = Math.round((w * maxHeight) / h);
+                                h = maxHeight;
+                            }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function updateProfileAvatarPreview(name) {
+            const preview = document.getElementById('profileAvatarPreview');
+            const btnRemove = document.getElementById('btnRemoveAvatar');
+            if (!preview) return;
+
+            if (currentStudentProfileAvatar) {
+                preview.innerHTML = getAvatarHtml(currentStudentProfileAvatar, name, 88);
+                if (btnRemove) btnRemove.style.display = 'inline-block';
+            } else {
+                const initial = (name || 'K').trim()[0].toUpperCase();
+                preview.innerHTML = `<span style="font-size:36px;font-weight:700;">${initial}</span>`;
+                if (btnRemove) btnRemove.style.display = 'none';
+            }
+        }
+
+        function openStudentProfileModal() {
+            const student = lmsStorage.getCurrentStudent();
+            if (!student) return;
+
+            // En güncel veriyi çek
+            const freshUser = lmsStorage.getUserById(student.id) || student;
+
+            document.getElementById('studentProfileFullName').value = freshUser.fullName || '';
+            document.getElementById('studentProfileEmail').value = freshUser.email || '';
+            document.getElementById('studentProfilePhone').value = freshUser.phone || '';
+            document.getElementById('studentProfileUsername').value = freshUser.username || '';
+            
+            const cls = lmsStorage.getAllClasses().find(c => c.id === freshUser.classId);
+            document.getElementById('studentProfileClass').value = cls ? cls.name : 'Sınıfsız';
+
+            document.getElementById('studentProfileNewPass').value = '';
+            document.getElementById('studentProfileNewPassConfirm').value = '';
+            
+            const fileInput = document.getElementById('profileAvatarInput');
+            if (fileInput) fileInput.value = '';
+
+            const alertBox = document.getElementById('studentProfileAlert');
+            if (alertBox) alertBox.style.display = 'none';
+
+            currentStudentProfileAvatar = freshUser.avatar || '';
+            updateProfileAvatarPreview(freshUser.fullName);
+
+            const modal = document.getElementById('studentProfileModal');
+            if (modal) modal.classList.add('active');
+        }
+
+        function closeStudentProfileModal() {
+            const modal = document.getElementById('studentProfileModal');
+            if (modal) modal.classList.remove('active');
+        }
+
+        function handleStudentAvatarSelect(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Lütfen 5MB\'dan küçük bir görsel seçiniz.');
+                return;
+            }
+
+            compressImageFile(file, 180, 180, 0.82)
+                .then(base64 => {
+                    currentStudentProfileAvatar = base64;
+                    const name = document.getElementById('studentProfileFullName').value;
+                    updateProfileAvatarPreview(name);
+                })
+                .catch(err => {
+                    console.error('Fotoğraf işlenirken hata oluştu:', err);
+                    alert('Fotoğraf yüklenemedi. Lütfen başka bir resim deneyiniz.');
+                });
+        }
+
+        function selectPresetAvatar(emoji) {
+            currentStudentProfileAvatar = emoji;
+            const name = document.getElementById('studentProfileFullName').value;
+            updateProfileAvatarPreview(name);
+        }
+
+        function handleRemoveStudentAvatar() {
+            currentStudentProfileAvatar = '';
+            const fileInput = document.getElementById('profileAvatarInput');
+            if (fileInput) fileInput.value = '';
+            const name = document.getElementById('studentProfileFullName').value;
+            updateProfileAvatarPreview(name);
+        }
+
+        function handleSaveStudentProfile(event) {
+            event.preventDefault();
+            const student = lmsStorage.getCurrentStudent();
+            if (!student) return;
+
+            const fullName = document.getElementById('studentProfileFullName').value.trim();
+            const email = document.getElementById('studentProfileEmail').value.trim();
+            const phone = document.getElementById('studentProfilePhone').value.trim();
+            const newPass = document.getElementById('studentProfileNewPass').value.trim();
+            const newPassConfirm = document.getElementById('studentProfileNewPassConfirm').value.trim();
+
+            const alertBox = document.getElementById('studentProfileAlert');
+            const showAlert = (msg) => {
+                if (alertBox) {
+                    alertBox.textContent = msg;
+                    alertBox.style.display = 'block';
+                } else {
+                    alert(msg);
+                }
+            };
+
+            if (!fullName) {
+                showAlert('Lütfen adınızı ve soyadınızı giriniz.');
+                return;
+            }
+
+            if (newPass) {
+                if (newPass.length < 3) {
+                    showAlert('Yeni şifreniz en az 3 karakter olmalıdır.');
+                    return;
+                }
+                if (newPass !== newPassConfirm) {
+                    showAlert('Girdiğiniz yeni şifreler birbiriyle uyuşmuyor.');
+                    return;
+                }
+            }
+
+            const payload = {
+                fullName,
+                email,
+                phone,
+                avatar: currentStudentProfileAvatar
+            };
+
+            if (newPass) {
+                payload.password = newPass;
+            }
+
+            const res = lmsStorage.updateStudentProfile(student.id, payload);
+            if (!res.success) {
+                showAlert(res.message || 'Profil güncellenirken bir hata oluştu.');
+                return;
+            }
+
+            closeStudentProfileModal();
+            checkAuthAndRender();
         }
     </script>
 </body>

@@ -28,6 +28,9 @@ const INITIAL_USERS = [
         fullName: 'Örnek Kursiyer (Ahmet Yılmaz)',
         username: 'ahmet',
         password: '123',
+        email: 'ahmet@bilisimkursum.com',
+        phone: '0555 123 45 67',
+        avatar: '',
         createdAt: new Date().toISOString(),
         lastActive: new Date().toISOString(),
         currentModuleId: 1,
@@ -40,6 +43,9 @@ const INITIAL_USERS = [
         fullName: 'Örnek İleri Kursiyer (Zeynep Kaya)',
         username: 'zeynep',
         password: '123',
+        email: 'zeynep@bilisimkursum.com',
+        phone: '0555 987 65 43',
+        avatar: '',
         createdAt: new Date().toISOString(),
         lastActive: new Date().toISOString(),
         currentModuleId: 4,
@@ -184,6 +190,9 @@ class StorageService {
                 userId: user.id,
                 name: user.fullName,
                 username: user.username,
+                email: user.email || '',
+                phone: user.phone || '',
+                avatar: user.avatar || '',
                 loginTime: new Date().toISOString()
             };
             localStorage.setItem(STORAGE_KEYS.STUDENT_SESSION, JSON.stringify(session));
@@ -279,7 +288,7 @@ class StorageService {
         return users.find(u => u.id === id) || null;
     }
 
-    addUser({ fullName, username, password, initialModuleId = 1, classId = null, notes = '' }) {
+    addUser({ fullName, username, password, initialModuleId = 1, classId = null, notes = '', email = '', phone = '', avatar = '' }) {
         const users = this.getAllUsers();
         const cleanUsername = (username || '').trim().toLowerCase();
 
@@ -306,6 +315,9 @@ class StorageService {
             fullName: (fullName || cleanUsername).trim(),
             username: cleanUsername,
             password: (password || '1234').trim(),
+            email: (email || '').trim(),
+            phone: (phone || '').trim(),
+            avatar: avatar || '',
             createdAt: new Date().toISOString(),
             lastActive: new Date().toISOString(),
             currentModuleId: startMod,
@@ -337,6 +349,38 @@ class StorageService {
         users[idx] = { ...users[idx], ...updates };
         this.saveAllUsers(users);
         return { success: true, user: users[idx] };
+    }
+
+    updateStudentProfile(userId, { fullName, email, phone, avatar, password = null }) {
+        const user = this.getUserById(userId);
+        if (!user) return { success: false, message: 'Kullanıcı bulunamadı.' };
+
+        const updates = {};
+        if (fullName !== undefined) updates.fullName = fullName.trim();
+        if (email !== undefined) updates.email = email.trim();
+        if (phone !== undefined) updates.phone = phone.trim();
+        if (avatar !== undefined) updates.avatar = avatar;
+        if (password && password.trim()) updates.password = password.trim();
+
+        const res = this.updateUser(userId, updates);
+        if (!res.success) return res;
+
+        // Öğrencinin aktif oturumu varsa güncelle
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.STUDENT_SESSION);
+            if (raw) {
+                const s = JSON.parse(raw);
+                if (s && s.userId === userId) {
+                    if (updates.fullName) s.name = updates.fullName;
+                    if (updates.email !== undefined) s.email = updates.email;
+                    if (updates.phone !== undefined) s.phone = updates.phone;
+                    if (updates.avatar !== undefined) s.avatar = updates.avatar;
+                    localStorage.setItem(STORAGE_KEYS.STUDENT_SESSION, JSON.stringify(s));
+                }
+            }
+        } catch(e) {}
+
+        return { success: true, user: res.user };
     }
 
     deleteUser(userId) {

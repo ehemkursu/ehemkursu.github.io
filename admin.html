@@ -529,7 +529,7 @@
 
 <!-- MODAL: KURSİYER EKLE / DÜZENLE -->
 <div id="userFormModal" class="modal-overlay">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width:540px;">
         <div class="modal-header">
             <h3 id="userFormTitle" style="color:white;font-size:18px;">Yeni Kursiyer Ekle</h3>
             <button class="modal-close" onclick="closeModal('userFormModal')">&times;</button>
@@ -537,16 +537,58 @@
         <div id="userFormAlert" class="alert-message alert-error"></div>
         <form onsubmit="handleSaveUser(event)">
             <input type="hidden" id="editUserId">
-            <div class="form-group"><label class="form-label">Adı ve Soyadı</label><input type="text" id="formFullName" class="form-control" placeholder="Ayşe Demir" required></div>
-            <div class="form-group"><label class="form-label">Kullanıcı Adı</label><input type="text" id="formUsername" class="form-control" placeholder="aysedemir" required></div>
-            <div class="form-group"><label class="form-label">Giriş Şifresi</label><input type="text" id="formPassword" class="form-control" placeholder="1234" required></div>
+
+            <!-- Avatar Alanı -->
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:12px;background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:10px;">
+                <div id="adminUserAvatarPreview" style="width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2px solid var(--accent-blue);box-shadow:0 0 10px rgba(59,130,246,0.3);background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:700;">
+                    K
+                </div>
+                <div style="flex:1;">
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px;">
+                        <label class="btn btn-primary btn-sm" style="margin:0;cursor:pointer;font-size:11.5px;padding:4px 10px;">
+                            📷 Fotoğraf Seç
+                            <input type="file" id="adminUserAvatarInput" accept="image/*" style="display:none;" onchange="handleAdminAvatarSelect(event)">
+                        </label>
+                        <button type="button" class="btn btn-ghost btn-sm" id="btnAdminRemoveAvatar" onclick="handleAdminRemoveAvatar()" style="font-size:11.5px;padding:4px 8px;display:none;">
+                            🗑️ Resmi Kaldır
+                        </button>
+                    </div>
+                    <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
+                        <span style="font-size:11px;color:var(--text-muted);margin-right:2px;">Simge:</span>
+                        <button type="button" class="avatar-preset-btn" style="width:28px;height:28px;font-size:14px;" onclick="selectAdminPresetAvatar('👨‍🎓')">👨‍🎓</button>
+                        <button type="button" class="avatar-preset-btn" style="width:28px;height:28px;font-size:14px;" onclick="selectAdminPresetAvatar('👩‍🎓')">👩‍🎓</button>
+                        <button type="button" class="avatar-preset-btn" style="width:28px;height:28px;font-size:14px;" onclick="selectAdminPresetAvatar('💻')">💻</button>
+                        <button type="button" class="avatar-preset-btn" style="width:28px;height:28px;font-size:14px;" onclick="selectAdminPresetAvatar('🚀')">🚀</button>
+                        <button type="button" class="avatar-preset-btn" style="width:28px;height:28px;font-size:14px;" onclick="selectAdminPresetAvatar('⚡')">⚡</button>
+                        <button type="button" class="avatar-preset-btn" style="width:28px;height:28px;font-size:14px;" onclick="selectAdminPresetAvatar('🌟')">🌟</button>
+                        <button type="button" class="avatar-preset-btn" style="width:28px;height:28px;font-size:14px;" onclick="selectAdminPresetAvatar('🐱')">🐱</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group"><label class="form-label">Adı ve Soyadı *</label><input type="text" id="formFullName" class="form-control" placeholder="Ayşe Demir" required></div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group"><label class="form-label">E-Posta Adresi</label><input type="email" id="formEmail" class="form-control" placeholder="ayse@ornek.com"></div>
+                <div class="form-group"><label class="form-label">Telefon Numarası</label><input type="tel" id="formPhone" class="form-control" placeholder="0555 123 45 67"></div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group"><label class="form-label">Kullanıcı Adı *</label><input type="text" id="formUsername" class="form-control" placeholder="aysedemir" required></div>
+                <div class="form-group"><label class="form-label">Giriş Şifresi *</label><input type="text" id="formPassword" class="form-control" placeholder="1234" required></div>
+            </div>
+
             <div class="form-group" id="initialModuleGroup">
                 <label class="form-label">Başlangıç Bölümü</label>
                 <select id="formInitialModule" class="form-control"></select>
                 <small style="color:var(--text-muted);font-size:11px;display:block;margin-top:4px;">Seçilen bölüme kadar önceki bölümler tamamlandı sayılır.</small>
             </div>
-            <div class="form-group"><label class="form-label">Sınıf</label><select id="formClassId" class="form-control"><option value="">— Sınıf Seçin —</option></select></div>
-            <div class="form-group"><label class="form-label">Not / Grup Bilgisi</label><input type="text" id="formNotes" class="form-control" placeholder="Sabah Grubu - Masa 4"></div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group"><label class="form-label">Sınıf</label><select id="formClassId" class="form-control"><option value="">— Sınıf Seçin —</option></select></div>
+                <div class="form-group"><label class="form-label">Not / Grup Bilgisi</label><input type="text" id="formNotes" class="form-control" placeholder="Sabah Grubu - Masa 4"></div>
+            </div>
+
             <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;">
                 <button type="button" class="btn btn-ghost" onclick="closeModal('userFormModal')">İptal</button>
                 <button type="submit" class="btn btn-primary">Kaydet</button>
@@ -1013,6 +1055,99 @@
         filterAndRenderUsers();
     }
 
+    function getAvatarHtml(avatar, name, size = 32) {
+        if (avatar && (avatar.startsWith('data:image') || avatar.startsWith('http'))) {
+            return `<img src="${avatar}" alt="${name || 'Kursiyer'}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;">`;
+        }
+        if (avatar) {
+            return `<span style="font-size:${Math.round(size * 0.55)}px;line-height:1;">${avatar}</span>`;
+        }
+        const initial = (name || 'K').trim()[0].toUpperCase();
+        return `<span style="font-size:${Math.round(size * 0.45)}px;font-weight:700;">${initial}</span>`;
+    }
+
+    function compressImageFile(file, maxWidth = 180, maxHeight = 180, quality = 0.82) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = reject;
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onerror = reject;
+                img.onload = () => {
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > h) {
+                        if (w > maxWidth) {
+                            h = Math.round((h * maxWidth) / w);
+                            w = maxWidth;
+                        }
+                    } else {
+                        if (h > maxHeight) {
+                            w = Math.round((w * maxHeight) / h);
+                            h = maxHeight;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    let currentAdminUserAvatar = '';
+
+    function updateAdminAvatarPreview(name) {
+        const preview = document.getElementById('adminUserAvatarPreview');
+        const btnRemove = document.getElementById('btnAdminRemoveAvatar');
+        if (!preview) return;
+        if (currentAdminUserAvatar) {
+            preview.innerHTML = getAvatarHtml(currentAdminUserAvatar, name, 52);
+            if (btnRemove) btnRemove.style.display = 'inline-block';
+        } else {
+            const initial = (name || 'K').trim()[0].toUpperCase();
+            preview.innerHTML = `<span style="font-size:22px;font-weight:700;">${initial}</span>`;
+            if (btnRemove) btnRemove.style.display = 'none';
+        }
+    }
+
+    function handleAdminAvatarSelect(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Lütfen 5MB\'dan küçük bir görsel seçiniz.');
+            return;
+        }
+        compressImageFile(file, 180, 180, 0.82)
+            .then(base64 => {
+                currentAdminUserAvatar = base64;
+                const name = document.getElementById('formFullName').value;
+                updateAdminAvatarPreview(name);
+            })
+            .catch(err => {
+                alert('Fotoğraf yüklenemedi: ' + err.message);
+            });
+    }
+
+    function selectAdminPresetAvatar(emoji) {
+        currentAdminUserAvatar = emoji;
+        const name = document.getElementById('formFullName').value;
+        updateAdminAvatarPreview(name);
+    }
+
+    function handleAdminRemoveAvatar() {
+        currentAdminUserAvatar = '';
+        const fi = document.getElementById('adminUserAvatarInput');
+        if (fi) fi.value = '';
+        const name = document.getElementById('formFullName').value;
+        updateAdminAvatarPreview(name);
+    }
+
     function filterAndRenderUsers() {
         const users = lmsStorage.getAllUsers(), classes = lmsStorage.getAllClasses(), mods = getModules();
         const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
@@ -1050,9 +1185,20 @@
             const clsB = cls
                 ? '<span style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);border-radius:12px;padding:2px 10px;font-size:12px;">'+cls.name+'</span>'
                 : '<span style="color:var(--text-muted);font-size:12px;">—</span>';
+
+            const avatarHtml = getAvatarHtml(u.avatar, u.fullName, 32);
+            let contactSubtitle = '';
+            const contactParts = [];
+            if (u.email) contactParts.push('✉️ ' + u.email);
+            if (u.phone) contactParts.push('📞 ' + u.phone);
+            if (contactParts.length > 0) {
+                contactSubtitle = '<div style="font-size:11px;color:#93c5fd;margin-top:2px;">' + contactParts.join(' • ') + '</div>';
+            }
+            const noteSubtitle = u.notes ? '<div style="font-size:11px;color:var(--text-muted);margin-top:1px;">' + u.notes + '</div>' : '';
+
             const tr = document.createElement('tr');
             tr.innerHTML =
-                '<td><div style="display:flex;align-items:center;gap:10px;"><div class="user-avatar" style="width:32px;height:32px;font-size:13px;">'+(u.fullName||'K')[0].toUpperCase()+'</div><div><div style="font-weight:700;color:white;">'+u.fullName+'</div><div style="font-size:11px;color:var(--text-muted);">'+(u.notes||'—')+'</div></div></div></td>'
+                '<td><div style="display:flex;align-items:center;gap:10px;"><div class="user-avatar" style="width:32px;height:32px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;">'+avatarHtml+'</div><div><div style="font-weight:700;color:white;">'+u.fullName+'</div>'+contactSubtitle+noteSubtitle+'</div></div></td>'
                 +'<td><code style="color:#93c5fd;">'+u.username+'</code></td>'
                 +'<td><span id="passSpan_'+u.id+'" style="letter-spacing:2px;">••••</span><button class="btn btn-ghost btn-sm" style="padding:2px 6px;margin-left:4px;font-size:10px;" onclick="togglePwd(\''+sid+'\',\''+sp+'\')">👁️</button></td>'
                 +'<td>'+clsB+'</td>'
@@ -1091,6 +1237,12 @@
         document.getElementById('formFullName').value = '';
         document.getElementById('formUsername').value = '';
         document.getElementById('formPassword').value = '123';
+        document.getElementById('formEmail').value = '';
+        document.getElementById('formPhone').value = '';
+        currentAdminUserAvatar = '';
+        const fi = document.getElementById('adminUserAvatarInput');
+        if (fi) fi.value = '';
+        updateAdminAvatarPreview('');
         document.getElementById('formInitialModule').value = getModules()[0]?.id || 1;
         document.getElementById('initialModuleGroup').style.display = 'block';
         document.getElementById('formClassId').value = '';
@@ -1107,6 +1259,12 @@
         document.getElementById('formFullName').value = u.fullName;
         document.getElementById('formUsername').value = u.username;
         document.getElementById('formPassword').value = u.password;
+        document.getElementById('formEmail').value = u.email || '';
+        document.getElementById('formPhone').value = u.phone || '';
+        currentAdminUserAvatar = u.avatar || '';
+        const fi = document.getElementById('adminUserAvatarInput');
+        if (fi) fi.value = '';
+        updateAdminAvatarPreview(u.fullName);
         document.getElementById('initialModuleGroup').style.display = 'none';
         document.getElementById('formClassId').value = u.classId || '';
         document.getElementById('formNotes').value = u.notes || '';
@@ -1121,6 +1279,9 @@
             fullName: document.getElementById('formFullName').value.trim(),
             username: document.getElementById('formUsername').value.trim(),
             password: document.getElementById('formPassword').value.trim(),
+            email:    document.getElementById('formEmail').value.trim(),
+            phone:    document.getElementById('formPhone').value.trim(),
+            avatar:   currentAdminUserAvatar,
             classId:  document.getElementById('formClassId').value || null,
             notes:    document.getElementById('formNotes').value.trim()
         };
@@ -1777,11 +1938,14 @@
                 repliesHtml += '</div>';
             }
 
+            const msgSenderUser = msg.userId ? lmsStorage.getUserById(msg.userId) : null;
+            const msgSenderAvatar = getAvatarHtml(msgSenderUser ? msgSenderUser.avatar : null, msg.userName, 36);
+
             card.innerHTML =
                 '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">'
                 + '<div style="display:flex;align-items:center;gap:12px;">'
                 + '<input type="checkbox" class="msg-checkbox msg-row-check" value="' + msg.id + '" ' + (isChecked ? 'checked' : '') + ' onchange="toggleSingleMessageSelect(\'' + msg.id + '\', this.checked)">'
-                + '<div class="user-avatar" style="width:36px;height:36px;font-size:14px;">' + (msg.userName || 'K')[0].toUpperCase() + '</div>'
+                + '<div class="user-avatar" style="width:36px;height:36px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;">' + msgSenderAvatar + '</div>'
                 + '<div>'
                 + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
                 + '<span style="font-weight:700;color:white;font-size:15px;">' + msg.userName + '</span>'
