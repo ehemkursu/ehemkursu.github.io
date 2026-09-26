@@ -826,6 +826,53 @@
     </div>
 </div>
 
+<!-- MODAL: DUYURU OKUYANLAR / OKUMAYANLAR LİSTESİ -->
+<div id="announcementReadersModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:740px;width:95%;max-height:88vh;display:flex;flex-direction:column;">
+        <div class="modal-header" style="flex-shrink:0;">
+            <div>
+                <h3 style="color:white;font-size:18px;display:flex;align-items:center;gap:8px;">
+                    <span>📢</span> <span id="readersAnnTitle">Duyuru Okuma Durumu</span>
+                </h3>
+                <p id="readersAnnSub" style="font-size:12px;color:var(--text-secondary);margin-top:3px;"></p>
+            </div>
+            <button class="modal-close" onclick="closeModal('announcementReadersModal')">&times;</button>
+        </div>
+
+        <!-- Sekmeler: Okuyanlar / Okumayanlar -->
+        <div style="display:flex;gap:10px;margin:14px 0;border-bottom:1px solid var(--border-color);padding-bottom:10px;flex-shrink:0;">
+            <button type="button" class="btn btn-sm" id="btnTabReadersRead" onclick="switchReadersModalTab('read')" style="display:inline-flex;align-items:center;gap:8px;font-weight:700;border-radius:8px;padding:8px 14px;border:1px solid rgba(16,185,129,0.5);background:rgba(16,185,129,0.2);color:#34d399;transition:all 0.2s ease;">
+                <span>👁️ Okuyanlar</span>
+                <span id="badgeReadersCount" style="background:rgba(16,185,129,0.3);color:#6ee7b7;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">0</span>
+            </button>
+            <button type="button" class="btn btn-sm" id="btnTabReadersUnread" onclick="switchReadersModalTab('unread')" style="display:inline-flex;align-items:center;gap:8px;font-weight:700;border-radius:8px;padding:8px 14px;border:1px solid var(--border-color);background:transparent;color:var(--text-secondary);transition:all 0.2s ease;">
+                <span>⏳ Okumayanlar</span>
+                <span id="badgeUnreadCount" style="background:rgba(245,158,11,0.25);color:#fbbf24;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;">0</span>
+            </button>
+        </div>
+
+        <!-- Arama Alanı -->
+        <div style="margin-bottom:12px;flex-shrink:0;">
+            <input type="text" id="readersSearchInput" class="form-control" placeholder="🔍 Kursiyer ara (Ad Soyad veya Kullanıcı Adı)..." oninput="filterReadersList()">
+        </div>
+
+        <!-- Liste Alanı (Kaydırılabilir) -->
+        <div id="readersListContainer" style="flex:1;overflow-y:auto;min-height:240px;max-height:420px;padding-right:6px;">
+            <!-- Dinamik doldurulur -->
+        </div>
+
+        <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid var(--border-color);flex-shrink:0;">
+            <span id="readersFooterStats" style="font-size:12px;color:var(--text-muted);"></span>
+            <div style="display:flex;gap:8px;">
+                <button type="button" id="btnModalResendAction" class="btn btn-ghost btn-sm" style="color:var(--accent-blue);border:1px solid var(--border-color);display:inline-flex;align-items:center;gap:5px;">
+                    🔁 Tekrar Gönder
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="closeModal('announcementReadersModal')">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- MODAL: YENİ MESAJ GÖNDER (TÜMÜ / SINIF / KURSİYER) -->
 <div id="adminDirectMessageModal" class="modal-overlay">
     <div class="modal-content" style="max-width:560px;">
@@ -1699,6 +1746,9 @@
     function confirmResetModules()         { if (!confirm('Menüyü varsayılan 26 bölüme sıfırlamak istediğinize emin misiniz?')) return; lmsStorage.resetModulesToDefault(); initInitialModuleOptions(); loadMenuTab(); }
 
     // ==================== DUYURU YÖNETİMİ ====================
+    let currentReadersAnnId = null;
+    let currentReadersTab = 'read'; // 'read' | 'unread'
+
     function loadAnnouncementsTab() {
         const anns = lmsStorage.getAllAnnouncements();
         const list  = document.getElementById('announcementsList');
@@ -1713,29 +1763,49 @@
             warning: {color:'#f59e0b', bg:'rgba(245,158,11,0.1)',  border:'rgba(245,158,11,0.3)',  icon:'⚠️'},
             danger:  {color:'#ef4444', bg:'rgba(239,68,68,0.1)',   border:'rgba(239,68,68,0.3)',   icon:'🚨'}
         };
-        anns.slice().reverse().forEach(ann => {
+
+        anns.forEach(ann => {
             const tm = typeMap[ann.type] || typeMap.info;
             const expired = ann.expiryDate && new Date(ann.expiryDate) < now;
             const cls = lmsStorage.getAllClasses().find(c => c.id === ann.classId);
+            const stats = lmsStorage.getAnnouncementReadStats(ann.id);
             const targetLabel  = ann.classId ? (cls ? '🏫 '+cls.name : 'Silinmiş Sınıf') : '👥 Tüm Kursiyerler';
             const expiryStr    = ann.expiryDate ? new Date(ann.expiryDate).toLocaleDateString('tr-TR') : 'Süresiz';
+            const resentBadge  = ann.resentAt ? '<span style="font-size:11px;background:rgba(59,130,246,0.18);color:#93c5fd;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;border-radius:12px;">🔁 Tekrar Gönderildi (' + new Date(ann.resentAt).toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) + ')</span>' : '';
+
             const card = document.createElement('div');
             card.style.cssText = 'background:'+tm.bg+';border:1px solid '+tm.border+';border-radius:12px;padding:18px 20px;position:relative;'+(expired?'opacity:0.55;':'');
             card.innerHTML =
                 '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">'
                 + '<div style="flex:1;min-width:0;">'
-                + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+                + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">'
                 + '<span style="font-size:18px;">'+tm.icon+'</span>'
                 + '<span style="font-size:15px;font-weight:700;color:white;">'+ann.title+'</span>'
                 + (expired ? '<span style="font-size:11px;background:rgba(0,0,0,0.3);color:#f87171;padding:2px 8px;border-radius:20px;">Süresi Doldu</span>' : '')
+                + resentBadge
                 + '</div>'
-                + '<p style="color:var(--text-secondary);font-size:13px;margin:0 0 10px;line-height:1.6;">'+ann.message.replace(/\n/g,'<br>')+'</p>'
-                + '<div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--text-muted);">'
+                + '<p style="color:var(--text-secondary);font-size:13.5px;margin:0 0 10px;line-height:1.6;">'+ann.message.replace(/\n/g,'<br>')+'</p>'
+                + '<div style="display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--text-muted);">'
                 + '<span>📅 '+new Date(ann.createdAt).toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})+'</span>'
-                + '<span>🎯 '+targetLabel+'</span>'
+                + '<span>🎯 '+targetLabel+' ('+stats.totalTarget+' Kursiyer)</span>'
                 + '<span>⏱️ Bitiş: '+expiryStr+'</span>'
-                + '</div></div>'
-                + '<button onclick="deleteAnnouncement(\''+ann.id+'\')" class="btn btn-danger btn-sm" style="flex-shrink:0;padding:4px 10px;">🗑️</button>'
+                + '</div>'
+                + '</div>'
+                + '</div>'
+                + '<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);">'
+                + '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);">'
+                + '<span>📊 Okuma Durumu:</span>'
+                + '<span style="font-weight:700;color:'+(stats.percent>=50?'#34d399':'#fbbf24')+';">'+stats.readCount+' / '+stats.totalTarget+' (%'+stats.percent+')</span>'
+                + '</div>'
+                + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
+                + '<button type="button" onclick="openAnnouncementReadersModal(\''+ann.id+'\', \'read\')" class="btn btn-sm btn-ghost" style="border:1px solid rgba(16,185,129,0.35);color:#34d399;font-size:12px;padding:5px 12px;display:inline-flex;align-items:center;gap:6px;" title="Bu duyuruyu okuyan kursiyerlerin listesi">'
+                + '👁️ Okuyanlar ('+stats.readCount+')</button>'
+                + '<button type="button" onclick="openAnnouncementReadersModal(\''+ann.id+'\', \'unread\')" class="btn btn-sm btn-ghost" style="border:1px solid rgba(245,158,11,0.35);color:#fbbf24;font-size:12px;padding:5px 12px;display:inline-flex;align-items:center;gap:6px;" title="Bu duyuruyu henüz okumamış kursiyerlerin listesi">'
+                + '⏳ Okumayanlar ('+stats.unreadCount+')</button>'
+                + '<button type="button" onclick="handleResendAnnouncement(\''+ann.id+'\')" class="btn btn-sm btn-ghost" style="border:1px solid rgba(59,130,246,0.35);color:#93c5fd;font-size:12px;padding:5px 12px;display:inline-flex;align-items:center;gap:6px;" title="Duyuruyu tüm hedef kursiyerlerin ekranına tekrar düşür">'
+                + '🔁 Tekrar Gönder</button>'
+                + '<button type="button" onclick="deleteAnnouncement(\''+ann.id+'\')" class="btn btn-danger btn-sm" style="padding:5px 10px;" title="Duyuruyu Sil">🗑️</button>'
+                + '</div>'
                 + '</div>';
             list.appendChild(card);
         });
@@ -1805,6 +1875,186 @@
         } catch (err) {
             console.error('Duyuru silme hatası:', err);
             loadAnnouncementsTab();
+        }
+    }
+
+    // ==================== DUYURU OKUYANLAR / OKUMAYANLAR MODAL FONKSİYONLARI ====================
+    function openAnnouncementReadersModal(annId, tab = 'read') {
+        currentReadersAnnId = annId;
+        currentReadersTab = tab;
+
+        const ann = lmsStorage.getAllAnnouncements().find(a => a.id === annId);
+        if (!ann) return;
+
+        const titleEl = document.getElementById('readersAnnTitle');
+        const subEl = document.getElementById('readersAnnSub');
+        const stats = lmsStorage.getAnnouncementReadStats(annId);
+
+        if (titleEl) titleEl.textContent = ann.title;
+        if (subEl) subEl.textContent = 'Hedef Kitle: ' + stats.targetName + ' • Toplam: ' + stats.totalTarget + ' Kursiyer • Okuma Oranı: %' + stats.percent;
+
+        const resendBtn = document.getElementById('btnModalResendAction');
+        if (resendBtn) {
+            resendBtn.onclick = () => {
+                closeModal('announcementReadersModal');
+                handleResendAnnouncement(annId);
+            };
+        }
+
+        const searchInput = document.getElementById('readersSearchInput');
+        if (searchInput) searchInput.value = '';
+
+        switchReadersModalTab(tab);
+        openModal('announcementReadersModal');
+    }
+
+    function switchReadersModalTab(tab) {
+        currentReadersTab = tab;
+        const btnRead = document.getElementById('btnTabReadersRead');
+        const btnUnread = document.getElementById('btnTabReadersUnread');
+
+        if (btnRead && btnUnread) {
+            if (tab === 'read') {
+                btnRead.style.background = 'rgba(16,185,129,0.2)';
+                btnRead.style.borderColor = 'rgba(16,185,129,0.5)';
+                btnRead.style.color = '#34d399';
+
+                btnUnread.style.background = 'transparent';
+                btnUnread.style.borderColor = 'var(--border-color)';
+                btnUnread.style.color = 'var(--text-secondary)';
+            } else {
+                btnUnread.style.background = 'rgba(245,158,11,0.2)';
+                btnUnread.style.borderColor = 'rgba(245,158,11,0.5)';
+                btnUnread.style.color = '#fbbf24';
+
+                btnRead.style.background = 'transparent';
+                btnRead.style.borderColor = 'var(--border-color)';
+                btnRead.style.color = 'var(--text-secondary)';
+            }
+        }
+
+        renderReadersList();
+    }
+
+    function filterReadersList() {
+        renderReadersList();
+    }
+
+    function renderReadersList() {
+        if (!currentReadersAnnId) return;
+        const stats = lmsStorage.getAnnouncementReadStats(currentReadersAnnId);
+        
+        const badgeR = document.getElementById('badgeReadersCount');
+        const badgeU = document.getElementById('badgeUnreadCount');
+        if (badgeR) badgeR.textContent = stats.readCount;
+        if (badgeU) badgeU.textContent = stats.unreadCount;
+
+        const listContainer = document.getElementById('readersListContainer');
+        const footerStats = document.getElementById('readersFooterStats');
+        const q = (document.getElementById('readersSearchInput')?.value || '').toLowerCase().trim();
+
+        const isReadTab = currentReadersTab === 'read';
+        let list = isReadTab ? stats.readStudents : stats.unreadStudents;
+
+        if (q) {
+            list = list.filter(u => 
+                (u.fullName || '').toLowerCase().includes(q) || 
+                (u.username || '').toLowerCase().includes(q) ||
+                (u.className || '').toLowerCase().includes(q)
+            );
+        }
+
+        if (footerStats) {
+            footerStats.textContent = `Toplam ${stats.totalTarget} hedef kursiyerden ${stats.readCount} okuyan, ${stats.unreadCount} okumayan.`;
+        }
+
+        if (!listContainer) return;
+
+        if (list.length === 0) {
+            listContainer.innerHTML = `
+                <div style="text-align:center;padding:40px 10px;color:var(--text-muted);">
+                    <div style="font-size:32px;margin-bottom:8px;">${isReadTab ? '🔍' : '🎉'}</div>
+                    <div style="font-size:14px;font-weight:600;color:white;">
+                        ${q ? 'Aramaya uygun kursiyer bulunamadı.' : (isReadTab ? 'Henüz bu duyuruyu okuyan kursiyer yok.' : 'Tebrikler! Tüm hedef kursiyerler bu duyuruyu okudu.')}
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
+        list.forEach(student => {
+            const avatarHtml = getAvatarHtml(student.avatar, student.fullName, 34);
+            const timeHtml = isReadTab && student.readAt ? 
+                `<span style="font-size:11px;color:#34d399;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);padding:2px 8px;border-radius:12px;display:inline-flex;align-items:center;gap:4px;">
+                    ✓ ${new Date(student.readAt).toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}
+                </span>` : 
+                `<span style="font-size:11px;color:#fbbf24;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);padding:2px 8px;border-radius:12px;display:inline-flex;align-items:center;gap:4px;">
+                    ⏳ Henüz Okumadı
+                </span>`;
+
+            const quickMsgBtn = !isReadTab ? `
+                <button type="button" onclick="openDirectMessageForStudent('${student.id}')" class="btn btn-sm btn-ghost" style="padding:4px 8px;font-size:11px;color:var(--accent-blue);border:1px solid rgba(59,130,246,0.3);" title="Bu kursiyere doğrudan özel mesaj gönder">
+                    ✉️ Mesaj
+                </button>
+            ` : '';
+
+            html += `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;gap:12px;">
+                    <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+                        <div style="width:34px;height:34px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg-card);display:flex;align-items:center;justify-content:center;">
+                            ${avatarHtml}
+                        </div>
+                        <div style="min-width:0;flex:1;">
+                            <div style="font-size:13.5px;font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                ${student.fullName}
+                            </div>
+                            <div style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:8px;margin-top:2px;">
+                                <span>@${student.username}</span>
+                                <span>•</span>
+                                <span>🏫 ${student.className}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                        ${timeHtml}
+                        ${quickMsgBtn}
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        listContainer.innerHTML = html;
+    }
+
+    function openDirectMessageForStudent(studentId) {
+        closeModal('announcementReadersModal');
+        openAdminDirectMessageModal(studentId);
+    }
+
+    async function handleResendAnnouncement(annId) {
+        const ann = lmsStorage.getAllAnnouncements().find(a => a.id === annId);
+        if (!ann) return;
+
+        const stats = lmsStorage.getAnnouncementReadStats(annId);
+        const confirmMsg = `"${ann.title}" başlıklı duyuruyu tüm hedef kursiyerlere tekrar göndermek istediğinize emin misiniz?\n\n`
+            + `• Şu ana kadar okuyan: ${stats.readCount} kursiyer\n`
+            + `• Henüz okumayan: ${stats.unreadCount} kursiyer\n\n`
+            + `Duyuru tekrar gönderildiğinde, daha önce okumuş olan kursiyerlerin ekranında da YENİDEN belirecektir.`;
+
+        if (!confirm(confirmMsg)) return;
+
+        try {
+            const res = await lmsStorage.resendAnnouncement(annId);
+            if (res.success) {
+                alert('✓ Duyuru başarıyla tekrar gönderildi!\n\nDuyuru güncellendi ve tüm hedef kursiyerlerin ekranına yeniden iletildi.');
+                loadAnnouncementsTab();
+            } else {
+                alert('Tekrar gönderme başarısız: ' + (res.message || 'Bilinmeyen hata'));
+            }
+        } catch (err) {
+            console.error('Tekrar gönderme hatası:', err);
+            alert('Hata oluştu: ' + (err.message || err));
         }
     }
 

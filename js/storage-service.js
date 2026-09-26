@@ -2228,14 +2228,191 @@ class StorageService {
         }
     }
 
-    dismissAnnouncement(annId, userId) {
+    async dismissAnnouncement(annId, userId) {
         if (!annId || !userId) return { success: false };
+
+        // 1. Yerel dismissed listesine kaydet
         const list = this.getDismissedAnnouncementIds(userId);
         if (!list.includes(annId)) {
             list.push(annId);
             localStorage.setItem('ehem_dismissed_anns_' + userId, JSON.stringify(list));
         }
+
+        // 2. Kullanıcı bilgilerini al
+        const user = this.getUserById(userId) || this.getCurrentStudent() || {};
+        const readRecord = {
+            userId: userId,
+            fullName: user.fullName || user.name || 'Kursiyer',
+            username: user.username || '',
+            classId: user.classId || null,
+            readAt: new Date().toISOString()
+        };
+
+        // 3. Yerel duyurunun readBy haritasını güncelle
+        const anns = this.getAllAnnouncements();
+        const ann = anns.find(a => a && a.id === annId);
+        if (ann) {
+            if (!ann.readBy || typeof ann.readBy !== 'object') {
+                ann.readBy = {};
+            }
+            ann.readBy[userId] = readRecord;
+            this.saveAllAnnouncements(anns);
+        }
+
+        // 4. Firebase'e doğrudan tekil atomic yaz
+        const cfg = this.getFirebaseConfig();
+        if (cfg && cfg.enabled && cfg.databaseURL) {
+            try {
+                const baseUrl = cfg.databaseURL.replace(/\/$/, '');
+                const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
+                await fetch(`${baseUrl}/announcements/${annId}/readBy/${userId}.json${authParam}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(readRecord)
+                });
+            } catch (err) {
+                console.warn('Firebase readBy senkronizasyon hatası:', err);
+            }
+        }
+
         return { success: true };
+    }
+
+    async resendAnnouncement(annId) {
+        const anns = this.getAllAnnouncements();
+        const ann = anns.find(a => a && a.id === annId);
+        if (!ann) return { success: false, message: 'Duyuru bulunamadı.' };
+
+        const now = new Date().toISOString();
+        ann.readBy = {}; // Okuyanlar listesini sıfırla
+        ann.resentAt = now; // Tekrar gönderilme zamanı
+        ann.createdAt = now; // Sıralamada en üste çıkması için
+        
+        // Yerel dismissed listelerinden bu annId'yi temizle
+        try {
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('ehem_dismissed_anns_')) {
+                    try {
+                        let ids = JSON.parse(localStorage.getItem(key)) || [];
+                        if (Array.isArray(ids) && ids.includes(annId)) {
+                            ids = ids.filter(id => id !== annId);
+                            localStorage.setItem(key, JSON.stringify(ids));
+                        }
+                    } catch (e) {}
+                }
+            }
+        } catch (e) {}
+
+        this.saveAllAnnouncements(anns);
+
+        // Firebase'e güncel duyuruyu kaydet ve readBy düğümünü sıfırla
+        const cfg = this.getFirebaseConfig();
+        if (cfg && cfg.enabled && cfg.databaseURL) {
+            try {
+                const baseUrl = cfg.databaseURL.replace(/\/$/, '');
+                const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
+                await fetch(`${baseUrl}/announcements/${annId}.json${authParam}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(ann)
+                });
+                await fetch(`${baseUrl}/announcements/${annId}/readBy.json${authParam}`, {
+                    method: 'DELETE'
+                });
+            } catch (err) {
+                console.warn('Firebase resendAnnouncement hatası:', err);
+            }
+        }
+
+        return { success: true, announcement: ann };
+    }
+
+    getAnnouncementReadStats(annId) {
+        const ann = this.getAllAnnouncements().find(a => a && a.id === annId);
+        if (!ann) {
+            return { totalTarget: 0, readCount: 0, unreadCount: 0, percent: 0, readStudents: [], unreadStudents: [], targetName: 'Bilinmiyor' };
+        }
+
+        const allUsers = this.getAllUsers();
+        const allClasses = this.getAllClasses();
+
+        // 1. Hedef kitledeki öğrencileri belirle
+        let targetStudents = [];
+        let targetName = 'Tüm Kursiyerler';
+
+        if (!ann.classId || ann.classId === 'all' || ann.classId === '') {
+            targetStudents = allUsers;
+        } else {
+            const cls = allClasses.find(c => c.id === ann.classId);
+            targetName = cls ? cls.name : 'Belirli Sınıf';
+            targetStudents = allUsers.filter(u => u && u.classId && String(u.classId).trim() === String(ann.classId).trim());
+        }
+
+        // 2. readBy haritasını çözümle
+        const readBy = ann.readBy || {};
+        const isRead = (userId) => {
+            if (!readBy) return false;
+            if (typeof readBy === 'object' && !Array.isArray(readBy)) {
+                return !!readBy[userId];
+            }
+            if (Array.isArray(readBy)) {
+                return readBy.some(r => r && (r.userId === userId || r === userId));
+            }
+            return false;
+        };
+
+        const getReadTime = (userId) => {
+            if (!readBy) return null;
+            if (typeof readBy === 'object' && !Array.isArray(readBy) && readBy[userId]) {
+                return readBy[userId].readAt || null;
+            }
+            if (Array.isArray(readBy)) {
+                const found = readBy.find(r => r && (r.userId === userId || r === userId));
+                return found && found.readAt ? found.readAt : null;
+            }
+            return null;
+        };
+
+        const readStudents = [];
+        const unreadStudents = [];
+
+        targetStudents.forEach(u => {
+            const cls = allClasses.find(c => c.id === u.classId);
+            const className = cls ? cls.name : (u.classId ? 'Sınıf ' + u.classId : 'Sınıfsız');
+            const studentInfo = {
+                id: u.id,
+                fullName: u.fullName || u.username,
+                username: u.username,
+                avatar: u.avatar || '',
+                classId: u.classId || null,
+                className: className,
+                email: u.email || '',
+                phone: u.phone || ''
+            };
+
+            if (isRead(u.id)) {
+                studentInfo.readAt = getReadTime(u.id);
+                readStudents.push(studentInfo);
+            } else {
+                unreadStudents.push(studentInfo);
+            }
+        });
+
+        const totalTarget = targetStudents.length;
+        const readCount = readStudents.length;
+        const unreadCount = unreadStudents.length;
+        const percent = totalTarget > 0 ? Math.round((readCount / totalTarget) * 100) : 0;
+
+        return {
+            totalTarget,
+            readCount,
+            unreadCount,
+            percent,
+            readStudents,
+            unreadStudents,
+            targetName
+        };
     }
 
     /**
@@ -2251,8 +2428,19 @@ class StorageService {
 
         return anns.filter(a => {
             if (!a || !a.id) return false;
-            // Kullanıcı bu duyuruyu okudum diyerek kapattıysa gösterme
-            if (dismissed.includes(a.id)) return false;
+            
+            // Bulutta bu öğrenci okudu olarak işaretlenmişse gösterme
+            const isReadInCloud = a.readBy && (
+                (typeof a.readBy === 'object' && !Array.isArray(a.readBy) && !!a.readBy[userId]) ||
+                (Array.isArray(a.readBy) && a.readBy.some(r => r && (r.userId === userId || r === userId)))
+            );
+            if (isReadInCloud) return false;
+
+            // Yerel dismissed listesinde varsa: ancak resentAt yoksa gizle (resentAt varsa yeniden gösterilsin)
+            if (dismissed.includes(a.id) && !a.resentAt) {
+                return false;
+            }
+
             // Bitiş tarihi kontrolü (Günün sonuna kadar geçerli sayılır: 23:59:59)
             if (a.expiryDate) {
                 const exp = new Date(a.expiryDate);

@@ -1089,8 +1089,8 @@
                 card.style.opacity = '0';
                 card.style.transform = 'translateY(-8px)';
             }
-            setTimeout(() => {
-                lmsStorage.dismissAnnouncement(annId, student.id);
+            setTimeout(async () => {
+                await lmsStorage.dismissAnnouncement(annId, student.id);
                 renderAnnouncementsBanner(student.id);
             }, 200);
         }
