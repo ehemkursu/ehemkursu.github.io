@@ -994,18 +994,24 @@
             syncAdminDataFromCloud();
         });
 
-        // 3 saniyede bir yerel mesaj kontrolü
+        // 4 saniyede bir buluttan yeni kursiyer mesajlarını çek ve güncelle
         setInterval(() => {
-            updateAdminUnreadBadge();
-            const tabMsg = document.getElementById('tabMessages');
-            if (tabMsg && tabMsg.style.display !== 'none') {
-                const active = document.activeElement;
-                const isTyping = active && (active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && active.type === 'text'));
-                if (!isTyping) {
-                    filterAndRenderMessages(true);
-                }
+            if (lmsStorage.pullMessagesFromFirebase) {
+                lmsStorage.pullMessagesFromFirebase().then(() => {
+                    updateAdminUnreadBadge();
+                    const tabMsg = document.getElementById('tabMessages');
+                    if (tabMsg && tabMsg.style.display !== 'none') {
+                        const active = document.activeElement;
+                        const isTyping = active && (active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && active.type === 'text'));
+                        if (!isTyping) {
+                            filterAndRenderMessages(true);
+                        }
+                    }
+                }).catch(() => {});
+            } else {
+                updateAdminUnreadBadge();
             }
-        }, 3000);
+        }, 4000);
 
         // 10 saniyede bir Firebase buluttan diğer bilgisayarlarda yapılan değişiklikleri otomatik eşitle
         setInterval(() => {
@@ -1806,6 +1812,13 @@
         selectedMessageIds.clear();
         filterAndRenderMessages();
         updateAdminUnreadBadge();
+
+        if (lmsStorage.pullMessagesFromFirebase) {
+            lmsStorage.pullMessagesFromFirebase().then(() => {
+                filterAndRenderMessages();
+                updateAdminUnreadBadge();
+            }).catch(() => {});
+        }
     }
 
     function selectAdminMsgTarget(type) {

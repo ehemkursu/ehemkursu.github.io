@@ -1842,13 +1842,7 @@ class StorageService {
             }
 
             // 4. Mesajlar
-            const msgsRes = await fetch(`${baseUrl}/messages.json${authParam}`);
-            if (msgsRes.ok) {
-                const msgsData = await msgsRes.json();
-                if (msgsData && Array.isArray(msgsData) && msgsData.length > 0) {
-                    localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(msgsData));
-                }
-            }
+            await this.pullMessagesFromFirebase();
 
             // 5. Özel Modüller (Menü yapısı ve sol/sağ dağılımı)
             const modulesRes = await fetch(`${baseUrl}/custom_modules.json${authParam}`);
@@ -2164,7 +2158,91 @@ class StorageService {
 
     saveAllMessages(messages) {
         localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages));
-        this.syncCollectionToFirebase('messages', messages);
+        const msgMap = {};
+        messages.forEach(m => {
+            if (m && m.id) msgMap[m.id] = m;
+        });
+        this.syncCollectionToFirebase('messages', msgMap);
+    }
+
+    async syncSingleMessageToFirebase(msg) {
+        const cfg = this.getFirebaseConfig();
+        if (!cfg || !cfg.enabled || !cfg.databaseURL || !msg || !msg.id) return;
+        try {
+            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
+            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
+            await fetch(`${baseUrl}/messages/${msg.id}.json${authParam}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(msg)
+            });
+        } catch (err) {
+            console.warn(`Firebase message ${msg.id} sync hatası:`, err);
+        }
+    }
+
+    async deleteMessageFromFirebase(messageId) {
+        const cfg = this.getFirebaseConfig();
+        if (!cfg || !cfg.enabled || !cfg.databaseURL || !messageId) return;
+        try {
+            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
+            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
+            await fetch(`${baseUrl}/messages/${messageId}.json${authParam}`, {
+                method: 'DELETE'
+            });
+        } catch (err) {
+            console.warn(`Firebase message ${messageId} silme hatası:`, err);
+        }
+    }
+
+    async pullMessagesFromFirebase() {
+        const cfg = this.getFirebaseConfig();
+        if (!cfg || !cfg.enabled || !cfg.databaseURL) return { success: false };
+
+        try {
+            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
+            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
+            const msgsRes = await fetch(`${baseUrl}/messages.json${authParam}`);
+            if (msgsRes.ok) {
+                const msgsRaw = await msgsRes.json();
+                let cloudList = [];
+                if (Array.isArray(msgsRaw)) {
+                    cloudList = msgsRaw.filter(Boolean);
+                } else if (msgsRaw && typeof msgsRaw === 'object') {
+                    cloudList = Object.values(msgsRaw).filter(Boolean);
+                }
+
+                // Yerel mesajlar ile buluttaki mesajları birleştir
+                const localList = this.getAllMessages();
+                const map = new Map();
+                localList.forEach(m => { if (m && m.id) map.set(m.id, m); });
+
+                let hasChanges = false;
+                cloudList.forEach(cm => {
+                    if (!cm || !cm.id) return;
+                    const lm = map.get(cm.id);
+                    if (!lm) {
+                        map.set(cm.id, cm);
+                        hasChanges = true;
+                    } else {
+                        // Yanıt sayısı veya okunma/cevap durumu güncellenmişse buluttakini al
+                        const cr = cm.replies || [];
+                        const lr = lm.replies || [];
+                        if (cr.length > lr.length || cm.status !== lm.status || cm.unreadByStudent !== lm.unreadByStudent || cm.unreadByAdmin !== lm.unreadByAdmin) {
+                            map.set(cm.id, cm);
+                            hasChanges = true;
+                        }
+                    }
+                });
+
+                const merged = Array.from(map.values()).sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+                localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(merged));
+                return { success: true, count: merged.length, hasChanges };
+            }
+            return { success: false };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
     }
 
     getMessageById(id) {
@@ -2173,16 +2251,23 @@ class StorageService {
     }
 
     getMessagesForUser(userId) {
-        const user = this.getUserById(userId);
+        const user = this.getUserById(userId) || this.getCurrentStudent();
         if (!user) return [];
         const messages = this.getAllMessages();
+        const uId = user.id;
+        const userClassId = user.classId ? String(user.classId).trim() : null;
+
         return messages.filter(m => {
+            if (!m) return false;
             // 1. Doğrudan bu kursiyere ait mesaj (kursiyerin sorduğu veya öğretmenin ona özel yazdığı)
-            if (m.userId === userId) return true;
+            if (m.userId === uId || m.targetId === uId) return true;
             // 2. Tüm kursiyerlere gönderilen genel mesaj
             if (m.targetType === 'all') return true;
             // 3. Kursiyerin sınıfına gönderilen mesaj
-            if (m.targetType === 'class' && m.classId && user.classId === m.classId) return true;
+            if (m.targetType === 'class' && userClassId) {
+                const msgClassId = m.classId ? String(m.classId).trim() : (m.targetId ? String(m.targetId).trim() : null);
+                if (msgClassId && msgClassId === userClassId) return true;
+            }
             return false;
         });
     }
@@ -2193,21 +2278,22 @@ class StorageService {
     }
 
     getUnreadMessageCountForStudent(userId) {
-        const user = this.getUserById(userId);
+        const user = this.getUserById(userId) || this.getCurrentStudent();
         if (!user) return 0;
-        const msgs = this.getMessagesForUser(userId);
+        const msgs = this.getMessagesForUser(user.id);
         return msgs.filter(m => {
-            if (m.targetType === 'student' || !m.targetType) {
+            if (!m) return false;
+            if (m.targetType === 'student' || !m.targetType || m.userId === user.id) {
                 return !!m.unreadByStudent;
             }
             // Genel veya sınıf mesajı ise öğrencinin okuyup okumadığına bak
             const reads = Array.isArray(m.readByStudentIds) ? m.readByStudentIds : [];
-            return !reads.includes(userId);
+            return !reads.includes(user.id);
         }).length;
     }
 
     sendMessageFromStudent({ userId, subject, message, moduleRefId = null }) {
-        const user = this.getUserById(userId);
+        const user = this.getUserById(userId) || this.getCurrentStudent();
         if (!user) return { success: false, message: 'Kullanıcı bulunamadı.' };
 
         const trimSubject = (subject || '').trim();
@@ -2243,6 +2329,7 @@ class StorageService {
 
         messages.push(newMsg);
         this.saveAllMessages(messages);
+        this.syncSingleMessageToFirebase(newMsg);
         return { success: true, message: newMsg };
     }
 
@@ -2338,6 +2425,7 @@ class StorageService {
 
         messages.push(newMsg);
         this.saveAllMessages(messages);
+        this.syncSingleMessageToFirebase(newMsg);
         return { success: true, message: newMsg };
     }
 
@@ -2378,6 +2466,7 @@ class StorageService {
         }
 
         this.saveAllMessages(messages);
+        this.syncSingleMessageToFirebase(msg);
         return { success: true, message: msg, reply: replyObj };
     }
 
@@ -2387,6 +2476,7 @@ class StorageService {
         if (msg && msg.unreadByAdmin) {
             msg.unreadByAdmin = false;
             this.saveAllMessages(messages);
+            this.syncSingleMessageToFirebase(msg);
         }
         return { success: true };
     }
@@ -2396,16 +2486,23 @@ class StorageService {
         const msg = messages.find(m => m.id === messageId);
         if (!msg) return { success: false };
 
+        let changed = false;
         if (!msg.readByStudentIds) msg.readByStudentIds = [];
-        if (studentId && !msg.readByStudentIds.includes(studentId)) {
-            msg.readByStudentIds.push(studentId);
+        const sId = studentId || (this.getCurrentStudent() ? this.getCurrentStudent().id : null);
+        if (sId && !msg.readByStudentIds.includes(sId)) {
+            msg.readByStudentIds.push(sId);
+            changed = true;
         }
 
-        if (msg.targetType === 'student' || !msg.targetType) {
+        if (msg.unreadByStudent) {
             msg.unreadByStudent = false;
+            changed = true;
         }
 
-        this.saveAllMessages(messages);
+        if (changed) {
+            this.saveAllMessages(messages);
+            this.syncSingleMessageToFirebase(msg);
+        }
         return { success: true };
     }
 
@@ -2413,6 +2510,7 @@ class StorageService {
         let messages = this.getAllMessages();
         messages = messages.filter(m => m.id !== messageId);
         this.saveAllMessages(messages);
+        this.deleteMessageFromFirebase(messageId);
         return { success: true };
     }
 
@@ -2423,29 +2521,40 @@ class StorageService {
         const initialCount = messages.length;
         messages = messages.filter(m => !idSet.has(m.id));
         this.saveAllMessages(messages);
+        messageIds.forEach(id => this.deleteMessageFromFirebase(id));
         return { success: true, count: initialCount - messages.length };
     }
 
     deleteMessagesByClass(classId) {
         let messages = this.getAllMessages();
         const initialCount = messages.length;
+        const toDeleteIds = [];
         if (classId === 'all_general') {
-            // Yalnızca genel duyuru/mesajları sil
-            messages = messages.filter(m => m.targetType !== 'all');
+            messages = messages.filter(m => {
+                if (m.targetType === 'all') { toDeleteIds.push(m.id); return false; }
+                return true;
+            });
         } else if (classId === 'none') {
-            // Sınıfsızları sil
-            messages = messages.filter(m => m.classId || m.targetType === 'all');
+            messages = messages.filter(m => {
+                if (!m.classId && m.targetType !== 'all') { toDeleteIds.push(m.id); return false; }
+                return true;
+            });
         } else {
-            // Belirtilen sınıfı sil
-            messages = messages.filter(m => m.classId !== classId);
+            messages = messages.filter(m => {
+                if (m.classId === classId || m.targetId === classId) { toDeleteIds.push(m.id); return false; }
+                return true;
+            });
         }
         this.saveAllMessages(messages);
+        toDeleteIds.forEach(id => this.deleteMessageFromFirebase(id));
         return { success: true, count: initialCount - messages.length };
     }
 
     deleteAllMessages() {
-        const count = this.getAllMessages().length;
+        const messages = this.getAllMessages();
+        const count = messages.length;
         this.saveAllMessages([]);
+        messages.forEach(m => this.deleteMessageFromFirebase(m.id));
         return { success: true, count };
     }
 }

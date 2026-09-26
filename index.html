@@ -656,30 +656,44 @@
 
             // Sekmeye dönüldüğünde buluttan en son verileri çek
             window.addEventListener('focus', () => {
+                const student = lmsStorage.getCurrentStudent();
                 if (lmsStorage.pullFromFirebase) {
                     lmsStorage.pullFromFirebase().then(() => {
                         refreshCustomModules();
                         checkAuthAndRender();
                         syncPortalThemeUI();
+                        if (student) {
+                            updateStudentUnreadBadge(student.id);
+                            const listPane = document.getElementById('studentMsgPaneList');
+                            if (listPane && listPane.style.display !== 'none') {
+                                renderStudentMessagesList();
+                            }
+                        }
                     });
                 }
             });
 
-            // 3 saniyede bir canlı mesaj kontrolü (farklı pencere ve sekmeler için)
+            // 4 saniyede bir canlı mesaj kontrolü (buluttan yeni öğretmen yanıtlarını anında çek)
             setInterval(() => {
                 const student = lmsStorage.getCurrentStudent();
                 if (student) {
-                    updateStudentUnreadBadge(student.id);
-                    const listPane = document.getElementById('studentMsgPaneList');
-                    if (listPane && listPane.style.display !== 'none') {
-                        const active = document.activeElement;
-                        const isTyping = active && (active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && active.type === 'text'));
-                        if (!isTyping) {
-                            renderStudentMessagesList();
-                        }
+                    if (lmsStorage.pullMessagesFromFirebase) {
+                        lmsStorage.pullMessagesFromFirebase().then(() => {
+                            updateStudentUnreadBadge(student.id);
+                            const listPane = document.getElementById('studentMsgPaneList');
+                            if (listPane && listPane.style.display !== 'none') {
+                                const active = document.activeElement;
+                                const isTyping = active && (active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && active.type === 'text'));
+                                if (!isTyping) {
+                                    renderStudentMessagesList();
+                                }
+                            }
+                        }).catch(() => {});
+                    } else {
+                        updateStudentUnreadBadge(student.id);
                     }
                 }
-            }, 3000);
+            }, 4000);
 
             // Alt pencereden veya iframe içinden gelebilecek tamamlama mesajlarını dinle
             window.addEventListener('message', (event) => {
@@ -1223,6 +1237,17 @@
 
             const modal = document.getElementById('studentMessageModal');
             if (modal) modal.classList.add('show');
+
+            // Buluttan en güncel mesajları ve öğretmen yanıtlarını çek
+            if (lmsStorage.pullMessagesFromFirebase) {
+                lmsStorage.pullMessagesFromFirebase().then(() => {
+                    updateStudentUnreadBadge(user.id);
+                    const listPane = document.getElementById('studentMsgPaneList');
+                    if (listPane && listPane.style.display !== 'none') {
+                        renderStudentMessagesList();
+                    }
+                }).catch(() => {});
+            }
         }
 
         function closeStudentMessageModal() {
