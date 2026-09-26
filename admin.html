@@ -1855,8 +1855,32 @@
         alert('✓ Arayüz teması ve menü tasarım ayarları başarıyla kaydedildi!\n\n• Tema: ' + (ADMIN_THEME_NAMES[curTheme] || curTheme) + '\n• Menüde Değiştirici: ' + (allowSwitch ? 'Açık' : 'Kapalı') + '\n• Menü Düzeni: ' + _selectedMenuLayout + '\n• Menü Stili: ' + _selectedMenuStyle);
     }
 
-    function saveFirebaseSettings()   { lmsStorage.saveFirebaseConfig({enabled: document.getElementById('fbEnabled').checked, databaseURL: document.getElementById('fbDatabaseURL').value.trim(), apiKey: document.getElementById('fbApiKey').value.trim()}); alert('Firebase ayarları kaydedildi.'); }
-    async function testFirebaseSync() { saveFirebaseSettings(); const res = await lmsStorage.pullFromFirebase(); if (res.success) { alert('✓ Senkronizasyon başarılı! '+res.count+' kursiyer eşitlendi.'); loadDashboardData(); } else alert('Senkronizasyon hatası: '+res.message); }
+    async function saveFirebaseSettings() {
+        const enabled = document.getElementById('fbEnabled').checked;
+        const databaseURL = document.getElementById('fbDatabaseURL').value.trim();
+        const apiKey = document.getElementById('fbApiKey').value.trim();
+        lmsStorage.saveFirebaseConfig({ enabled, databaseURL, apiKey });
+        
+        if (enabled && databaseURL) {
+            const pushRes = await lmsStorage.pushAllToFirebase();
+            if (pushRes.success) {
+                alert('✓ Firebase ayarları kaydedildi ve mevcut tüm verileriniz (kursiyerler, sınıflar, duyurular, mesajlar) buluta yüklendi!');
+            } else {
+                alert('Firebase ayarları kaydedildi, ancak veriler yüklenirken hata oluştu: ' + pushRes.message);
+            }
+        } else {
+            alert('Firebase ayarları kaydedildi.');
+        }
+    }
+    async function testFirebaseSync() {
+        const res = await lmsStorage.pullFromFirebase();
+        if (res.success) {
+            alert('✓ Senkronizasyon başarılı! ' + res.count + ' kursiyer eşitlendi.');
+            loadDashboardData();
+        } else {
+            alert('Senkronizasyon hatası: ' + res.message);
+        }
+    }
     function handleImportBackup(e)    { const file=e.target.files[0]; if(!file)return; const r=new FileReader(); r.onload=ev=>{const res=lmsStorage.importBackupJSON(ev.target.result); alert(res.success?'✓ Yedek geri yüklendi! ('+res.count+' Kursiyer)':'Hata: '+res.message); if(res.success)loadDashboardData();}; r.readAsText(file); }
 
     function exportCsvList() {

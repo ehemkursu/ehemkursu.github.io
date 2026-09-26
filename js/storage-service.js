@@ -65,6 +65,9 @@ class StorageService {
 
         // Bulut ayarları
         this.firebaseConfig = this.getFirebaseConfig();
+        if (this.firebaseConfig && this.firebaseConfig.enabled && this.firebaseConfig.databaseURL) {
+            this.pullFromFirebase();
+        }
 
         // Yerel sunucu (server.js) çalışıyorsa veriyi senkronize et
         this.tryPullFromLocalServer();
@@ -443,13 +446,12 @@ class StorageService {
         this.firebaseConfig = cfg;
     }
 
-    async syncToFirebase(users) {
+    async syncCollectionToFirebase(collectionKey, data) {
         const cfg = this.getFirebaseConfig();
         if (!cfg || !cfg.enabled || !cfg.databaseURL) return;
 
         try {
-            // Firebase Realtime Database REST API doğrudan çalışır (sunucusuz)
-            let url = cfg.databaseURL.replace(/\/$/, '') + '/kursiyerler.json';
+            let url = cfg.databaseURL.replace(/\/$/, '') + `/${collectionKey}.json`;
             if (cfg.apiKey) {
                 url += `?auth=${cfg.apiKey}`;
             }
@@ -457,12 +459,15 @@ class StorageService {
             await fetch(url, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(users)
+                body: JSON.stringify(data)
             });
-            console.log("Firebase bulut senkronizasyonu başarılı.");
         } catch (err) {
-            console.warn("Firebase senkronizasyon hatası:", err);
+            console.warn(`Firebase ${collectionKey} senkronizasyon hatası:`, err);
         }
+    }
+
+    async syncToFirebase(users) {
+        await this.syncCollectionToFirebase('kursiyerler', users);
     }
 
     async pullFromFirebase() {
@@ -470,14 +475,63 @@ class StorageService {
         if (!cfg || !cfg.enabled || !cfg.databaseURL) return { success: false, message: 'Firebase aktif değil.' };
 
         try {
-            let url = cfg.databaseURL.replace(/\/$/, '') + '/kursiyerler.json';
-            const res = await fetch(url);
-            const data = await res.json();
-            if (data && Array.isArray(data)) {
-                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(data));
-                return { success: true, count: data.length };
+            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
+            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
+
+            // 1. Kursiyerler
+            let count = 0;
+            const usersRes = await fetch(`${baseUrl}/kursiyerler.json${authParam}`);
+            if (usersRes.ok) {
+                const usersData = await usersRes.json();
+                if (usersData && Array.isArray(usersData)) {
+                    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(usersData));
+                    count = usersData.length;
+                }
             }
-            return { success: false, message: 'Uzak sunucuda veri bulunamadı.' };
+
+            // 2. Sınıflar
+            const classesRes = await fetch(`${baseUrl}/classes.json${authParam}`);
+            if (classesRes.ok) {
+                const classesData = await classesRes.json();
+                if (classesData && Array.isArray(classesData)) {
+                    localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(classesData));
+                }
+            }
+
+            // 3. Duyurular
+            const annsRes = await fetch(`${baseUrl}/announcements.json${authParam}`);
+            if (annsRes.ok) {
+                const annsData = await annsRes.json();
+                if (annsData && Array.isArray(annsData)) {
+                    localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(annsData));
+                }
+            }
+
+            // 4. Mesajlar
+            const msgsRes = await fetch(`${baseUrl}/messages.json${authParam}`);
+            if (msgsRes.ok) {
+                const msgsData = await msgsRes.json();
+                if (msgsData && Array.isArray(msgsData)) {
+                    localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(msgsData));
+                }
+            }
+
+            return { success: true, count };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
+    }
+
+    async pushAllToFirebase() {
+        const cfg = this.getFirebaseConfig();
+        if (!cfg || !cfg.enabled || !cfg.databaseURL) return { success: false, message: 'Firebase aktif değil.' };
+
+        try {
+            await this.syncCollectionToFirebase('kursiyerler', this.getAllUsers());
+            await this.syncCollectionToFirebase('classes', this.getAllClasses());
+            await this.syncCollectionToFirebase('announcements', this.getAllAnnouncements());
+            await this.syncCollectionToFirebase('messages', this.getAllMessages());
+            return { success: true };
         } catch (err) {
             return { success: false, message: err.message };
         }
@@ -536,6 +590,7 @@ class StorageService {
 
     saveAllClasses(classes) {
         localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(classes));
+        this.syncCollectionToFirebase('classes', classes);
     }
 
     addClass({ name, description = '' }) {
@@ -685,6 +740,7 @@ class StorageService {
 
     saveAllAnnouncements(anns) {
         localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(anns));
+        this.syncCollectionToFirebase('announcements', anns);
     }
 
     addAnnouncement({ title, message, classId = null, type = 'info', expiryDate = null }) {
@@ -740,6 +796,7 @@ class StorageService {
 
     saveAllMessages(messages) {
         localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages));
+        this.syncCollectionToFirebase('messages', messages);
     }
 
     getMessageById(id) {
