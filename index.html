@@ -602,8 +602,7 @@
             }
         }
 
-        // Admin'in özel menüsü varsa COURSE_MODULES'u yerinde güncelle
-        (function() {
+        function refreshCustomModules() {
             try {
                 const custom = lmsStorage.getCustomModules();
                 if (custom && Array.isArray(custom) && custom.length > 0) {
@@ -611,14 +610,18 @@
                     custom.forEach(m => COURSE_MODULES.push(m));
                 }
             } catch(e) {}
-        })();
+        }
+        refreshCustomModules();
 
         // Sayfa Yüklendiğinde Oturum Kontrolü
         document.addEventListener('DOMContentLoaded', () => {
+            refreshCustomModules();
             checkAuthAndRender();
             if (lmsStorage.pullFromFirebase) {
                 lmsStorage.pullFromFirebase().then(() => {
+                    refreshCustomModules();
                     checkAuthAndRender();
+                    syncPortalThemeUI();
                 });
             }
 
@@ -631,6 +634,10 @@
 
             // Başka sekmede admin ayarları veya mesajlar güncellendiğinde anında uygula
             window.addEventListener('storage', (e) => {
+                if (e.key === 'ehem_custom_modules_v1') {
+                    refreshCustomModules();
+                    checkAuthAndRender();
+                }
                 if (e.key === 'ehem_theme_settings' || e.key === 'ehem_theme') {
                     lmsStorage.applyThemeSettings();
                     syncPortalThemeUI();
@@ -644,6 +651,17 @@
                             renderStudentMessagesList();
                         }
                     }
+                }
+            });
+
+            // Sekmeye dönüldüğünde buluttan en son verileri çek
+            window.addEventListener('focus', () => {
+                if (lmsStorage.pullFromFirebase) {
+                    lmsStorage.pullFromFirebase().then(() => {
+                        refreshCustomModules();
+                        checkAuthAndRender();
+                        syncPortalThemeUI();
+                    });
                 }
             });
 

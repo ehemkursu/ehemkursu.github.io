@@ -6,6 +6,7 @@ const COURSE_MODULES = [
         title: "1. Fare Uygulaması",
         category: "Temel Beceriler",
         categoryColor: "#ec4899", // Pembe
+        menuPosition: "left",
         path: "html/fare_klavye/fare_oyunu.html",
         icon: "🖱️",
         description: "Sol ve sağ tık, sürükle-bırak ve sayı yakalama pratikleri."
@@ -16,6 +17,7 @@ const COURSE_MODULES = [
         title: "2. Klavye Uygulaması",
         category: "Temel Beceriler",
         categoryColor: "#3b82f6", // Mavi
+        menuPosition: "left",
         path: "html/fare_klavye/klavye oyunu.html",
         icon: "⌨️",
         description: "Hızlı ve doğru yazma, harf ve sembol çalışmaları."
@@ -26,6 +28,7 @@ const COURSE_MODULES = [
         title: "3. Eşleştirme Uygulaması",
         category: "Temel Beceriler",
         categoryColor: "#ec4899",
+        menuPosition: "left",
         path: "html/fare_klavye/eslestir/ogrenci/1.tur.html",
         icon: "🧩",
         description: "Görsel hafıza ve fare hakimiyeti eşleştirme oyunu."
@@ -36,6 +39,7 @@ const COURSE_MODULES = [
         title: "4. Yön Tuşu Uygulaması",
         category: "Klavye Becerileri",
         categoryColor: "#3b82f6",
+        menuPosition: "left",
         path: "html/giris/yon.html",
         icon: "🎮",
         description: "Yön tuşları ile engelleri aşma ve labirent görevi."
@@ -46,6 +50,7 @@ const COURSE_MODULES = [
         title: "5. Topu Düşürme Oyunu",
         category: "Temel Beceriler",
         categoryColor: "#ec4899",
+        menuPosition: "left",
         path: "html/topudusurme/index.html",
         icon: "⚪",
         description: "Refleks ve fare koordinasyon geliştirme oyunu."
@@ -56,6 +61,7 @@ const COURSE_MODULES = [
         title: "6. Silme Tuşu Uygulaması",
         category: "Klavye Becerileri",
         categoryColor: "#3b82f6",
+        menuPosition: "left",
         path: "html/giris/sil.html",
         icon: "⌫",
         description: "Backspace ve Delete tuşları arasındaki farklar ve uygulama."
@@ -66,6 +72,7 @@ const COURSE_MODULES = [
         title: "7. Simgeleri Tanıma",
         category: "Windows & İşletim Sistemi",
         categoryColor: "#ec4899",
+        menuPosition: "left",
         path: "html/uzantilar/sinav.html",
         icon: "🖼️",
         description: "Dosya uzantıları ve sistem simgelerini tanıma testi."
@@ -76,6 +83,7 @@ const COURSE_MODULES = [
         title: "8. Geri Dönüşüm Kutusu",
         category: "Windows & İşletim Sistemi",
         categoryColor: "#3b82f6",
+        menuPosition: "left",
         path: "html/giris/gdk.html",
         icon: "🗑️",
         description: "Dosya silme, geri yükleme ve kalıcı silme kuralları."
@@ -86,6 +94,7 @@ const COURSE_MODULES = [
         title: "9. Kes - Kopyala - Yapıştır",
         category: "Windows & İşletim Sistemi",
         categoryColor: "#ec4899",
+        menuPosition: "left",
         path: "html/giris/kopyala.html",
         icon: "📋",
         description: "Ctrl+C, Ctrl+X, Ctrl+V klavye kısayolları ve dosya yönetimi."
@@ -96,6 +105,7 @@ const COURSE_MODULES = [
         title: "10. Sistem Kurma Uygulaması",
         category: "Donanım & Sistem",
         categoryColor: "#3b82f6",
+        menuPosition: "left",
         path: "html/giris/sistem.html",
         icon: "💻",
         description: "Bilgisayar bileşenleri ve işletim sistemi kurulum simülasyonu."
@@ -106,6 +116,7 @@ const COURSE_MODULES = [
         title: "11. Donanım Bilgisi",
         category: "Donanım & Sistem",
         categoryColor: "#ec4899",
+        menuPosition: "left",
         path: "html/kur/index.html",
         icon: "🖥️",
         description: "İç ve dış donanım birimleri, anakart, RAM, işlemci detayları."
@@ -116,6 +127,7 @@ const COURSE_MODULES = [
         title: "12. Bakım İşlemi Uygulaması",
         category: "Donanım & Sistem",
         categoryColor: "#ec4899",
+        menuPosition: "left",
         path: "html/bakim/sinav.html",
         icon: "🛠️",
         description: "Disk birleştirme, disk temizleme ve bilgisayar bakım adımları."
@@ -126,6 +138,7 @@ const COURSE_MODULES = [
         title: "13. Bilgisayarı Tanıma",
         category: "Donanım & Sistem",
         categoryColor: "#3b82f6",
+        menuPosition: "right",
         path: "html/bilgisayarinizi_taniyormusunuz/sinav.html",
         icon: "🧠",
         description: "Temel bilgisayar kavramları ve donanım tanıma testi."
@@ -136,6 +149,7 @@ const COURSE_MODULES = [
         title: "Deneme Sınavı - 1",
         category: "Modül Sınavları",
         categoryColor: "#ef4444", // Kırmızı
+        menuPosition: "right",
         path: "html/sinav/modul1.html",
         icon: "📝",
         description: "1. Modül genel değerlendirme ve pekiştirme sınavı."
@@ -146,6 +160,7 @@ const COURSE_MODULES = [
         title: "14. İnternete Giriş",
         category: "İnternet & Ağ",
         categoryColor: "#3b82f6",
+        menuPosition: "right",
         path: "html/internet/internet.html",
         icon: "🌐",
         description: "Tarayıcılar, arama motorları, e-posta ve web güvenliği."
@@ -156,6 +171,7 @@ const COURSE_MODULES = [
         title: "Deneme Sınavı - 2",
         category: "Modül Sınavları",
         categoryColor: "#ef4444",
+        menuPosition: "right",
         path: "html/sinav/modul2.html",
         icon: "📝",
         description: "İnternet ve ağ modülü değerlendirme sınavı."
@@ -166,6 +182,7 @@ const COURSE_MODULES = [
         title: "15. Word Programı Ekranı",
         category: "Microsoft Word",
         categoryColor: "#3b82f6",
+        menuPosition: "right",
         path: "html/word/word_ekrani.html",
         icon: "📄",
         description: "Word arayüzü, şerit menü, araç çubukları ve sayfa düzeni."
@@ -176,6 +193,7 @@ const COURSE_MODULES = [
         title: "Deneme Sınavı - 3",
         category: "Modül Sınavları",
         categoryColor: "#ef4444",
+        menuPosition: "right",
         path: "html/sinav/modul3/modul3.html",
         icon: "📝",
         description: "Kelime işlemci (Word) modülü teorik deneme sınavı."
@@ -186,6 +204,7 @@ const COURSE_MODULES = [
         title: "Word Görsel Sınavı",
         category: "Microsoft Word",
         categoryColor: "#ef4444",
+        menuPosition: "right",
         path: "html/word/word_gorsel/etkilesimli_sinav.html",
         icon: "👁️",
         description: "Word simgeleri ve menü elemanlarını etkileşimli bulma sınavı."
@@ -196,6 +215,7 @@ const COURSE_MODULES = [
         title: "16. Excel'e Giriş",
         category: "Microsoft Excel",
         categoryColor: "#10b981", // Yeşil
+        menuPosition: "right",
         path: "html/excel/excelgiris.html",
         icon: "📊",
         description: "Hücreler, satırlar, sütunlar, formüller ve temel tablolar."
@@ -206,6 +226,7 @@ const COURSE_MODULES = [
         title: "Excel Görsel Sınavı",
         category: "Microsoft Excel",
         categoryColor: "#ef4444",
+        menuPosition: "right",
         path: "html/excel/excel_gorsel/excel_gorsel.html",
         icon: "👁️",
         description: "Excel formülleri ve araç çubuğu öğeleri görsel testi."
@@ -216,6 +237,7 @@ const COURSE_MODULES = [
         title: "Excel Çözümlü Soruları",
         category: "Microsoft Excel",
         categoryColor: "#ef4444",
+        menuPosition: "right",
         path: "html/excel/excel_cozumlu/cozumlu.html",
         icon: "💡",
         description: "Excel formül mantığı ve açıklamalı örnek sorular."
@@ -226,6 +248,7 @@ const COURSE_MODULES = [
         title: "Excel Doğru - Yanlış Testi",
         category: "Microsoft Excel",
         categoryColor: "#ef4444",
+        menuPosition: "right",
         path: "html/excel/D_Y_excel/dogru_yanlis.html",
         icon: "⚖️",
         description: "Excel çalışma kuralları doğru-yanlış pekiştirme sınavı."
@@ -236,6 +259,7 @@ const COURSE_MODULES = [
         title: "Deneme Sınavı - 4",
         category: "Modül Sınavları",
         categoryColor: "#ef4444",
+        menuPosition: "right",
         path: "html/excel/excel_email/excel_email_test.html",
         icon: "📝",
         description: "Excel ve E-posta kapsamlı modül değerlendirme sınavı."
@@ -246,6 +270,7 @@ const COURSE_MODULES = [
         title: "PowerPoint'e Giriş",
         category: "Microsoft PowerPoint",
         categoryColor: "#f59e0b", // Amber
+        menuPosition: "right",
         path: "html/ppt/Tur_1.html",
         icon: "📽️",
         description: "Sunum hazırlama, slayt geçişleri ve animasyonlara giriş."
@@ -256,6 +281,7 @@ const COURSE_MODULES = [
         title: "Deneme Sınavı - 5",
         category: "Modül Sınavları",
         categoryColor: "#ef4444",
+        menuPosition: "right",
         path: "html/ppt/powerpoint.html",
         icon: "🏆",
         description: "PowerPoint ve Kurs Sonu Genel Bitirme Deneme Sınavı."

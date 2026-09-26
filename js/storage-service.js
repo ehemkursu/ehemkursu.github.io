@@ -1850,6 +1850,28 @@ class StorageService {
                 }
             }
 
+            // 5. Özel Modüller (Menü yapısı ve sol/sağ dağılımı)
+            const modulesRes = await fetch(`${baseUrl}/custom_modules.json${authParam}`);
+            if (modulesRes.ok) {
+                const modulesData = await modulesRes.json();
+                if (modulesData && Array.isArray(modulesData) && modulesData.length > 0) {
+                    localStorage.setItem(STORAGE_KEYS.CUSTOM_MODULES, JSON.stringify(modulesData));
+                }
+            }
+
+            // 6. Tema ve Menü Tasarım Ayarları
+            const themeRes = await fetch(`${baseUrl}/theme_settings.json${authParam}`);
+            if (themeRes.ok) {
+                const themeData = await themeRes.json();
+                if (themeData && typeof themeData === 'object' && Object.keys(themeData).length > 0) {
+                    localStorage.setItem('ehem_theme_settings', JSON.stringify(themeData));
+                    if (themeData.theme) {
+                        localStorage.setItem('ehem_theme', themeData.theme);
+                    }
+                    this.applyThemeSettings(themeData);
+                }
+            }
+
             return { success: true, count };
         } catch (err) {
             return { success: false, message: err.message };
@@ -1865,6 +1887,14 @@ class StorageService {
             await this.syncCollectionToFirebase('classes', this.getAllClasses());
             await this.syncCollectionToFirebase('announcements', this.getAllAnnouncements());
             await this.syncCollectionToFirebase('messages', this.getAllMessages());
+            const customMods = this.getCustomModules() || (typeof COURSE_MODULES !== 'undefined' ? COURSE_MODULES : null);
+            if (customMods && customMods.length > 0) {
+                await this.syncCollectionToFirebase('custom_modules', customMods);
+            }
+            const themeSets = this.getThemeSettings();
+            if (themeSets) {
+                await this.syncCollectionToFirebase('theme_settings', themeSets);
+            }
             return { success: true };
         } catch (err) {
             return { success: false, message: err.message };
@@ -1988,10 +2018,13 @@ class StorageService {
 
     saveCustomModules(modules) {
         localStorage.setItem(STORAGE_KEYS.CUSTOM_MODULES, JSON.stringify(modules));
+        this.syncCollectionToFirebase('custom_modules', modules);
     }
 
     resetModulesToDefault() {
         localStorage.removeItem(STORAGE_KEYS.CUSTOM_MODULES);
+        const def = (typeof COURSE_MODULES !== 'undefined') ? COURSE_MODULES : [];
+        this.syncCollectionToFirebase('custom_modules', def);
     }
 
     // ==================== TEMA & MENÜ TASARIM YÖNETİMİ ====================
@@ -2004,19 +2037,19 @@ class StorageService {
         try {
             const raw = localStorage.getItem('ehem_theme_settings');
             const def = {
-                theme: localStorage.getItem('ehem_theme') || 'night-blue',
-                allowMenuThemeSwitch: true,   // "Menü içinde tema ve tasarım değiştirme seçeneği"
-                menuLayout: 'two-column',     // 'two-column' | 'card-grid' | 'compact'
-                menuStyle: 'theme-adaptive',  // 'theme-adaptive' | 'classic-retro' | 'minimal'
+                theme: localStorage.getItem('ehem_theme') || 'forest-green',
+                allowMenuThemeSwitch: false,   // "Menü içinde tema ve tasarım değiştirme seçeneği"
+                menuLayout: 'compact',     // 'two-column' | 'card-grid' | 'compact'
+                menuStyle: 'classic-retro',  // 'theme-adaptive' | 'classic-retro' | 'minimal'
                 switcherPosition: 'both'      // 'bottom' | 'navbar' | 'both'
             };
             return raw ? { ...def, ...JSON.parse(raw) } : def;
         } catch (e) {
             return {
-                theme: localStorage.getItem('ehem_theme') || 'night-blue',
-                allowMenuThemeSwitch: true,
-                menuLayout: 'two-column',
-                menuStyle: 'theme-adaptive',
+                theme: localStorage.getItem('ehem_theme') || 'forest-green',
+                allowMenuThemeSwitch: false,
+                menuLayout: 'compact',
+                menuStyle: 'classic-retro',
                 switcherPosition: 'both'
             };
         }
@@ -2027,13 +2060,14 @@ class StorageService {
         const next = { ...current, ...updates };
         const validThemes = this.getValidThemes();
         if (next.theme && !validThemes.includes(next.theme)) {
-            next.theme = 'night-blue';
+            next.theme = 'forest-green';
         }
         localStorage.setItem('ehem_theme_settings', JSON.stringify(next));
         if (next.theme) {
             localStorage.setItem('ehem_theme', next.theme);
         }
         this.applyThemeSettings(next);
+        this.syncCollectionToFirebase('theme_settings', next);
         return next;
     }
 

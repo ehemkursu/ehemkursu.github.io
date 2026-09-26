@@ -965,7 +965,7 @@
         initInitialModuleOptions();
         checkAdminAuth();
 
-        // Başka sekmede öğrenci mesaj gönderdiğinde veya mesaj silindiğinde anında güncelle
+        // Başka sekmede veri veya ayar güncellendiğinde anında güncelle
         window.addEventListener('storage', (e) => {
             if (e.key === 'ehem_messages_v1') {
                 updateAdminUnreadBadge();
@@ -974,9 +974,27 @@
                     filterAndRenderMessages(true);
                 }
             }
+            if (e.key === 'ehem_custom_modules_v1') {
+                initInitialModuleOptions();
+                const tabMenu = document.getElementById('tabMenu');
+                if (tabMenu && tabMenu.style.display !== 'none') {
+                    loadMenuTab();
+                }
+            }
+            if (e.key === 'ehem_theme_settings' || e.key === 'ehem_theme') {
+                const tabSettings = document.getElementById('tabSettings');
+                if (tabSettings && tabSettings.style.display !== 'none') {
+                    loadSettingsTab();
+                }
+            }
         });
 
-        // 3 saniyede bir otomatik canlı kontrol (farklı pencere ve sekmeler arası senkronizasyon için)
+        // Pencereye dönüldüğünde buluttan en son verileri çek
+        window.addEventListener('focus', () => {
+            syncAdminDataFromCloud();
+        });
+
+        // 3 saniyede bir yerel mesaj kontrolü
         setInterval(() => {
             updateAdminUnreadBadge();
             const tabMsg = document.getElementById('tabMessages');
@@ -988,7 +1006,52 @@
                 }
             }
         }, 3000);
+
+        // 10 saniyede bir Firebase buluttan diğer bilgisayarlarda yapılan değişiklikleri otomatik eşitle
+        setInterval(() => {
+            syncAdminDataFromCloud();
+        }, 10000);
     });
+
+    function syncAdminDataFromCloud() {
+        if (!lmsStorage.pullFromFirebase) return;
+        // Kullanıcı bir modalda veri giriyorsa bölmeyelim
+        if (document.querySelector('.modal.show')) return;
+        const active = document.activeElement;
+        const isTyping = active && (active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && active.type === 'text'));
+        if (isTyping) return;
+
+        const s = lmsStorage.getCurrentAdmin();
+        if (!s || (!s.type && !s.username)) return;
+
+        lmsStorage.pullFromFirebase().then(res => {
+            if (res && res.success) {
+                initInitialModuleOptions();
+                loadDashboardData();
+                rebuildClassDropdowns();
+
+                const tabMenu = document.getElementById('tabMenu');
+                if (tabMenu && tabMenu.style.display !== 'none') {
+                    loadMenuTab();
+                }
+
+                const tabSettings = document.getElementById('tabSettings');
+                if (tabSettings && tabSettings.style.display !== 'none') {
+                    loadSettingsTab();
+                }
+
+                const tabClasses = document.getElementById('tabClasses');
+                if (tabClasses && tabClasses.style.display !== 'none') {
+                    loadClassesTab();
+                }
+
+                const tabAnns = document.getElementById('tabAnnouncements');
+                if (tabAnns && tabAnns.style.display !== 'none') {
+                    loadAnnouncementsTab();
+                }
+            }
+        }).catch(() => {});
+    }
 
     function checkAdminAuth() {
         const s = lmsStorage.getCurrentAdmin();
@@ -999,14 +1062,7 @@
         if (ok) {
             loadDashboardData();
             rebuildClassDropdowns();
-            if (lmsStorage.pullFromFirebase) {
-                lmsStorage.pullFromFirebase().then(res => {
-                    if (res && res.success) {
-                        loadDashboardData();
-                        rebuildClassDropdowns();
-                    }
-                });
-            }
+            syncAdminDataFromCloud();
         }
     }
 
@@ -1022,6 +1078,7 @@
 
     function initInitialModuleOptions() {
         const sel = document.getElementById('formInitialModule');
+        if (!sel) return;
         sel.innerHTML = '';
         getModules().forEach(m => {
             const o = document.createElement('option');
@@ -1039,10 +1096,11 @@
             document.getElementById('tab' + cap(t)).style.display = t === name ? 'block' : 'none';
             document.getElementById('tabBtn' + cap(t)).classList.toggle('active', t === name);
         });
+        if (name === 'students')      renderStudentsTable();
         if (name === 'classes')       loadClassesTab();
         if (name === 'announcements') loadAnnouncementsTab();
         if (name === 'messages')      loadMessagesTab();
-        if (name === 'menu')          loadMenuTab();
+        if (name === 'menu')          { initInitialModuleOptions(); loadMenuTab(); }
         if (name === 'settings')      loadSettingsTab();
     }
 
