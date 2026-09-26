@@ -487,16 +487,21 @@ class StorageService {
 
     exportBackupJSON() {
         const data = {
-            version: '1.0',
+            version: '2.0',
             exportedAt: new Date().toISOString(),
             admin: this.getAdminCreds(),
-            users: this.getAllUsers()
+            users: this.getAllUsers(),
+            classes: this.getAllClasses(),
+            announcements: this.getAllAnnouncements ? this.getAllAnnouncements() : [],
+            messages: this.getAllMessages(),
+            themeSettings: this.getThemeSettings(),
+            customModules: this.getCustomModules()
         };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `ehem_kursiyer_yedek_${new Date().toISOString().slice(0, 10)}.json`;
+        a.download = `bilisimkursum_tam_yedek_${new Date().toISOString().slice(0, 10)}.json`;
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -504,12 +509,15 @@ class StorageService {
     importBackupJSON(jsonStr) {
         try {
             const data = JSON.parse(jsonStr);
-            if (data && Array.isArray(data.users)) {
-                this.saveAllUsers(data.users);
-                if (data.admin) {
-                    localStorage.setItem(STORAGE_KEYS.ADMIN_CREDS, JSON.stringify(data.admin));
-                }
-                return { success: true, count: data.users.length };
+            if (data && (Array.isArray(data.users) || data.admin)) {
+                if (Array.isArray(data.users)) this.saveAllUsers(data.users);
+                if (data.admin) localStorage.setItem(STORAGE_KEYS.ADMIN_CREDS, JSON.stringify(data.admin));
+                if (Array.isArray(data.classes)) this.saveAllClasses(data.classes);
+                if (Array.isArray(data.announcements)) localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(data.announcements));
+                if (Array.isArray(data.messages)) this.saveAllMessages(data.messages);
+                if (data.themeSettings) this.saveThemeSettings(data.themeSettings);
+                if (data.customModules) this.saveCustomModules(data.customModules);
+                return { success: true, count: (data.users || []).length };
             }
             return { success: false, message: 'Geçersiz yedek dosyası yapısı.' };
         } catch (e) {
