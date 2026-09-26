@@ -383,7 +383,7 @@
     </div>
 
     <!-- MODAL: KURSİYER PROFİL BİLGİLERİ DÜZENLEME -->
-    <div id="studentProfileModal" class="modal-overlay">
+    <div id="studentProfileModal" class="modal-overlay" onclick="if(event.target===this)closeStudentProfileModal()">
         <div class="modal-content" style="max-width: 520px;">
             <div class="modal-header">
                 <h3 style="color: white; font-size: 18px; display: flex; align-items: center; gap: 8px;">
@@ -1025,6 +1025,11 @@
             document.getElementById('continueNextBtn').textContent = '🛡️ Yönetici Paneline Git';
             document.getElementById('continueNextBtn').onclick = () => { window.location.href = 'admin.html'; };
 
+            const heroAvatarThumb = document.getElementById('heroAvatarThumb');
+            if (heroAvatarThumb) heroAvatarThumb.innerHTML = '👑';
+            const heroContactRow = document.getElementById('heroContactRow');
+            if (heroContactRow) heroContactRow.style.display = 'none';
+
             const leftContainer = document.getElementById('leftItemsContainer');
             const rightContainer = document.getElementById('rightItemsContainer');
             leftContainer.innerHTML = '';
@@ -1489,39 +1494,71 @@
         }
 
         function openStudentProfileModal() {
-            const student = lmsStorage.getCurrentStudent();
-            if (!student) return;
+            try {
+                const student = lmsStorage.getCurrentStudent();
+                if (!student) {
+                    const admin = lmsStorage.getCurrentAdmin();
+                    if (admin) {
+                        alert('Yönetici oturumundasınız. Kursiyer profil bilgilerini Yönetici Paneli -> Kursiyerler sekmesinden veya bir kursiyer hesabı ile giriş yaparak düzenleyebilirsiniz.');
+                        return;
+                    }
+                    alert('Profil düzenlemek için lütfen kursiyer girişi yapınız.');
+                    return;
+                }
 
-            // En güncel veriyi çek
-            const freshUser = lmsStorage.getUserById(student.id) || student;
+                // En güncel veriyi çek
+                const freshUser = (student.id && lmsStorage.getUserById(student.id)) || student;
 
-            document.getElementById('studentProfileFullName').value = freshUser.fullName || '';
-            document.getElementById('studentProfileEmail').value = freshUser.email || '';
-            document.getElementById('studentProfilePhone').value = freshUser.phone || '';
-            document.getElementById('studentProfileUsername').value = freshUser.username || '';
-            
-            const cls = lmsStorage.getAllClasses().find(c => c.id === freshUser.classId);
-            document.getElementById('studentProfileClass').value = cls ? cls.name : 'Sınıfsız';
+                const nameEl = document.getElementById('studentProfileFullName');
+                if (nameEl) nameEl.value = freshUser.fullName || '';
 
-            document.getElementById('studentProfileNewPass').value = '';
-            document.getElementById('studentProfileNewPassConfirm').value = '';
-            
-            const fileInput = document.getElementById('profileAvatarInput');
-            if (fileInput) fileInput.value = '';
+                const emailEl = document.getElementById('studentProfileEmail');
+                if (emailEl) emailEl.value = freshUser.email || '';
 
-            const alertBox = document.getElementById('studentProfileAlert');
-            if (alertBox) alertBox.style.display = 'none';
+                const phoneEl = document.getElementById('studentProfilePhone');
+                if (phoneEl) phoneEl.value = freshUser.phone || '';
 
-            currentStudentProfileAvatar = freshUser.avatar || '';
-            updateProfileAvatarPreview(freshUser.fullName);
+                const userEl = document.getElementById('studentProfileUsername');
+                if (userEl) userEl.value = freshUser.username || '';
+                
+                const classes = (lmsStorage.getAllClasses && lmsStorage.getAllClasses()) || [];
+                const cls = classes.find(c => c.id === freshUser.classId);
+                const classEl = document.getElementById('studentProfileClass');
+                if (classEl) classEl.value = cls ? cls.name : 'Sınıfsız';
 
-            const modal = document.getElementById('studentProfileModal');
-            if (modal) modal.classList.add('active');
+                const p1 = document.getElementById('studentProfileNewPass');
+                if (p1) p1.value = '';
+                const p2 = document.getElementById('studentProfileNewPassConfirm');
+                if (p2) p2.value = '';
+                
+                const fileInput = document.getElementById('profileAvatarInput');
+                if (fileInput) fileInput.value = '';
+
+                const alertBox = document.getElementById('studentProfileAlert');
+                if (alertBox) alertBox.style.display = 'none';
+
+                currentStudentProfileAvatar = freshUser.avatar || '';
+                updateProfileAvatarPreview(freshUser.fullName);
+
+                const modal = document.getElementById('studentProfileModal');
+                if (modal) {
+                    modal.classList.add('show');
+                    modal.classList.add('active');
+                    modal.style.display = 'flex';
+                }
+            } catch (err) {
+                console.error('Profil penceresi açılırken hata:', err);
+                alert('Profil penceresi açılırken bir hata oluştu: ' + (err.message || err));
+            }
         }
 
         function closeStudentProfileModal() {
             const modal = document.getElementById('studentProfileModal');
-            if (modal) modal.classList.remove('active');
+            if (modal) {
+                modal.classList.remove('show');
+                modal.classList.remove('active');
+                modal.style.display = 'none';
+            }
         }
 
         function handleStudentAvatarSelect(event) {

@@ -258,8 +258,29 @@ class StorageService {
                 const s = this.getCurrentSession();
                 if (s && s.type === 'student') studentSession = s;
             }
-            if (!studentSession || !studentSession.userId) return null;
-            return this.getUserById(studentSession.userId);
+            if (!studentSession) return null;
+            if (studentSession.userId) {
+                const u = this.getUserById(studentSession.userId);
+                if (u) return u;
+            }
+            if (studentSession.username) {
+                const uByName = this.getUserByUsername(studentSession.username);
+                if (uByName) return uByName;
+            }
+            if (studentSession.userId || studentSession.username) {
+                return {
+                    id: studentSession.userId || 'usr_session',
+                    fullName: studentSession.name || studentSession.fullName || 'Kursiyer',
+                    username: studentSession.username || 'kursiyer',
+                    completedModuleIds: studentSession.completedModuleIds || [],
+                    unlockedModuleIds: studentSession.unlockedModuleIds || [1],
+                    email: studentSession.email || '',
+                    phone: studentSession.phone || '',
+                    avatar: studentSession.avatar || '',
+                    classId: studentSession.classId || null
+                };
+            }
+            return null;
         } catch (e) {
             return null;
         }
