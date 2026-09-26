@@ -1,0 +1,1960 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yönetici Kontrol Merkezi - Edremit HEM LMS</title>
+    <meta name="description" content="Edremit HEM Bilgisayar İşletmenliği Kursu Yönetici Paneli">
+    <link rel="stylesheet" href="css/lms-theme.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('ehem_theme') || 'night-blue');</script>
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="admin.html" class="brand-container">
+        <div class="brand-logo" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">🛡️</div>
+        <div>
+            <div class="brand-title">YÖNETİCİ KONTROL PANELİ</div>
+            <div class="brand-subtitle">Kursiyer Takip &amp; Yönetim Sistemi</div>
+        </div>
+    </a>
+    <div class="user-nav-actions" id="adminNavActions" style="display:none;">
+        <button class="btn btn-ghost btn-sm" onclick="openAdminPasswordModal()" title="Yönetici Şifresini Değiştir">🔑 Şifre Değiştir</button>
+        <a href="index.html" class="btn btn-ghost btn-sm" target="_blank">👁️ Kursiyer Görünümü ↗</a>
+        <button class="btn btn-ghost btn-sm" onclick="handleAdminLogout()">Güvenli Çıkış</button>
+    </div>
+</nav>
+
+<!-- GİRİŞ EKRANI -->
+<div id="adminLoginSection" class="auth-wrapper" style="display:none;">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo-badge" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">🔒</div>
+            <h2 style="font-size:24px;color:white;margin-bottom:6px;">Yönetici Girişi</h2>
+            <p style="font-size:13px;color:var(--text-secondary);">Kursiyerleri yönetmek için giriş yapınız</p>
+        </div>
+        <div id="adminLoginAlert" class="alert-message alert-error"></div>
+        <form onsubmit="handleAdminLoginSubmit(event)">
+            <div class="form-group">
+                <label class="form-label">Kullanıcı Adı</label>
+                <input type="text" id="adminUser" class="form-control" placeholder="Kullanıcı adınızı girin" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Şifre</label>
+                <input type="password" id="adminPass" class="form-control" placeholder="Şifrenizi girin" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;margin-top:10px;background:linear-gradient(135deg,#f59e0b,#d97706);">Panele Giriş Yap ➔</button>
+        </form>
+    </div>
+</div>
+
+<!-- PANEL -->
+<main id="adminDashboardSection" class="main-content" style="display:none;">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;">
+        <div>
+            <h1 style="font-size:26px;color:white;margin-bottom:4px;">Yönetim Merkezi</h1>
+            <p style="font-size:14px;color:var(--text-secondary);">Kursiyerleri, sınıfları ve ders menüsünü buradan yönetin.</p>
+        </div>
+    </div>
+
+    <div style="display:flex;gap:4px;border-bottom:1px solid var(--border-color);margin-bottom:28px;flex-wrap:wrap;">
+        <button class="admin-tab-btn active" id="tabBtnStudents"      onclick="switchAdminTab('students')">👥 Kursiyerler</button>
+        <button class="admin-tab-btn"         id="tabBtnClasses"       onclick="switchAdminTab('classes')">🏫 Sınıflar</button>
+        <button class="admin-tab-btn"         id="tabBtnAnnouncements" onclick="switchAdminTab('announcements')">📢 Duyurular</button>
+        <button class="admin-tab-btn"         id="tabBtnMessages"      onclick="switchAdminTab('messages')">💬 Mesajlar <span id="adminUnreadBadge" style="display:none;background:#ef4444;color:white;border-radius:10px;padding:2px 7px;font-size:11px;margin-left:4px;font-weight:700;">0</span></button>
+        <button class="admin-tab-btn"         id="tabBtnMenu"          onclick="switchAdminTab('menu')">📋 Menü Yönetimi</button>
+        <button class="admin-tab-btn"         id="tabBtnSettings"      onclick="switchAdminTab('settings')">⚙️ Ayarlar</button>
+    </div>
+
+    <!-- ===== SEKME: KURSİYERLER ===== -->
+    <div id="tabStudents">
+        <div class="admin-kpi-grid" style="margin-bottom:20px;">
+            <div class="kpi-card"><div class="kpi-title">Toplam Kursiyer</div><div class="kpi-value" id="kpiTotalUsers">0</div><div class="kpi-sub">Sistemde kayıtlı</div></div>
+            <div class="kpi-card"><div class="kpi-title">Aktif (24 saat)</div><div class="kpi-value" id="kpiActiveUsers" style="color:var(--accent-blue);">0</div><div class="kpi-sub">Son 24 saatte giriş</div></div>
+            <div class="kpi-card"><div class="kpi-title">Genel Tamamlama</div><div class="kpi-value" id="kpiAvgProgress" style="color:var(--accent-emerald);">%0</div><div class="kpi-sub">Sınıf ortalaması</div></div>
+            <div class="kpi-card"><div class="kpi-title">Kursu Bitirenler</div><div class="kpi-value" id="kpiCompletedUsers" style="color:#fbbf24;">0</div><div class="kpi-sub">Tüm bölümler bitti</div></div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="openAddUserModal()">➕ Yeni Kursiyer</button>
+                <button class="btn btn-ghost"   onclick="openBulkAddModal()">📊 Toplu / Excel Ekle</button>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="exportCsvList()">📥 CSV İndir</button>
+        </div>
+        <div class="table-card">
+            <div class="table-toolbar">
+                <div class="table-search-box">
+                    <input type="text" id="searchInput" class="form-control" placeholder="🔍 Ad veya Kullanıcı Adı ara..." oninput="filterAndRenderUsers()">
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <select id="filterClass" class="form-control" style="width:auto;padding:8px 12px;" onchange="filterAndRenderUsers()">
+                        <option value="all">Tüm Sınıflar</option>
+                        <option value="none">Sınıfsız</option>
+                    </select>
+                    <select id="filterStatus" class="form-control" style="width:auto;padding:8px 12px;" onchange="filterAndRenderUsers()">
+                        <option value="all">Tüm Durumlar</option>
+                        <option value="completed">%100 Bitirenler</option>
+                        <option value="in_progress">Devam Edenler</option>
+                        <option value="starter">Yeni Başlayanlar</option>
+                    </select>
+                </div>
+            </div>
+            <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr><th>Kursiyer</th><th>Kullanıcı Adı</th><th>Şifre</th><th>Sınıf</th><th>İlerleme</th><th>Mevcut Bölüm</th><th>Son Aktiflik</th><th style="text-align:right;">İşlemler</th></tr>
+                    </thead>
+                    <tbody id="usersTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SEKME: SINIFLAR ===== -->
+    <div id="tabClasses" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h2 style="color:white;font-size:20px;margin-bottom:4px;">Sınıf Yönetimi</h2>
+                <p style="color:var(--text-secondary);font-size:13px;">Her sınıf için toplu işlem yapabilirsiniz: taşı, ilerlet, sıfırla veya sil.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openAddClassModal()">➕ Yeni Sınıf Ekle</button>
+        </div>
+        <div id="classesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;"></div>
+        <div id="classesEmpty" style="display:none;text-align:center;padding:60px 20px;color:var(--text-muted);">
+            <div style="font-size:52px;margin-bottom:14px;">🏫</div>
+            <p style="font-size:16px;color:white;margin-bottom:8px;">Henüz sınıf oluşturulmadı.</p>
+            <p style="font-size:13px;">Kursiyerleri gruplamak için sınıf ekleyin.</p>
+        </div>
+    </div>
+
+    <!-- ===== SEKME: DUYURULAR ===== -->
+    <div id="tabAnnouncements" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h2 style="color:white;font-size:20px;margin-bottom:4px;">Duyuru Yönetimi</h2>
+                <p style="color:var(--text-secondary);font-size:13px;">Tüm kursiyerlere veya belirli sınıflara duyuru gönderin.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openAnnouncementModal()">📢 Yeni Duyuru Yaz</button>
+        </div>
+        <div id="announcementsEmpty" style="display:none;text-align:center;padding:60px 20px;color:var(--text-muted);">
+            <div style="font-size:52px;margin-bottom:14px;">📢</div>
+            <p style="font-size:16px;color:white;margin-bottom:8px;">Henüz duyuru yok.</p>
+        </div>
+        <div id="announcementsList" style="display:flex;flex-direction:column;gap:14px;"></div>
+    </div>
+
+    <!-- ===== SEKME: MESAJLAR ===== -->
+    <div id="tabMessages" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h2 style="color:white;font-size:20px;margin-bottom:4px;display:flex;align-items:center;gap:8px;">
+                    <span>💬</span> Kursiyer Mesajları &amp; Soru-Cevap
+                </h2>
+                <p style="color:var(--text-secondary);font-size:13px;">Kursiyerlerden gelen soruları, takıldıkları bölümleri ve mesajları yanıtlayın.</p>
+            </div>
+            <button class="btn btn-primary" onclick="openAdminDirectMessageModal()">✉️ Kursiyere Mesaj Yaz</button>
+        </div>
+
+        <!-- Filtre ve Arama Araç Çubuğu -->
+        <div class="table-card" style="margin-bottom:18px;padding:14px 18px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:240px;">
+                    <input type="text" id="messageSearchInput" class="form-control" placeholder="🔍 Kursiyer adı, konu veya mesaj içeriğinde ara..." oninput="filterAndRenderMessages()">
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                    <select id="messageFilterStatus" class="form-control" style="width:auto;" onchange="filterAndRenderMessages()">
+                        <option value="all">Tüm Durumlar</option>
+                        <option value="pending">🟡 Yanıt Bekleyenler</option>
+                        <option value="answered">🟢 Yanıtlananlar</option>
+                    </select>
+                    <select id="messageFilterClass" class="form-control" style="width:auto;" onchange="filterAndRenderMessages()">
+                        <option value="all">Tüm Sınıflar</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="messagesEmpty" style="display:none;text-align:center;padding:60px 20px;color:var(--text-muted);">
+            <div style="font-size:52px;margin-bottom:14px;">💬</div>
+            <p style="font-size:16px;color:white;margin-bottom:8px;">Henüz kursiyer mesajı yok.</p>
+            <p style="font-size:13px;">Kursiyerler portaldan soru sorduğunda veya mesaj ilettiğinde burada görünecektir.</p>
+        </div>
+
+        <div id="messagesList" style="display:flex;flex-direction:column;gap:16px;"></div>
+    </div>
+
+    <!-- ===== SEKME: MENÜ YÖNETİMİ ===== -->
+    <div id="tabMenu" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
+            <div>
+                <h2 style="color:white;font-size:20px;margin-bottom:4px;">Menü Yönetimi</h2>
+                <p style="color:var(--text-secondary);font-size:13px;">Ders listesini düzenleyin. Sol/Sağ menü konumunu bölüm bazında belirleyin.</p>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="btn btn-primary" onclick="openAddModuleModal()">➕ Yeni Bölüm Ekle</button>
+                <button class="btn btn-ghost btn-sm" onclick="confirmResetModules()">↺ Varsayılana Sıfırla</button>
+            </div>
+        </div>
+        <div id="menuCustomBadge" style="display:none;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.3);border-radius:8px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:#fbbf24;">
+            ⚠️ Menü özelleştirilmiş durumda. Kursiyer portalında bu özel menü görünecektir.
+        </div>
+        <div class="table-card">
+            <div style="overflow-x:auto;">
+                <table class="data-table">
+                    <thead><tr><th style="width:50px;">ID</th><th style="width:50px;">İkon</th><th>Bölüm Adı</th><th>Kategori</th><th>Konum</th><th>Path</th><th style="text-align:right;">İşlemler</th></tr></thead>
+                    <tbody id="menuTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== SEKME: AYARLAR ===== -->
+    <div id="tabSettings" style="display:none;">
+        <div style="max-width:760px;">
+            <h2 style="color:white;font-size:20px;margin-bottom:24px;">Sistem Ayarları</h2>
+
+            <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:24px;margin-bottom:24px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
+                    <div>
+                        <h4 style="color:var(--accent-blue);font-size:16px;font-weight:700;margin-bottom:4px;">🎨 Arayüz Renk Teması</h4>
+                        <p style="font-size:12px;color:var(--text-secondary);">Sistemin ve menünün ana renk paletini belirleyin. Tıkladığınızda anında uygulanır.</p>
+                    </div>
+                    <span id="activeThemeBadge" style="font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(59,130,246,0.15);color:var(--accent-blue);border:1px solid rgba(59,130,246,0.3);font-weight:700;">Aktif: Gece Mavisi</span>
+                </div>
+
+                <div class="theme-grid">
+                    <!-- Tema 1: Gece Mavisi -->
+                    <div class="theme-card" id="theme-card-night-blue" onclick="applyTheme('night-blue')">
+                        <div class="theme-preview" style="background:#0b0f19;">
+                            <div class="theme-preview-bar" style="background:rgba(11,15,25,0.9);">
+                                <div class="theme-preview-dot"></div><div class="theme-preview-dot"></div><div class="theme-preview-dot"></div>
+                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#3b82f6,#6366f1);border-radius:4px;margin-left:4px;opacity:0.8;"></div>
+                            </div>
+                            <div class="theme-preview-body">
+                                <div class="theme-preview-sidebar"></div>
+                                <div class="theme-preview-main">
+                                    <div class="theme-preview-row" style="background:rgba(99,102,241,0.3);"></div>
+                                    <div class="theme-preview-row accent" style="background:#3b82f6;opacity:0.7;"></div>
+                                </div>
+                            </div>
+                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#3b82f6,#6366f1);">Mavi</div>
+                        </div>
+                        <div class="theme-info"><span class="theme-name">🌌 Gece Mavisi</span><div class="theme-check" id="theme-check-night-blue">✓</div></div>
+                    </div>
+
+                    <!-- Tema 2: Orman Yeşili -->
+                    <div class="theme-card" id="theme-card-forest-green" onclick="applyTheme('forest-green')">
+                        <div class="theme-preview" style="background:#071510;">
+                            <div class="theme-preview-bar" style="background:rgba(7,21,16,0.9);">
+                                <div class="theme-preview-dot"></div><div class="theme-preview-dot"></div><div class="theme-preview-dot"></div>
+                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#10b981,#22d3ee);border-radius:4px;margin-left:4px;opacity:0.8;"></div>
+                            </div>
+                            <div class="theme-preview-body">
+                                <div class="theme-preview-sidebar" style="background:rgba(16,185,129,0.15);"></div>
+                                <div class="theme-preview-main">
+                                    <div class="theme-preview-row" style="background:rgba(16,185,129,0.25);"></div>
+                                    <div class="theme-preview-row accent" style="background:#10b981;opacity:0.7;"></div>
+                                </div>
+                            </div>
+                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#10b981,#22d3ee);">Yeşil</div>
+                        </div>
+                        <div class="theme-info"><span class="theme-name">🌲 Orman Yeşili</span><div class="theme-check" id="theme-check-forest-green">✓</div></div>
+                    </div>
+
+                    <!-- Tema 3: Mor Gün Batımı -->
+                    <div class="theme-card" id="theme-card-purple-sunset" onclick="applyTheme('purple-sunset')">
+                        <div class="theme-preview" style="background:#0f0714;">
+                            <div class="theme-preview-bar" style="background:rgba(15,7,20,0.9);">
+                                <div class="theme-preview-dot"></div><div class="theme-preview-dot"></div><div class="theme-preview-dot"></div>
+                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#a855f7,#ec4899);border-radius:4px;margin-left:4px;opacity:0.8;"></div>
+                            </div>
+                            <div class="theme-preview-body">
+                                <div class="theme-preview-sidebar" style="background:rgba(168,85,247,0.15);"></div>
+                                <div class="theme-preview-main">
+                                    <div class="theme-preview-row" style="background:rgba(168,85,247,0.25);"></div>
+                                    <div class="theme-preview-row accent" style="background:#a855f7;opacity:0.7;"></div>
+                                </div>
+                            </div>
+                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#a855f7,#ec4899);">Mor</div>
+                        </div>
+                        <div class="theme-info"><span class="theme-name">🌅 Mor Gün Batımı</span><div class="theme-check" id="theme-check-purple-sunset">✓</div></div>
+                    </div>
+
+                    <!-- Tema 4: Kehribar Ateşi -->
+                    <div class="theme-card" id="theme-card-amber-gold" onclick="applyTheme('amber-gold')">
+                        <div class="theme-preview" style="background:#130e06;">
+                            <div class="theme-preview-bar" style="background:rgba(19,14,6,0.9);">
+                                <div class="theme-preview-dot"></div><div class="theme-preview-dot"></div><div class="theme-preview-dot"></div>
+                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#f59e0b,#ea580c);border-radius:4px;margin-left:4px;opacity:0.8;"></div>
+                            </div>
+                            <div class="theme-preview-body">
+                                <div class="theme-preview-sidebar" style="background:rgba(245,158,11,0.15);"></div>
+                                <div class="theme-preview-main">
+                                    <div class="theme-preview-row" style="background:rgba(245,158,11,0.25);"></div>
+                                    <div class="theme-preview-row accent" style="background:#f59e0b;opacity:0.7;"></div>
+                                </div>
+                            </div>
+                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#f59e0b,#ea580c);">Kehribar</div>
+                        </div>
+                        <div class="theme-info"><span class="theme-name">⚡ Kehribar Ateşi</span><div class="theme-check" id="theme-check-amber-gold">✓</div></div>
+                    </div>
+
+                    <!-- Tema 5: Okyanus Turkuaz -->
+                    <div class="theme-card" id="theme-card-ocean-teal" onclick="applyTheme('ocean-teal')">
+                        <div class="theme-preview" style="background:#05161d;">
+                            <div class="theme-preview-bar" style="background:rgba(5,22,29,0.9);">
+                                <div class="theme-preview-dot"></div><div class="theme-preview-dot"></div><div class="theme-preview-dot"></div>
+                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#06b6d4,#0284c7);border-radius:4px;margin-left:4px;opacity:0.8;"></div>
+                            </div>
+                            <div class="theme-preview-body">
+                                <div class="theme-preview-sidebar" style="background:rgba(6,182,212,0.15);"></div>
+                                <div class="theme-preview-main">
+                                    <div class="theme-preview-row" style="background:rgba(6,182,212,0.25);"></div>
+                                    <div class="theme-preview-row accent" style="background:#06b6d4;opacity:0.7;"></div>
+                                </div>
+                            </div>
+                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#06b6d4,#0284c7);">Turkuaz</div>
+                        </div>
+                        <div class="theme-info"><span class="theme-name">🌊 Okyanus Turkuaz</span><div class="theme-check" id="theme-check-ocean-teal">✓</div></div>
+                    </div>
+
+                    <!-- Tema 6: Modern Aydınlık -->
+                    <div class="theme-card" id="theme-card-clean-light" onclick="applyTheme('clean-light')">
+                        <div class="theme-preview" style="background:#f1f5f9;">
+                            <div class="theme-preview-bar" style="background:rgba(255,255,255,0.9);">
+                                <div class="theme-preview-dot" style="background:rgba(0,0,0,0.2);"></div><div class="theme-preview-dot" style="background:rgba(0,0,0,0.2);"></div><div class="theme-preview-dot" style="background:rgba(0,0,0,0.2);"></div>
+                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#2563eb,#4f46e5);border-radius:4px;margin-left:4px;opacity:0.8;"></div>
+                            </div>
+                            <div class="theme-preview-body">
+                                <div class="theme-preview-sidebar" style="background:rgba(37,99,235,0.1);"></div>
+                                <div class="theme-preview-main">
+                                    <div class="theme-preview-row" style="background:rgba(0,0,0,0.08);"></div>
+                                    <div class="theme-preview-row accent" style="background:#2563eb;opacity:0.7;"></div>
+                                </div>
+                            </div>
+                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#2563eb,#4f46e5);">Aydınlık</div>
+                        </div>
+                        <div class="theme-info"><span class="theme-name">☀️ Modern Aydınlık</span><div class="theme-check" id="theme-check-clean-light">✓</div></div>
+                    </div>
+                </div>
+
+                <!-- ==================== MENÜ İÇİ TEMA & TASARIM SEÇENEKLERİ ==================== -->
+                <div style="margin-top:28px;padding-top:22px;border-top:1px solid var(--border-color);">
+                    <div style="margin-bottom:16px;">
+                        <h4 style="color:white;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                            <span>📱</span> Menü İçi Tema &amp; Tasarım Değiştirme Seçenekleri
+                        </h4>
+                        <p style="font-size:12px;color:var(--text-secondary);">Kursiyer portalı menüsündeki tema ve tasarım değiştirici kontrolünü buradan yapılandırın.</p>
+                    </div>
+
+                    <!-- 1. Kursiyer Menüsünde Tema Değiştirici Göster Toggle Switch -->
+                    <label class="switch-control" for="settingAllowMenuThemeSwitch" style="margin-bottom:16px;">
+                        <div class="switch-label-group">
+                            <div class="switch-title">Kursiyer Menüsünde Tema ve Tasarım Değiştiriciyi Göster</div>
+                            <div class="switch-desc">Aktif olduğunda kursiyerler öğrenci portalındaki ders menüsü içinden veya üst çubuktan tema ve tasarım seçebilir.</div>
+                        </div>
+                        <div class="switch-toggle">
+                            <input type="checkbox" id="settingAllowMenuThemeSwitch" onchange="handleSettingSwitchChange()">
+                            <span class="switch-slider"></span>
+                        </div>
+                    </label>
+
+                    <!-- 2. Menü Tasarım / Düzen Seçenekleri -->
+                    <div style="margin-bottom:16px;">
+                        <label class="form-label" style="font-weight:700;margin-bottom:8px;">Menü Tasarım / Yerleşim Modu</label>
+                        <div class="design-choice-grid">
+                            <div class="design-choice-card" id="choice-layout-two-column" onclick="selectMenuLayout('two-column')">
+                                <span class="design-choice-badge">Varsayılan</span>
+                                <div class="design-choice-title"><span>📐</span> 2 Sütunlu Dengeli</div>
+                                <div class="design-choice-desc">Sol sütunda temel konular, sağ sütunda ileri konular yan yana açık.</div>
+                            </div>
+                            <div class="design-choice-card" id="choice-layout-card-grid" onclick="selectMenuLayout('card-grid')">
+                                <span class="design-choice-badge">Geniş</span>
+                                <div class="design-choice-title"><span>🔲</span> Modern Kart Izgarası</div>
+                                <div class="design-choice-desc">Bölümler esnek ve modern bir kart ızgarasında genişçe dizilir.</div>
+                            </div>
+                            <div class="design-choice-card" id="choice-layout-compact" onclick="selectMenuLayout('compact')">
+                                <span class="design-choice-badge">Hızlı</span>
+                                <div class="design-choice-title"><span>📋</span> Kompakt Hızlı Liste</div>
+                                <div class="design-choice-desc">Daha az yer kaplayan ince satırlar; hızlı erişim için ideal.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Menü Kart Tasarım Stili -->
+                    <div style="margin-bottom:16px;">
+                        <label class="form-label" style="font-weight:700;margin-bottom:8px;">Menü Kart Tasarım Stili</label>
+                        <div class="design-choice-grid">
+                            <div class="design-choice-card" id="choice-style-theme-adaptive" onclick="selectMenuStyle('theme-adaptive')">
+                                <span class="design-choice-badge">Önerilen</span>
+                                <div class="design-choice-title"><span>🎨</span> Tema Uyumlu Modern</div>
+                                <div class="design-choice-desc">Kartlar seçilen temayla (%100) uyumlu renklenir, cam efektli ve parlaktır.</div>
+                            </div>
+                            <div class="design-choice-card" id="choice-style-classic-retro" onclick="selectMenuStyle('classic-retro')">
+                                <span class="design-choice-badge">Özel</span>
+                                <div class="design-choice-title"><span>🌸</span> Klasik Retro Pembe-Mor</div>
+                                <div class="design-choice-desc">Koyu mor çerçeveli ve pastel pembe vurgulu kurumsal retro görünüm.</div>
+                            </div>
+                            <div class="design-choice-card" id="choice-style-minimal" onclick="selectMenuStyle('minimal')">
+                                <span class="design-choice-badge">Yalın</span>
+                                <div class="design-choice-title"><span>◻️</span> Minimalist Çizgili</div>
+                                <div class="design-choice-desc">Gözü yormayan, sade ve düz çizgili kurumsal liste tasarımı.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Tema Seçici Konumu -->
+                    <div style="margin-bottom:18px;">
+                        <label class="form-label" style="font-weight:700;margin-bottom:6px;">Menüde Tema Seçici Konumu</label>
+                        <select id="settingMenuThemePosition" class="form-control" style="max-width:400px;" onchange="handleMenuPositionChange()">
+                            <option value="both">Menü Altında Panel + Üst Gezinme Çubuğu (Önerilen)</option>
+                            <option value="bottom">Yalnızca Menü Altında Kompakt Açılır Kutu</option>
+                            <option value="navbar">Yalnızca Üst Gezinme Çubuğunda (Navbar)</option>
+                        </select>
+                    </div>
+
+                    <!-- 5. Canlı Mini Önizleme Kutusu -->
+                    <div class="admin-theme-preview-box">
+                        <div style="font-size:12px;font-weight:700;color:var(--text-secondary);display:flex;justify-content:space-between;align-items:center;">
+                            <span>👁️ Canlı Menü Kartı Önizlemesi</span>
+                            <span id="previewStyleName" style="color:var(--accent-blue);font-size:11px;">Tema Uyumlu Modern</span>
+                        </div>
+                        <div id="adminPreviewMockup" class="admin-preview-item-mockup" style="background:var(--bg-input);border:1px solid var(--border-color);margin-top:10px;">
+                            <div style="display:flex;align-items:center;gap:10px;">
+                                <div id="previewMockupBar" style="width:4px;height:24px;background:var(--accent-blue);border-radius:2px;"></div>
+                                <span id="previewMockupTitle" style="font-size:13.5px;font-weight:600;color:var(--text-primary);">Örnek Ders Bölümü (Canlı Görünüm)</span>
+                            </div>
+                            <span id="previewMockupBadge" style="font-size:11px;font-weight:700;color:var(--accent-blue);background:rgba(59,130,246,0.12);padding:2px 8px;border-radius:4px;">▶ BAŞLA</span>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+                        <button class="btn btn-primary" onclick="saveAdminThemeSettings()">💾 Arayüz &amp; Menü Ayarlarını Kaydet</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:20px;margin-bottom:20px;">
+                <h4 style="color:#fbbf24;font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+                    <span>🔐</span> Yönetici Giriş Bilgileri &amp; Şifre Değiştir
+                </h4>
+                <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;">
+                    Panel güvenliğiniz için yönetici kullanıcı adı ve şifrenizi buradan güncelleyebilirsiniz.
+                </p>
+                <div id="settingsPasswordAlert" class="alert-message" style="display:none;margin-bottom:12px;"></div>
+                <form onsubmit="handleSettingsChangePassword(event)" style="max-width:480px;">
+                    <div class="form-group">
+                        <label class="form-label">Yönetici Kullanıcı Adı</label>
+                        <input type="text" id="settingsAdminUser" class="form-control" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Mevcut Şifre</label>
+                        <input type="password" id="settingsCurrentPass" class="form-control" placeholder="Mevcut şifrenizi girin" required autocomplete="current-password">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Yeni Şifre</label>
+                        <input type="password" id="settingsNewPass" class="form-control" placeholder="Yeni şifrenizi girin (en az 4 karakter)" required autocomplete="new-password">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Yeni Şifre (Tekrar)</label>
+                        <input type="password" id="settingsNewPassConfirm" class="form-control" placeholder="Yeni şifrenizi tekrar girin" required autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm" style="background:linear-gradient(135deg,#f59e0b,#d97706);padding:8px 16px;">
+                        🔒 Şifreyi Güncelle
+                    </button>
+                </form>
+            </div>
+
+            <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:20px;margin-bottom:20px;">
+                <h4 style="color:#60a5fa;font-size:15px;margin-bottom:10px;">☁️ Firebase Bulut Senkronizasyonu</h4>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;">
+                        <input type="checkbox" id="fbEnabled" style="width:16px;height:16px;"> Firebase Senkronizasyonunu Etkinleştir
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Firebase Database URL</label>
+                    <input type="text" id="fbDatabaseURL" class="form-control" placeholder="https://proje-default-rtdb.firebaseio.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Web API Key</label>
+                    <input type="text" id="fbApiKey" class="form-control" placeholder="AIzaSy...">
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <button class="btn btn-primary btn-sm" onclick="saveFirebaseSettings()">Kaydet</button>
+                    <button class="btn btn-ghost btn-sm" onclick="testFirebaseSync()">🔄 Buluttan Veri Çek</button>
+                </div>
+            </div>
+            <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:20px;">
+                <h4 style="color:white;font-size:15px;margin-bottom:10px;">💾 Veri Yedekleme</h4>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button class="btn btn-success btn-sm" onclick="lmsStorage.exportBackupJSON()">📥 Yedek İndir (JSON)</button>
+                    <label class="btn btn-ghost btn-sm" style="margin:0;cursor:pointer;">
+                        📤 Yedeği Geri Yükle
+                        <input type="file" id="backupFileInput" accept=".json" style="display:none;" onchange="handleImportBackup(event)">
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- ============================== MODALLER ============================== -->
+
+<!-- MODAL: KURSİYER EKLE / DÜZENLE -->
+<div id="userFormModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="userFormTitle" style="color:white;font-size:18px;">Yeni Kursiyer Ekle</h3>
+            <button class="modal-close" onclick="closeModal('userFormModal')">&times;</button>
+        </div>
+        <div id="userFormAlert" class="alert-message alert-error"></div>
+        <form onsubmit="handleSaveUser(event)">
+            <input type="hidden" id="editUserId">
+            <div class="form-group"><label class="form-label">Adı ve Soyadı</label><input type="text" id="formFullName" class="form-control" placeholder="Ayşe Demir" required></div>
+            <div class="form-group"><label class="form-label">Kullanıcı Adı</label><input type="text" id="formUsername" class="form-control" placeholder="aysedemir" required></div>
+            <div class="form-group"><label class="form-label">Giriş Şifresi</label><input type="text" id="formPassword" class="form-control" placeholder="1234" required></div>
+            <div class="form-group" id="initialModuleGroup">
+                <label class="form-label">Başlangıç Bölümü</label>
+                <select id="formInitialModule" class="form-control"></select>
+                <small style="color:var(--text-muted);font-size:11px;display:block;margin-top:4px;">Seçilen bölüme kadar önceki bölümler tamamlandı sayılır.</small>
+            </div>
+            <div class="form-group"><label class="form-label">Sınıf</label><select id="formClassId" class="form-control"><option value="">— Sınıf Seçin —</option></select></div>
+            <div class="form-group"><label class="form-label">Not / Grup Bilgisi</label><input type="text" id="formNotes" class="form-control" placeholder="Sabah Grubu - Masa 4"></div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('userFormModal')">İptal</button>
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: TOPLU / EXCEL EKLEME -->
+<div id="bulkAddModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:640px;">
+        <div class="modal-header">
+            <h3 style="color:white;font-size:18px;">Toplu Kursiyer Ekle</h3>
+            <button class="modal-close" onclick="closeModal('bulkAddModal')">&times;</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+            <button class="btn btn-primary btn-sm" id="bulkTabText"  onclick="switchBulkTab('text')">📝 Metin Listesi</button>
+            <button class="btn btn-ghost btn-sm"   id="bulkTabExcel" onclick="switchBulkTab('excel')">📊 Excel (.xls/.xlsx)</button>
+        </div>
+        <div id="bulkTextPane">
+            <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">Her satıra bir öğrenci: <code>Ad Soyad</code> veya <code>Ad Soyad, kullanici, sifre</code></p>
+            <div class="form-group"><label class="form-label">Öğrenci Listesi</label><textarea id="bulkDataInput" class="form-control" rows="7" placeholder="Ali Can&#10;Zeynep Çelik&#10;Murat Yılmaz, muraty, ozel123"></textarea></div>
+            <div class="form-group"><label class="form-label">Varsayılan Şifre</label><input type="text" id="bulkDefaultPass" class="form-control" value="123"></div>
+        </div>
+        <div id="bulkExcelPane" style="display:none;">
+            <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:#93c5fd;line-height:1.7;">
+                <strong>Sütun sırası:</strong> A: Ad Soyad | B: Kullanıcı Adı | C: Şifre | D: Sınıf Adı
+            </div>
+            <div class="excel-drop-zone" onclick="document.getElementById('excelFileInput').click()">
+                <div style="font-size:40px;margin-bottom:10px;">📊</div>
+                <p style="color:var(--text-secondary);font-size:14px;margin-bottom:4px;">Excel dosyasını seçmek için tıklayın</p>
+                <p style="color:var(--text-muted);font-size:12px;">.xls ve .xlsx desteklenir</p>
+                <input type="file" id="excelFileInput" accept=".xls,.xlsx" style="display:none;" onchange="handleExcelPreview(event)">
+            </div>
+            <div id="excelPreviewArea" style="display:none;margin-top:14px;">
+                <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;" id="excelFileInfo"></div>
+                <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border-color);border-radius:6px;">
+                    <table class="data-table" style="font-size:12px;">
+                        <thead><tr><th>Ad Soyad</th><th>Kullanıcı Adı</th><th>Şifre</th><th>Sınıf</th></tr></thead>
+                        <tbody id="excelPreviewBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="form-group" style="margin-top:12px;"><label class="form-label">Şifre sütunu boşsa varsayılan</label><input type="text" id="excelDefaultPass" class="form-control" value="123"></div>
+        </div>
+        <div class="form-group" style="margin-top:6px;">
+            <label class="form-label">Sınıfa Ekle (İsteğe Bağlı)</label>
+            <select id="bulkClassId" class="form-control"><option value="">— Sınıf Seçin —</option></select>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('bulkAddModal')">Kapat</button>
+            <button type="button" class="btn btn-primary" onclick="handleBulkAddSubmit()">Hesapları Oluştur ➔</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: İLERLEME MATRİSİ -->
+<div id="progressDetailModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:780px;">
+        <div class="modal-header">
+            <div>
+                <h3 id="matrixStudentName" style="color:white;font-size:18px;">Kursiyer İlerleme Detayı</h3>
+                <p id="matrixStudentSub" style="font-size:12px;color:var(--text-secondary);"></p>
+            </div>
+            <button class="modal-close" onclick="closeModal('progressDetailModal')">&times;</button>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+            <div style="font-size:13px;color:var(--text-secondary);">💡 Bölüme tıklayarak kilidi manuel açabilir/kapatabilirsiniz.</div>
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-success btn-sm" onclick="handleMatrixUnlockAll()">✓ Tümünü Aç</button>
+                <button class="btn btn-danger btn-sm" onclick="handleMatrixReset()">↺ Sıfırla</button>
+            </div>
+        </div>
+        <div class="module-matrix-grid" id="matrixGrid"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:24px;">
+            <button class="btn btn-primary" onclick="closeModal('progressDetailModal')">Tamam</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: SINIF EKLE / DÜZENLE -->
+<div id="classFormModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:460px;">
+        <div class="modal-header">
+            <h3 id="classFormTitle" style="color:white;font-size:18px;">Yeni Sınıf Ekle</h3>
+            <button class="modal-close" onclick="closeModal('classFormModal')">&times;</button>
+        </div>
+        <div id="classFormAlert" class="alert-message alert-error"></div>
+        <form onsubmit="handleSaveClass(event)">
+            <input type="hidden" id="editClassId">
+            <div class="form-group"><label class="form-label">Sınıf Adı</label><input type="text" id="formClassName" class="form-control" placeholder="Sabah Grubu" required></div>
+            <div class="form-group"><label class="form-label">Açıklama (İsteğe Bağlı)</label><input type="text" id="formClassDesc" class="form-control" placeholder="Pzt-Çrş 09:00-11:00"></div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('classFormModal')">İptal</button>
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: SINIF TOPLU İŞLEM -->
+<div id="classBulkModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:560px;">
+        <div class="modal-header">
+            <div>
+                <h3 id="bulkClassTitle" style="color:white;font-size:18px;">Toplu İşlem</h3>
+                <p id="bulkClassInfo" style="font-size:12px;color:var(--text-secondary);margin-top:2px;"></p>
+            </div>
+            <button class="modal-close" onclick="closeModal('classBulkModal')">&times;</button>
+        </div>
+
+        <!-- Sınıfa Taşı -->
+        <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:10px;padding:16px;margin-bottom:12px;">
+            <h4 style="color:#60a5fa;font-size:14px;margin-bottom:10px;">🔀 Tüm Öğrencileri Başka Sınıfa Taşı</h4>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <select id="bulkMoveTarget" class="form-control" style="flex:1;"><option value="">— Hedef Sınıf Seç —</option></select>
+                <button class="btn btn-primary btn-sm" onclick="handleBulkMoveClass()">Taşı →</button>
+            </div>
+        </div>
+
+        <!-- Ders İlerlet -->
+        <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:10px;padding:16px;margin-bottom:12px;">
+            <h4 style="color:#34d399;font-size:14px;margin-bottom:4px;">⏭️ Tümünü Belirli Bir Bölüme İlerlet</h4>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Seçilen bölüme kadar önceki bölümler tamamlanmış sayılacak.</p>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <select id="bulkAdvanceModule" class="form-control" style="flex:1;"></select>
+                <button class="btn btn-success btn-sm" onclick="handleBulkAdvance()">İlerlet →</button>
+            </div>
+        </div>
+
+        <!-- İlerleme Sıfırla -->
+        <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:10px;padding:16px;margin-bottom:12px;">
+            <h4 style="color:#fbbf24;font-size:14px;margin-bottom:4px;">↺ Tüm İlerlemeleri Sıfırla</h4>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Hesaplar silinmez, sadece ilerleme 1. bölüme döner.</p>
+            <button class="btn btn-ghost btn-sm" style="border-color:rgba(245,158,11,0.4);color:#fbbf24;" onclick="handleBulkResetAll()">↺ Tüm İlerlemeleri Sıfırla</button>
+        </div>
+
+        <!-- Tümünü Sil -->
+        <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:16px;margin-bottom:16px;">
+            <h4 style="color:#f87171;font-size:14px;margin-bottom:4px;">🗑️ Sınıftaki Tüm Öğrencileri Sil</h4>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">⚠️ Geri alınamaz! Tüm kursiyer hesapları kalıcı olarak silinir.</p>
+            <button class="btn btn-danger btn-sm" onclick="handleBulkDeleteClass()">🗑️ Tüm Hesapları Kalıcı Sil</button>
+        </div>
+
+        <div id="bulkClassResult" style="display:none;"></div>
+        <div style="display:flex;justify-content:flex-end;">
+            <button class="btn btn-ghost" onclick="closeModal('classBulkModal')">Kapat</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: MODÜL EKLE / DÜZENLE -->
+<div id="moduleFormModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:580px;">
+        <div class="modal-header">
+            <h3 id="moduleFormTitle" style="color:white;font-size:18px;">Yeni Bölüm Ekle</h3>
+            <button class="modal-close" onclick="closeModal('moduleFormModal')">&times;</button>
+        </div>
+        <div id="moduleFormAlert" class="alert-message alert-error"></div>
+        <form onsubmit="handleSaveModule(event)">
+            <input type="hidden" id="editModuleIdx">
+            <div style="display:grid;grid-template-columns:1fr auto;gap:12px;">
+                <div class="form-group"><label class="form-label">Bölüm Adı</label><input type="text" id="formModuleTitle" class="form-control" placeholder="15. Word Ekranı" required></div>
+                <div class="form-group"><label class="form-label">İkon</label><input type="text" id="formModuleIcon" class="form-control" placeholder="📄" maxlength="4" style="width:70px;"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Bağlantı / Dosya Yolu</label>
+                <input type="text" id="formModulePath" class="form-control" placeholder="html/word/word_ekrani.html" required>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;">
+                <div class="form-group"><label class="form-label">Kategori</label><input type="text" id="formModuleCategory" class="form-control" placeholder="Microsoft Word"></div>
+                <div class="form-group">
+                    <label class="form-label">Menü Konumu</label>
+                    <select id="formModulePosition" class="form-control">
+                        <option value="left">⬅️ Sol Menü</option>
+                        <option value="right">➡️ Sağ Menü</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-label">Renk</label><input type="color" id="formModuleCategoryColor" class="form-control" value="#3b82f6" style="padding:4px;width:56px;height:40px;"></div>
+            </div>
+            <div class="form-group"><label class="form-label">Açıklama</label><input type="text" id="formModuleDescription" class="form-control" placeholder="Kısa açıklama..."></div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('moduleFormModal')">İptal</button>
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: DUYURU EKLE -->
+<div id="announcementFormModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:580px;">
+        <div class="modal-header">
+            <h3 style="color:white;font-size:18px;">📢 Yeni Duyuru</h3>
+            <button class="modal-close" onclick="closeModal('announcementFormModal')">&times;</button>
+        </div>
+        <form onsubmit="handleSaveAnnouncement(event)">
+            <div class="form-group"><label class="form-label">Başlık</label><input type="text" id="formAnnTitle" class="form-control" placeholder="Yarın Ders Yok!" required></div>
+            <div class="form-group"><label class="form-label">Duyuru Metni</label><textarea id="formAnnMessage" class="form-control" rows="4" placeholder="Duyuru içeriğini buraya yazın..." required></textarea></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label class="form-label">Hedef Kitle</label>
+                    <select id="formAnnTarget" class="form-control" onchange="updateAnnClassSelector()">
+                        <option value="all">👥 Tüm Kursiyerler</option>
+                        <option value="class">🏫 Belirli Sınıf</option>
+                    </select>
+                </div>
+                <div class="form-group" id="annClassGroup" style="display:none;">
+                    <label class="form-label">Sınıf Seç</label>
+                    <select id="formAnnClass" class="form-control"><option value="">— Sınıf —</option></select>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label class="form-label">Tür / Renk</label>
+                    <select id="formAnnType" class="form-control">
+                        <option value="info">ℹ️ Bilgi (Mavi)</option>
+                        <option value="success">✅ Başarı (Yeşil)</option>
+                        <option value="warning">⚠️ Uyarı (Sarı)</option>
+                        <option value="danger">🚨 Önemli (Kırmızı)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Bitiş Tarihi (İsteğe Bağlı)</label>
+                    <input type="date" id="formAnnExpiry" class="form-control">
+                    <small style="color:var(--text-muted);font-size:11px;">Boş = Süresiz</small>
+                </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('announcementFormModal')">İptal</button>
+                <button type="submit" class="btn btn-primary">📢 Yayınla</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: KURSİYERE DOĞRUDAN MESAJ GÖNDER -->
+<div id="adminDirectMessageModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:540px;">
+        <div class="modal-header">
+            <h3 style="color:white;font-size:18px;display:flex;align-items:center;gap:8px;">
+                <span>✉️</span> Kursiyere Mesaj Gönder
+            </h3>
+            <button class="modal-close" onclick="closeModal('adminDirectMessageModal')">&times;</button>
+        </div>
+        <div id="adminDirectMsgAlert" class="alert-message alert-error"></div>
+        <form onsubmit="handleSendAdminDirectMessage(event)">
+            <div class="form-group">
+                <label class="form-label">Kursiyer Seçin</label>
+                <select id="formAdminMsgUser" class="form-control" required>
+                    <option value="">— Kursiyer Seçin —</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Konu Başlığı</label>
+                <input type="text" id="formAdminMsgSubject" class="form-control" placeholder="Örn: Ders İlerlemesi, Tebrik, Ödev..." required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Mesaj İçeriği</label>
+                <textarea id="formAdminMsgBody" class="form-control" rows="5" placeholder="Kursiyere iletmek istediğiniz mesajınızı yazın..." required></textarea>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('adminDirectMessageModal')">İptal</button>
+                <button type="submit" class="btn btn-primary">Mesajı Gönder ➔</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL: YÖNETİCİ ŞİFRESİ DEĞİŞTİR -->
+<div id="adminPasswordModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:460px;">
+        <div class="modal-header">
+            <h3 style="color:white;font-size:18px;display:flex;align-items:center;gap:8px;">
+                <span>🔑</span> Yönetici Şifresini Değiştir
+            </h3>
+            <button class="modal-close" onclick="closeModal('adminPasswordModal')">&times;</button>
+        </div>
+        <div id="adminModalPasswordAlert" class="alert-message alert-error" style="display:none;margin-bottom:12px;"></div>
+        <form onsubmit="handleModalChangePassword(event)">
+            <div class="form-group">
+                <label class="form-label">Kullanıcı Adı</label>
+                <input type="text" id="modalAdminUser" class="form-control" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Mevcut Şifre</label>
+                <input type="password" id="modalCurrentPass" class="form-control" placeholder="Mevcut şifrenizi girin" required autocomplete="current-password">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Yeni Şifre</label>
+                <input type="password" id="modalNewPass" class="form-control" placeholder="En az 4 karakter" required autocomplete="new-password">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Yeni Şifre (Tekrar)</label>
+                <input type="password" id="modalNewPassConfirm" class="form-control" placeholder="Yeni şifrenizi doğrulayın" required autocomplete="new-password">
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('adminPasswordModal')">İptal</button>
+                <button type="submit" class="btn btn-primary" style="background:linear-gradient(135deg,#f59e0b,#d97706);">Şifreyi Değiştir</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================== JAVASCRIPT ============================== -->
+<script src="js/modules-data.js"></script>
+<script src="js/storage-service.js"></script>
+<script>
+    let currentSelectedStudentId = null;
+    let excelParsedRows = [];
+    let _bulkClassId = null;
+
+    function getModules() { return lmsStorage.getCustomModules() || COURSE_MODULES; }
+
+    // ==================== INIT ====================
+    document.addEventListener('DOMContentLoaded', () => {
+        initInitialModuleOptions();
+        checkAdminAuth();
+    });
+
+    function checkAdminAuth() {
+        const s = lmsStorage.getCurrentSession();
+        const ok = s && s.type === 'admin';
+        document.getElementById('adminLoginSection').style.display = ok ? 'none' : 'flex';
+        document.getElementById('adminDashboardSection').style.display = ok ? 'block' : 'none';
+        document.getElementById('adminNavActions').style.display = ok ? 'flex' : 'none';
+        if (ok) { loadDashboardData(); rebuildClassDropdowns(); }
+    }
+
+    function handleAdminLoginSubmit(e) {
+        e.preventDefault();
+        const ab = document.getElementById('adminLoginAlert');
+        const res = lmsStorage.login(document.getElementById('adminUser').value.trim(), document.getElementById('adminPass').value.trim());
+        if (res.success && res.role === 'admin') { ab.style.display = 'none'; checkAdminAuth(); }
+        else { ab.textContent = 'Yönetici bilgileri hatalı!'; ab.style.display = 'block'; }
+    }
+
+    function handleAdminLogout() { lmsStorage.logout(); checkAdminAuth(); }
+
+    function initInitialModuleOptions() {
+        const sel = document.getElementById('formInitialModule');
+        sel.innerHTML = '';
+        getModules().forEach(m => {
+            const o = document.createElement('option');
+            o.value = m.id; o.textContent = m.id + '. ' + m.title;
+            sel.appendChild(o);
+        });
+    }
+
+    // ==================== SEKMELER ====================
+    const ALL_TABS = ['students','classes','announcements','messages','menu','settings'];
+    function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+    function switchAdminTab(name) {
+        ALL_TABS.forEach(t => {
+            document.getElementById('tab' + cap(t)).style.display = t === name ? 'block' : 'none';
+            document.getElementById('tabBtn' + cap(t)).classList.toggle('active', t === name);
+        });
+        if (name === 'classes')       loadClassesTab();
+        if (name === 'announcements') loadAnnouncementsTab();
+        if (name === 'messages')      loadMessagesTab();
+        if (name === 'menu')          loadMenuTab();
+        if (name === 'settings')      loadSettingsTab();
+    }
+
+    // ==================== DASHBOARD ====================
+    function loadDashboardData() {
+        updateAdminUnreadBadge();
+        const users = lmsStorage.getAllUsers(), mods = getModules();
+        let cT = 0, pS = 0, aC = 0;
+        const ago = Date.now() - 86400000;
+        users.forEach(u => {
+            const c = (u.completedModuleIds || []).length;
+            const p = mods.length > 0 ? Math.round(c / mods.length * 100) : 0;
+            pS += p;
+            if (c >= mods.length) cT++;
+            if (u.lastActive && new Date(u.lastActive).getTime() > ago) aC++;
+        });
+        const avg = users.length > 0 ? Math.round(pS / users.length) : 0;
+        document.getElementById('kpiTotalUsers').textContent = users.length;
+        document.getElementById('kpiActiveUsers').textContent = aC;
+        document.getElementById('kpiAvgProgress').textContent = '%' + avg;
+        document.getElementById('kpiCompletedUsers').textContent = cT;
+        filterAndRenderUsers();
+    }
+
+    function filterAndRenderUsers() {
+        const users = lmsStorage.getAllUsers(), classes = lmsStorage.getAllClasses(), mods = getModules();
+        const q = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+        const sF = document.getElementById('filterStatus').value;
+        const cF = document.getElementById('filterClass').value;
+        const tbody = document.getElementById('usersTableBody');
+        tbody.innerHTML = '';
+        const filtered = users.filter(u => {
+            if (!((u.fullName||'').toLowerCase().includes(q) || (u.username||'').toLowerCase().includes(q))) return false;
+            if (cF === 'none' && u.classId) return false;
+            if (cF !== 'all' && cF !== 'none' && u.classId !== cF) return false;
+            const c = (u.completedModuleIds||[]).length, done = mods.length > 0 && c >= mods.length;
+            if (sF === 'completed') return done;
+            if (sF === 'starter') return c <= 1;
+            if (sF === 'in_progress') return c > 1 && !done;
+            return true;
+        });
+        if (!filtered.length) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:30px;">Kriterlere uygun kursiyer bulunamadı.</td></tr>';
+            return;
+        }
+        filtered.forEach(u => {
+            const c = (u.completedModuleIds||[]).length;
+            const pct = mods.length > 0 ? Math.round(c / mods.length * 100) : 0;
+            const curMod = mods.find(m => m.id === (u.currentModuleId || (mods[0] && mods[0].id))) || mods[0];
+            const cls = classes.find(cl => cl.id === u.classId);
+            const sid = (u.id+'').replace(/'/g,"\\'");
+            const sn  = (u.fullName+'').replace(/'/g,"\\'");
+            const sp  = (u.password+'').replace(/'/g,"\\'");
+            let lastStr = 'Henüz girmedi';
+            if (u.lastActive) {
+                const d = new Date(u.lastActive);
+                lastStr = d.toLocaleDateString('tr-TR') + ' ' + d.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+            }
+            const clsB = cls
+                ? '<span style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);border-radius:12px;padding:2px 10px;font-size:12px;">'+cls.name+'</span>'
+                : '<span style="color:var(--text-muted);font-size:12px;">—</span>';
+            const tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td><div style="display:flex;align-items:center;gap:10px;"><div class="user-avatar" style="width:32px;height:32px;font-size:13px;">'+(u.fullName||'K')[0].toUpperCase()+'</div><div><div style="font-weight:700;color:white;">'+u.fullName+'</div><div style="font-size:11px;color:var(--text-muted);">'+(u.notes||'—')+'</div></div></div></td>'
+                +'<td><code style="color:#93c5fd;">'+u.username+'</code></td>'
+                +'<td><span id="passSpan_'+u.id+'" style="letter-spacing:2px;">••••</span><button class="btn btn-ghost btn-sm" style="padding:2px 6px;margin-left:4px;font-size:10px;" onclick="togglePwd(\''+sid+'\',\''+sp+'\')">👁️</button></td>'
+                +'<td>'+clsB+'</td>'
+                +'<td style="min-width:140px;"><div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:4px;"><span>'+c+'/'+mods.length+'</span><span style="color:'+(pct===100?'var(--accent-emerald)':'var(--accent-blue)')+';">%'+pct+'</span></div><div class="progress-bar-container" style="margin-top:0;height:6px;"><div class="progress-bar-fill" style="width:'+pct+'%;"></div></div></td>'
+                +'<td><span style="font-size:12px;color:#cbd5e1;">'+(curMod?curMod.title:'—')+'</span></td>'
+                +'<td style="font-size:11px;color:var(--text-muted);">'+lastStr+'</td>'
+                +'<td style="text-align:right;"><div style="display:inline-flex;gap:6px;"><button class="btn btn-primary btn-sm" onclick="openProgressMatrix(\''+sid+'\')">📊</button><button class="btn btn-ghost btn-sm" onclick="openAdminDirectMessageModal(\''+sid+'\')" title="Kursiyere Mesaj Gönder">💬</button><button class="btn btn-ghost btn-sm" onclick="openEditUserModal(\''+sid+'\')">✏️</button><button class="btn btn-danger btn-sm" onclick="handleDeleteUser(\''+sid+'\',\''+sn+'\')">🗑️</button></div></td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    function togglePwd(id,pw) {
+        const s = document.getElementById('passSpan_'+id);
+        if (!s) return;
+        if (s.textContent === '••••') { s.textContent = pw; s.style.letterSpacing = 'normal'; s.style.color = '#fbbf24'; }
+        else { s.textContent = '••••'; s.style.letterSpacing = '2px'; s.style.color = 'inherit'; }
+    }
+
+    function rebuildClassDropdowns() {
+        const cls = lmsStorage.getAllClasses();
+        const f = document.getElementById('filterClass');
+        while (f.options.length > 2) f.remove(2);
+        cls.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; f.appendChild(o); });
+        ['formClassId','bulkClassId'].forEach(id => {
+            const sel = document.getElementById(id); if (!sel) return;
+            while (sel.options.length > 1) sel.remove(1);
+            cls.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
+        });
+    }
+
+    // ==================== KURSİYER CRUD ====================
+    function openAddUserModal() {
+        rebuildClassDropdowns(); initInitialModuleOptions();
+        document.getElementById('userFormTitle').textContent = 'Yeni Kursiyer Ekle';
+        document.getElementById('editUserId').value = '';
+        document.getElementById('formFullName').value = '';
+        document.getElementById('formUsername').value = '';
+        document.getElementById('formPassword').value = '123';
+        document.getElementById('formInitialModule').value = getModules()[0]?.id || 1;
+        document.getElementById('initialModuleGroup').style.display = 'block';
+        document.getElementById('formClassId').value = '';
+        document.getElementById('formNotes').value = '';
+        document.getElementById('userFormAlert').style.display = 'none';
+        openModal('userFormModal');
+    }
+
+    function openEditUserModal(userId) {
+        rebuildClassDropdowns();
+        const u = lmsStorage.getUserById(userId); if (!u) return;
+        document.getElementById('userFormTitle').textContent = 'Düzenle: ' + u.fullName;
+        document.getElementById('editUserId').value = u.id;
+        document.getElementById('formFullName').value = u.fullName;
+        document.getElementById('formUsername').value = u.username;
+        document.getElementById('formPassword').value = u.password;
+        document.getElementById('initialModuleGroup').style.display = 'none';
+        document.getElementById('formClassId').value = u.classId || '';
+        document.getElementById('formNotes').value = u.notes || '';
+        document.getElementById('userFormAlert').style.display = 'none';
+        openModal('userFormModal');
+    }
+
+    function handleSaveUser(e) {
+        e.preventDefault();
+        const uid = document.getElementById('editUserId').value;
+        const p = {
+            fullName: document.getElementById('formFullName').value.trim(),
+            username: document.getElementById('formUsername').value.trim(),
+            password: document.getElementById('formPassword').value.trim(),
+            classId:  document.getElementById('formClassId').value || null,
+            notes:    document.getElementById('formNotes').value.trim()
+        };
+        const ab = document.getElementById('userFormAlert');
+        const res = uid ? lmsStorage.updateUser(uid, p) : lmsStorage.addUser({...p, initialModuleId: document.getElementById('formInitialModule').value});
+        if (!res.success) { ab.textContent = res.message; ab.style.display = 'block'; return; }
+        closeModal('userFormModal'); rebuildClassDropdowns(); loadDashboardData();
+    }
+
+    function handleDeleteUser(id, name) {
+        if (confirm('"' + name + '" isimli kursiyeri silmek istediğinize emin misiniz?')) {
+            lmsStorage.deleteUser(id); loadDashboardData();
+        }
+    }
+
+    // ==================== TOPLU EKLEME ====================
+    function openBulkAddModal() {
+        rebuildClassDropdowns();
+        document.getElementById('bulkDataInput').value = '';
+        document.getElementById('excelFileInput').value = '';
+        document.getElementById('excelPreviewArea').style.display = 'none';
+        excelParsedRows = []; switchBulkTab('text'); openModal('bulkAddModal');
+    }
+
+    function switchBulkTab(tab) {
+        const it = tab === 'text';
+        document.getElementById('bulkTextPane').style.display  = it ? 'block' : 'none';
+        document.getElementById('bulkExcelPane').style.display = it ? 'none' : 'block';
+        document.getElementById('bulkTabText').className  = it ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
+        document.getElementById('bulkTabExcel').className = it ? 'btn btn-ghost btn-sm' : 'btn btn-primary btn-sm';
+    }
+
+    function handleExcelPreview(event) {
+        const file = event.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+                const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+                let start = 0;
+                if (rows.length > 0) { const f = String(rows[0][0]||'').toLowerCase(); if (f.includes('ad')||f.includes('isim')||f.includes('name')) start = 1; }
+                excelParsedRows = rows.slice(start).filter(r => String(r[0]||'').trim());
+                document.getElementById('excelFileInfo').textContent = '📄 ' + file.name + ' — ' + excelParsedRows.length + ' öğrenci bulundu';
+                const tbody = document.getElementById('excelPreviewBody'); tbody.innerHTML = '';
+                excelParsedRows.slice(0,10).forEach(r => { const tr = document.createElement('tr'); tr.innerHTML = '<td>'+(r[0]||'')+'</td><td>'+(r[1]||'(otomatik)')+'</td><td>'+(r[2]||'(varsayılan)')+'</td><td>'+(r[3]||'')+'</td>'; tbody.appendChild(tr); });
+                if (excelParsedRows.length > 10) { const tr = document.createElement('tr'); tr.innerHTML = '<td colspan="4" style="color:var(--text-muted);text-align:center;">... ve '+(excelParsedRows.length-10)+' kişi daha</td>'; tbody.appendChild(tr); }
+                document.getElementById('excelPreviewArea').style.display = 'block';
+            } catch(err) { alert('Excel dosyası okunamadı: ' + err.message); }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function handleBulkAddSubmit() {
+        const defCls = document.getElementById('bulkClassId').value || null;
+        const cls = lmsStorage.getAllClasses();
+        let added = 0, skipped = 0;
+        const isExcel = document.getElementById('bulkExcelPane').style.display !== 'none';
+        const tr2 = s => s.toLowerCase().replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u').replace(/[^a-z0-9]/g,'');
+        if (isExcel) {
+            if (!excelParsedRows.length) { alert('Lütfen önce bir Excel dosyası seçin.'); return; }
+            const dp = document.getElementById('excelDefaultPass').value.trim() || '123';
+            excelParsedRows.forEach(r => {
+                const fullName = String(r[0]||'').trim(); if (!fullName) return;
+                const username = String(r[1]||'').trim() || tr2(fullName);
+                const password = String(r[2]||'').trim() || dp;
+                const clsName  = String(r[3]||'').trim();
+                let classId = defCls;
+                if (clsName) { let found = cls.find(c => c.name.toLowerCase() === clsName.toLowerCase()); if (!found) { const nc = lmsStorage.addClass({name:clsName}); if (nc.success) { cls.push(nc.cls); found = nc.cls; } } if (found) classId = found.id; }
+                const res = lmsStorage.addUser({fullName, username, password, classId});
+                if (res.success) added++; else skipped++;
+            });
+        } else {
+            const text = document.getElementById('bulkDataInput').value.trim();
+            const dp = document.getElementById('bulkDefaultPass').value.trim() || '123';
+            if (!text) { alert('Lütfen en az bir öğrenci ismi giriniz.'); return; }
+            text.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
+                const parts = line.split(',').map(p => p.trim());
+                const fullName = parts[0] || '', username = parts[1] || tr2(fullName), password = parts[2] || dp;
+                if (!username) return;
+                const res = lmsStorage.addUser({fullName, username, password, classId: defCls});
+                if (res.success) added++; else skipped++;
+            });
+        }
+        alert('İşlem tamamlandı:\n✓ '+added+' Kursiyer başarıyla eklendi.'+(skipped>0?'\n⚠️ '+skipped+' kayıt atlandı (mükerrer kullanıcı adı).':''));
+        closeModal('bulkAddModal'); rebuildClassDropdowns(); loadDashboardData();
+    }
+
+    // ==================== İLERLEME MATRİSİ ====================
+    function openProgressMatrix(userId) {
+        const user = lmsStorage.getUserById(userId); if (!user) return;
+        currentSelectedStudentId = userId;
+        const mods = getModules();
+        document.getElementById('matrixStudentName').textContent = user.fullName + ' — İlerleme Haritası';
+        document.getElementById('matrixStudentSub').textContent = 'Kullanıcı: ' + user.username + ' | Tamamlanan: ' + (user.completedModuleIds||[]).length + ' / ' + mods.length;
+        renderMatrixItems(user);
+        openModal('progressDetailModal');
+    }
+
+    function renderMatrixItems(user) {
+        const cont = document.getElementById('matrixGrid'); cont.innerHTML = '';
+        const done = new Set(user.completedModuleIds||[]), open = new Set(user.unlockedModuleIds||[]);
+        getModules().forEach(mod => {
+            const d = done.has(mod.id), o = open.has(mod.id);
+            const item = document.createElement('div');
+            item.className = 'matrix-item' + (d?' completed':(o?' unlocked':''));
+            item.title = mod.title;
+            item.innerHTML = '<div style="font-size:16px;">'+(mod.icon||'📄')+'</div><div style="font-weight:700;font-size:12px;margin:4px 0;">B. '+mod.id+'</div><div style="font-size:10px;color:'+(d?'#34d399':(o?'#60a5fa':'#94a3b8'))+'">'+(d?'🟢 Tamam':(o?'🔵 Açık':'🔒 Kilitli'))+'</div>';
+            item.onclick = () => { lmsStorage.toggleModuleLock(user.id, mod.id); renderMatrixItems(lmsStorage.getUserById(user.id)); loadDashboardData(); };
+            cont.appendChild(item);
+        });
+    }
+
+    function handleMatrixUnlockAll() { if (!currentSelectedStudentId||!confirm('Tüm bölümlerin kilidini açmak istiyor musunuz?')) return; lmsStorage.updateUser(currentSelectedStudentId,{unlockedModuleIds:getModules().map(m=>m.id)}); renderMatrixItems(lmsStorage.getUserById(currentSelectedStudentId)); loadDashboardData(); }
+    function handleMatrixReset()     { if (!currentSelectedStudentId||!confirm('Tüm ilerlemesini sıfırlamak istediğinize emin misiniz?')) return; lmsStorage.resetUserProgress(currentSelectedStudentId); renderMatrixItems(lmsStorage.getUserById(currentSelectedStudentId)); loadDashboardData(); }
+
+    // ==================== SINIF YÖNETİMİ ====================
+    function loadClassesTab() {
+        const cls = lmsStorage.getAllClasses(), users = lmsStorage.getAllUsers(), mods = getModules();
+        const grid = document.getElementById('classesGrid'), empty = document.getElementById('classesEmpty');
+        grid.innerHTML = '';
+        if (!cls.length) { grid.style.display='none'; empty.style.display='block'; return; }
+        grid.style.display = 'grid'; empty.style.display = 'none';
+        cls.forEach(c => {
+            const clsUsers      = users.filter(u => u.classId === c.id);
+            const cnt           = clsUsers.length;
+            const avgPct        = cnt > 0 ? Math.round(clsUsers.reduce((s,u) => s + Math.round((u.completedModuleIds||[]).length / Math.max(mods.length,1) * 100), 0) / cnt) : 0;
+            const completedAll  = clsUsers.filter(u => (u.completedModuleIds||[]).length >= mods.length).length;
+            const sid = (c.id+'').replace(/'/g,"\\'"), sn = (c.name+'').replace(/'/g,"\\'");
+            const card = document.createElement('div'); card.className = 'class-card';
+            card.innerHTML =
+                '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">'
+                + '<div style="width:42px;height:42px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🏫</div>'
+                + '<div style="flex:1;min-width:0;">'
+                + '<div style="color:white;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+c.name+'</div>'
+                + '<div style="color:var(--text-muted);font-size:12px;">'+(c.description||'Açıklama yok')+'</div>'
+                + '</div></div>'
+                + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;">'
+                + '<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#60a5fa;">'+cnt+'</div><div style="font-size:10px;color:var(--text-muted);">Kursiyer</div></div>'
+                + '<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#34d399;">%'+avgPct+'</div><div style="font-size:10px;color:var(--text-muted);">Ort. İlerleme</div></div>'
+                + '<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:8px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#fbbf24;">'+completedAll+'</div><div style="font-size:10px;color:var(--text-muted);">Bitiren</div></div>'
+                + '</div>'
+                + '<div style="border-top:1px solid var(--border-color);padding-top:12px;display:flex;flex-direction:column;gap:8px;">'
+                + '<button class="btn btn-primary btn-sm" style="width:100%;" onclick="openClassBulkModal(\''+sid+'\',\''+sn+'\')">⚡ Toplu İşlem ('+cnt+' kişi)</button>'
+                + '<div style="display:flex;gap:6px;">'
+                + '<button class="btn btn-ghost btn-sm" style="flex:1;" onclick="openEditClassModal(\''+sid+'\')">✏️ Düzenle</button>'
+                + '<button class="btn btn-danger btn-sm" onclick="handleDeleteClass(\''+sid+'\',\''+sn+'\')">🗑️ Sil</button>'
+                + '</div></div>';
+            grid.appendChild(card);
+        });
+    }
+
+    function openAddClassModal()  { document.getElementById('classFormTitle').textContent='Yeni Sınıf Ekle'; document.getElementById('editClassId').value=''; document.getElementById('formClassName').value=''; document.getElementById('formClassDesc').value=''; document.getElementById('classFormAlert').style.display='none'; openModal('classFormModal'); }
+    function openEditClassModal(classId) { const c=lmsStorage.getAllClasses().find(x=>x.id===classId); if(!c)return; document.getElementById('classFormTitle').textContent='Düzenle: '+c.name; document.getElementById('editClassId').value=c.id; document.getElementById('formClassName').value=c.name; document.getElementById('formClassDesc').value=c.description||''; document.getElementById('classFormAlert').style.display='none'; openModal('classFormModal'); }
+    function handleSaveClass(e)   { e.preventDefault(); const id=document.getElementById('editClassId').value,n=document.getElementById('formClassName').value.trim(),d=document.getElementById('formClassDesc').value.trim(),ab=document.getElementById('classFormAlert'); const res=id?lmsStorage.updateClass(id,{name:n,description:d}):lmsStorage.addClass({name:n,description:d}); if(!res.success){ab.textContent=res.message;ab.style.display='block';return;} closeModal('classFormModal'); rebuildClassDropdowns(); loadClassesTab(); }
+    function handleDeleteClass(classId,name) { const cnt=lmsStorage.getUsersByClass(classId).length,w=cnt>0?'\n\n⚠️ '+cnt+' kursiyer var. Sınıf atamaları kaldırılır, hesaplar korunur.':''; if(!confirm('"'+name+'" sınıfını silmek istediğinize emin misiniz?'+w))return; lmsStorage.deleteClass(classId); rebuildClassDropdowns(); loadClassesTab(); }
+
+    // ==================== SINIF TOPLU İŞLEM ====================
+    function openClassBulkModal(classId, className) {
+        _bulkClassId = classId;
+        const users = lmsStorage.getUsersByClass(classId);
+        document.getElementById('bulkClassTitle').textContent = className + ' — Toplu İşlem';
+        document.getElementById('bulkClassInfo').textContent  = users.length + ' kursiyer seçili';
+
+        const sel = document.getElementById('bulkMoveTarget');
+        sel.innerHTML = '<option value="">— Hedef Sınıf Seç —</option><option value="none">Sınıfsız Bırak</option>';
+        lmsStorage.getAllClasses().filter(c => c.id !== classId).forEach(c => {
+            const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o);
+        });
+
+        const modSel = document.getElementById('bulkAdvanceModule');
+        modSel.innerHTML = '';
+        getModules().forEach(m => {
+            const o = document.createElement('option'); o.value = m.id; o.textContent = m.id + '. ' + m.title; modSel.appendChild(o);
+        });
+
+        document.getElementById('bulkClassResult').style.display = 'none';
+        openModal('classBulkModal');
+    }
+
+    function handleBulkDeleteClass() {
+        const users = lmsStorage.getUsersByClass(_bulkClassId);
+        if (!users.length) { alert('Bu sınıfta hiç kursiyer yok.'); return; }
+        if (!confirm(users.length + ' kursiyerin tümünü silmek istediğinize emin misiniz?\n\nBu işlem geri alınamaz!')) return;
+        let deleted = 0;
+        users.forEach(u => { if (lmsStorage.deleteUser(u.id).success) deleted++; });
+        showBulkResult('✅ ' + deleted + ' kursiyer başarıyla silindi.', 'success');
+        rebuildClassDropdowns(); loadClassesTab(); loadDashboardData();
+    }
+
+    function handleBulkMoveClass() {
+        const targetId = document.getElementById('bulkMoveTarget').value;
+        if (!targetId) { alert('Lütfen hedef sınıf seçin.'); return; }
+        const users = lmsStorage.getUsersByClass(_bulkClassId);
+        if (!users.length) { alert('Bu sınıfta hiç kursiyer yok.'); return; }
+        const targetName = targetId === 'none' ? 'Sınıfsız' : (lmsStorage.getAllClasses().find(c => c.id === targetId)?.name || '?');
+        if (!confirm(users.length + ' kursiyeri "' + targetName + '" sınıfına taşımak istiyor musunuz?')) return;
+        let moved = 0;
+        users.forEach(u => { if (lmsStorage.updateUser(u.id, {classId: targetId === 'none' ? null : targetId}).success) moved++; });
+        showBulkResult('✅ ' + moved + ' kursiyer "' + targetName + '" sınıfına taşındı.', 'success');
+        rebuildClassDropdowns(); loadClassesTab(); loadDashboardData();
+    }
+
+    function handleBulkAdvance() {
+        const targetModId = parseInt(document.getElementById('bulkAdvanceModule').value);
+        if (!targetModId) { alert('Lütfen hedef bölüm seçin.'); return; }
+        const users = lmsStorage.getUsersByClass(_bulkClassId);
+        if (!users.length) { alert('Bu sınıfta hiç kursiyer yok.'); return; }
+        const mods = getModules();
+        const targetMod = mods.find(m => m.id === targetModId);
+        if (!targetMod) return;
+        if (!confirm(users.length + ' kursiyeri "' + targetMod.title + '" bölümüne ilerletmek istiyor musunuz?\n\nHedef bölüme kadar tüm bölümler tamamlanmış sayılacak.')) return;
+        let advanced = 0;
+        const targetIdx = mods.findIndex(m => m.id === targetModId);
+        users.forEach(u => {
+            const toComplete  = mods.slice(0, targetIdx).map(m => m.id);
+            const toUnlock    = mods.slice(0, targetIdx + 1).map(m => m.id);
+            const doneSet     = new Set(u.completedModuleIds||[]); toComplete.forEach(id => doneSet.add(id));
+            const openSet     = new Set(u.unlockedModuleIds||[]);  toUnlock.forEach(id => openSet.add(id));
+            const r = lmsStorage.updateUser(u.id, {
+                completedModuleIds: Array.from(doneSet).sort((a,b)=>a-b),
+                unlockedModuleIds:  Array.from(openSet).sort((a,b)=>a-b),
+                currentModuleId: targetModId,
+                lastActive: new Date().toISOString()
+            });
+            if (r.success) advanced++;
+        });
+        showBulkResult('✅ ' + advanced + ' kursiyer "' + targetMod.title + '" bölümüne ilerletildi.', 'success');
+        loadDashboardData();
+    }
+
+    function handleBulkResetAll() {
+        const users = lmsStorage.getUsersByClass(_bulkClassId);
+        if (!users.length) { alert('Bu sınıfta hiç kursiyer yok.'); return; }
+        if (!confirm(users.length + ' kursiyerin tüm ilerlemesini sıfırlamak istiyor musunuz?')) return;
+        let reset = 0;
+        users.forEach(u => { if (lmsStorage.resetUserProgress(u.id).success) reset++; });
+        showBulkResult('✅ ' + reset + ' kursiyerin ilerlemesi sıfırlandı.', 'warning');
+        loadDashboardData();
+    }
+
+    function showBulkResult(msg, type) {
+        const el = document.getElementById('bulkClassResult');
+        const colors = {
+            success: {bg:'rgba(16,185,129,0.15)', border:'rgba(16,185,129,0.4)', text:'#6ee7b7'},
+            warning: {bg:'rgba(245,158,11,0.15)', border:'rgba(245,158,11,0.4)', text:'#fde68a'},
+            danger:  {bg:'rgba(239,68,68,0.15)',  border:'rgba(239,68,68,0.4)',  text:'#fca5a5'}
+        };
+        const c = colors[type] || colors.success;
+        el.style.cssText = 'background:'+c.bg+';border:1px solid '+c.border+';border-radius:8px;padding:12px 16px;color:'+c.text+';font-size:13px;font-weight:600;margin-bottom:16px;';
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+
+    // ==================== MENÜ YÖNETİMİ ====================
+    function loadMenuTab() {
+        const mods = getModules();
+        document.getElementById('menuCustomBadge').style.display = lmsStorage.getCustomModules() ? 'block' : 'none';
+        const tbody = document.getElementById('menuTableBody'); tbody.innerHTML = '';
+        mods.forEach((mod, idx) => {
+            const st = (mod.title+'').replace(/'/g,"\\'");
+            const pos = mod.menuPosition === 'right' ? '➡️ Sağ' : '⬅️ Sol';
+            const posColor = mod.menuPosition === 'right' ? '#c084fc' : '#60a5fa';
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td style="font-weight:700;color:#60a5fa;">'+mod.id+'</td>'
+                + '<td style="font-size:20px;">'+(mod.icon||'📄')+'</td>'
+                + '<td style="color:white;font-weight:600;">'+mod.title+'</td>'
+                + '<td><span style="background:rgba(255,255,255,0.07);border-radius:12px;padding:2px 10px;font-size:12px;color:var(--text-secondary);">'+(mod.category||'—')+'</span></td>'
+                + '<td><span style="font-size:12px;font-weight:600;color:'+posColor+';">'+pos+'</span></td>'
+                + '<td><code style="font-size:11px;color:#86efac;">'+mod.path+'</code></td>'
+                + '<td style="text-align:right;"><div style="display:inline-flex;gap:5px;">'
+                + '<button class="btn btn-ghost btn-sm" onclick="moveModule('+idx+',-1)" '+(idx===0?'disabled':'')+'>↑</button>'
+                + '<button class="btn btn-ghost btn-sm" onclick="moveModule('+idx+',1)" '+(idx===mods.length-1?'disabled':'')+'>↓</button>'
+                + '<button class="btn btn-ghost btn-sm" onclick="openEditModuleModal('+idx+')">✏️</button>'
+                + '<button class="btn btn-danger btn-sm" onclick="handleDeleteModule('+idx+',\''+st+'\')">🗑️</button>'
+                + '</div></td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    function openAddModuleModal() {
+        document.getElementById('moduleFormTitle').textContent = 'Yeni Bölüm Ekle';
+        ['editModuleIdx','formModuleTitle','formModulePath','formModuleCategory','formModuleDescription'].forEach(id => document.getElementById(id).value = '');
+        document.getElementById('formModuleIcon').value = '📄';
+        document.getElementById('formModuleCategoryColor').value = '#3b82f6';
+        document.getElementById('formModulePosition').value = 'left';
+        document.getElementById('moduleFormAlert').style.display = 'none';
+        openModal('moduleFormModal');
+    }
+
+    function openEditModuleModal(idx) {
+        const mod = getModules()[idx]; if (!mod) return;
+        document.getElementById('moduleFormTitle').textContent = 'Bölümü Düzenle';
+        document.getElementById('editModuleIdx').value = idx;
+        document.getElementById('formModuleTitle').value = mod.title;
+        document.getElementById('formModuleIcon').value  = mod.icon || '📄';
+        document.getElementById('formModulePath').value  = mod.path;
+        document.getElementById('formModuleCategory').value      = mod.category || '';
+        document.getElementById('formModuleCategoryColor').value  = mod.categoryColor || '#3b82f6';
+        document.getElementById('formModulePosition').value       = mod.menuPosition || 'left';
+        document.getElementById('formModuleDescription').value    = mod.description || '';
+        document.getElementById('moduleFormAlert').style.display  = 'none';
+        openModal('moduleFormModal');
+    }
+
+    function handleSaveModule(e) {
+        e.preventDefault();
+        const idx = document.getElementById('editModuleIdx').value;
+        const title    = document.getElementById('formModuleTitle').value.trim();
+        const icon     = document.getElementById('formModuleIcon').value.trim() || '📄';
+        const path     = document.getElementById('formModulePath').value.trim();
+        const category = document.getElementById('formModuleCategory').value.trim();
+        const categoryColor  = document.getElementById('formModuleCategoryColor').value;
+        const menuPosition   = document.getElementById('formModulePosition').value || 'left';
+        const description    = document.getElementById('formModuleDescription').value.trim();
+        const ab = document.getElementById('moduleFormAlert');
+        if (!title || !path) { ab.textContent = 'Bölüm adı ve bağlantı zorunludur!'; ab.style.display = 'block'; return; }
+        const mods = JSON.parse(JSON.stringify(getModules()));
+        if (idx !== '') {
+            const i = parseInt(idx);
+            mods[i] = {...mods[i], title, icon, path, category, categoryColor, menuPosition, description};
+        } else {
+            const newId = mods.length > 0 ? Math.max(...mods.map(m => m.id)) + 1 : 1;
+            const slug  = title.toLowerCase().replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+            mods.push({id:newId, slug, title, icon, path, category, categoryColor, menuPosition, description});
+        }
+        lmsStorage.saveCustomModules(mods);
+        closeModal('moduleFormModal');
+        initInitialModuleOptions();
+        loadMenuTab();
+    }
+
+    function handleDeleteModule(idx, name) { if (!confirm('"'+name+'" bölümünü kaldırmak istediğinize emin misiniz?\n\nÖğrenci ilerleme kayıtları değişmez.')) return; const mods = JSON.parse(JSON.stringify(getModules())); mods.splice(idx,1); lmsStorage.saveCustomModules(mods); loadMenuTab(); }
+    function moveModule(idx, dir)          { const mods = JSON.parse(JSON.stringify(getModules())), t = idx+dir; if (t<0||t>=mods.length) return; [mods[idx],mods[t]]=[mods[t],mods[idx]]; lmsStorage.saveCustomModules(mods); loadMenuTab(); }
+    function confirmResetModules()         { if (!confirm('Menüyü varsayılan 26 bölüme sıfırlamak istediğinize emin misiniz?')) return; lmsStorage.resetModulesToDefault(); initInitialModuleOptions(); loadMenuTab(); }
+
+    // ==================== DUYURU YÖNETİMİ ====================
+    function loadAnnouncementsTab() {
+        const anns = lmsStorage.getAllAnnouncements();
+        const list  = document.getElementById('announcementsList');
+        const empty = document.getElementById('announcementsEmpty');
+        list.innerHTML = '';
+        const now = new Date();
+        if (!anns.length) { empty.style.display = 'block'; list.style.display = 'none'; return; }
+        empty.style.display = 'none'; list.style.display = 'flex';
+        const typeMap = {
+            info:    {color:'#3b82f6', bg:'rgba(59,130,246,0.1)',  border:'rgba(59,130,246,0.3)',  icon:'ℹ️'},
+            success: {color:'#10b981', bg:'rgba(16,185,129,0.1)',  border:'rgba(16,185,129,0.3)',  icon:'✅'},
+            warning: {color:'#f59e0b', bg:'rgba(245,158,11,0.1)',  border:'rgba(245,158,11,0.3)',  icon:'⚠️'},
+            danger:  {color:'#ef4444', bg:'rgba(239,68,68,0.1)',   border:'rgba(239,68,68,0.3)',   icon:'🚨'}
+        };
+        anns.slice().reverse().forEach(ann => {
+            const tm = typeMap[ann.type] || typeMap.info;
+            const expired = ann.expiryDate && new Date(ann.expiryDate) < now;
+            const cls = lmsStorage.getAllClasses().find(c => c.id === ann.classId);
+            const targetLabel  = ann.classId ? (cls ? '🏫 '+cls.name : 'Silinmiş Sınıf') : '👥 Tüm Kursiyerler';
+            const expiryStr    = ann.expiryDate ? new Date(ann.expiryDate).toLocaleDateString('tr-TR') : 'Süresiz';
+            const card = document.createElement('div');
+            card.style.cssText = 'background:'+tm.bg+';border:1px solid '+tm.border+';border-radius:12px;padding:18px 20px;position:relative;'+(expired?'opacity:0.55;':'');
+            card.innerHTML =
+                '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">'
+                + '<div style="flex:1;min-width:0;">'
+                + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+                + '<span style="font-size:18px;">'+tm.icon+'</span>'
+                + '<span style="font-size:15px;font-weight:700;color:white;">'+ann.title+'</span>'
+                + (expired ? '<span style="font-size:11px;background:rgba(0,0,0,0.3);color:#f87171;padding:2px 8px;border-radius:20px;">Süresi Doldu</span>' : '')
+                + '</div>'
+                + '<p style="color:var(--text-secondary);font-size:13px;margin:0 0 10px;line-height:1.6;">'+ann.message.replace(/\n/g,'<br>')+'</p>'
+                + '<div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--text-muted);">'
+                + '<span>📅 '+new Date(ann.createdAt).toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})+'</span>'
+                + '<span>🎯 '+targetLabel+'</span>'
+                + '<span>⏱️ Bitiş: '+expiryStr+'</span>'
+                + '</div></div>'
+                + '<button onclick="deleteAnnouncement(\''+ann.id+'\')" class="btn btn-danger btn-sm" style="flex-shrink:0;padding:4px 10px;">🗑️</button>'
+                + '</div>';
+            list.appendChild(card);
+        });
+    }
+
+    function openAnnouncementModal() {
+        const cls = lmsStorage.getAllClasses();
+        const sel = document.getElementById('formAnnClass');
+        sel.innerHTML = '<option value="">— Sınıf Seçin —</option>';
+        cls.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
+        document.getElementById('formAnnTitle').value = '';
+        document.getElementById('formAnnMessage').value = '';
+        document.getElementById('formAnnTarget').value = 'all';
+        document.getElementById('formAnnType').value   = 'info';
+        document.getElementById('formAnnExpiry').value = '';
+        document.getElementById('annClassGroup').style.display = 'none';
+        openModal('announcementFormModal');
+    }
+
+    function updateAnnClassSelector() {
+        const isClass = document.getElementById('formAnnTarget').value === 'class';
+        document.getElementById('annClassGroup').style.display = isClass ? 'block' : 'none';
+    }
+
+    function handleSaveAnnouncement(e) {
+        e.preventDefault();
+        const title      = document.getElementById('formAnnTitle').value.trim();
+        const message    = document.getElementById('formAnnMessage').value.trim();
+        const target     = document.getElementById('formAnnTarget').value;
+        const classId    = target === 'class' ? (document.getElementById('formAnnClass').value || null) : null;
+        const type       = document.getElementById('formAnnType').value;
+        const expiryDate = document.getElementById('formAnnExpiry').value || null;
+        if (target === 'class' && !classId) { alert('Lütfen bir sınıf seçin.'); return; }
+        lmsStorage.addAnnouncement({title, message, classId, type, expiryDate});
+        closeModal('announcementFormModal');
+        loadAnnouncementsTab();
+    }
+
+    function deleteAnnouncement(id) {
+        if (!confirm('Bu duyuruyu silmek istiyor musunuz?')) return;
+        lmsStorage.deleteAnnouncement(id);
+        loadAnnouncementsTab();
+    }
+
+    // ==================== KURSİYER MESAJLARI & SORU-CEVAP ====================
+    function updateAdminUnreadBadge() {
+        const badge = document.getElementById('adminUnreadBadge');
+        if (!badge) return;
+        const count = lmsStorage.getUnreadMessageCountForAdmin();
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline-block';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    function loadMessagesTab() {
+        // Sınıf filtresini doldur
+        const cls = lmsStorage.getAllClasses();
+        const sel = document.getElementById('messageFilterClass');
+        if (sel) {
+            const curVal = sel.value;
+            sel.innerHTML = '<option value="all">Tüm Sınıflar</option><option value="none">Sınıfsız</option>';
+            cls.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = '🏫 ' + c.name;
+                sel.appendChild(opt);
+            });
+            if (curVal) sel.value = curVal;
+        }
+
+        filterAndRenderMessages();
+        updateAdminUnreadBadge();
+    }
+
+    function filterAndRenderMessages() {
+        const allMsgs = lmsStorage.getAllMessages();
+        const q = (document.getElementById('messageSearchInput')?.value || '').toLowerCase().trim();
+        const statusFilter = document.getElementById('messageFilterStatus')?.value || 'all';
+        const classFilter = document.getElementById('messageFilterClass')?.value || 'all';
+        const list = document.getElementById('messagesList');
+        const empty = document.getElementById('messagesEmpty');
+        const mods = getModules();
+
+        if (!list || !empty) return;
+
+        let filtered = allMsgs.slice().reverse().filter(m => {
+            if (statusFilter !== 'all' && m.status !== statusFilter) return false;
+            if (classFilter === 'none' && m.classId) return false;
+            if (classFilter !== 'all' && classFilter !== 'none' && m.classId !== classFilter) return false;
+            if (q) {
+                const matchName = (m.userName || '').toLowerCase().includes(q);
+                const matchUser = (m.userUsername || '').toLowerCase().includes(q);
+                const matchSub  = (m.subject || '').toLowerCase().includes(q);
+                const matchMsg  = (m.message || '').toLowerCase().includes(q);
+                if (!matchName && !matchUser && !matchSub && !matchMsg) return false;
+            }
+            return true;
+        });
+
+        list.innerHTML = '';
+        if (filtered.length === 0) {
+            empty.style.display = 'block';
+            list.style.display = 'none';
+            return;
+        }
+
+        empty.style.display = 'none';
+        list.style.display = 'flex';
+
+        filtered.forEach(msg => {
+            const card = document.createElement('div');
+            card.className = 'message-card ' + (msg.status === 'answered' ? 'status-answered' : 'status-pending');
+
+            const isPending = msg.status === 'pending';
+            const statusBadge = isPending
+                ? '<span style="background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">🟡 Yanıt Bekliyor</span>'
+                : '<span style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">🟢 Yanıtlandı</span>';
+
+            const unreadDot = msg.unreadByAdmin
+                ? '<span style="background:#ef4444;color:white;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;">YENİ</span>'
+                : '';
+
+            const refMod = msg.moduleRefId ? mods.find(m => m.id === msg.moduleRefId) : null;
+            const refBadge = refMod
+                ? '<span style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;">📌 Bölüm ' + refMod.id + ': ' + refMod.title + '</span>'
+                : '';
+
+            const classBadge = msg.className
+                ? '<span style="background:rgba(255,255,255,0.06);color:var(--text-secondary);padding:2px 8px;border-radius:6px;font-size:11px;">🏫 ' + msg.className + '</span>'
+                : '<span style="color:var(--text-muted);font-size:11px;">(Sınıfsız)</span>';
+
+            const dateStr = new Date(msg.createdAt).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            let repliesHtml = '';
+            if (msg.replies && msg.replies.length > 0) {
+                repliesHtml += '<div class="chat-thread">';
+                msg.replies.forEach(r => {
+                    const isTeacher = r.sender === 'admin';
+                    const repDate = new Date(r.createdAt).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    repliesHtml += '<div class="chat-bubble ' + (isTeacher ? 'teacher' : 'student') + '">'
+                        + '<div class="chat-bubble-header">'
+                        + '<span class="chat-bubble-sender">' + (isTeacher ? '👑 Kurs Öğretmeni' : '👤 ' + (r.senderName || msg.userName)) + '</span>'
+                        + '<span>' + repDate + '</span>'
+                        + '</div>'
+                        + '<div style="color:var(--text-primary);">' + r.text.replace(/\n/g, '<br>') + '</div>'
+                        + '</div>';
+                });
+                repliesHtml += '</div>';
+            }
+
+            card.innerHTML =
+                '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">'
+                + '<div style="display:flex;align-items:center;gap:10px;">'
+                + '<div class="user-avatar" style="width:36px;height:36px;font-size:14px;">' + (msg.userName || 'K')[0].toUpperCase() + '</div>'
+                + '<div>'
+                + '<div style="display:flex;align-items:center;gap:8px;">'
+                + '<span style="font-weight:700;color:white;font-size:15px;">' + msg.userName + '</span>'
+                + '<code style="color:#93c5fd;font-size:12px;">@' + msg.userUsername + '</code>'
+                + unreadDot
+                + '</div>'
+                + '<div style="display:flex;align-items:center;gap:8px;margin-top:2px;">'
+                + classBadge
+                + '<span style="color:var(--text-muted);font-size:11px;">📅 ' + dateStr + '</span>'
+                + '</div></div></div>'
+                + '<div style="display:flex;align-items:center;gap:8px;">'
+                + statusBadge
+                + '<button class="btn btn-danger btn-sm" onclick="deleteAdminMessage(\'' + msg.id + '\')" title="Mesajı Sil" style="padding:4px 9px;">🗑️</button>'
+                + '</div></div>'
+                + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
+                + '<h3 style="color:white;font-size:16px;font-weight:700;margin:0;">' + msg.subject + '</h3>'
+                + refBadge
+                + '</div>'
+                + '<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:10px;padding:14px;color:var(--text-primary);font-size:13.5px;line-height:1.6;margin-bottom:12px;">'
+                + msg.message.replace(/\n/g, '<br>')
+                + '</div>'
+                + repliesHtml
+                + '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border-color);">'
+                + '<div style="display:flex;gap:10px;align-items:flex-start;">'
+                + '<textarea id="replyInput_' + msg.id + '" class="form-control" rows="2" placeholder="Kursiyere yanıtınızı buraya yazın..." style="font-size:13px;flex:1;"></textarea>'
+                + '<button class="btn btn-primary btn-sm" onclick="sendAdminReply(\'' + msg.id + '\')" style="white-space:nowrap;padding:10px 16px;">💬 Yanıtla &amp; Gönder</button>'
+                + '</div></div>';
+
+            list.appendChild(card);
+        });
+
+        // Yönetici mesajları gördüğünde okundu yap
+        allMsgs.forEach(m => {
+            if (m.unreadByAdmin) lmsStorage.markMessageAsReadByAdmin(m.id);
+        });
+        updateAdminUnreadBadge();
+    }
+
+    function sendAdminReply(msgId) {
+        const input = document.getElementById('replyInput_' + msgId);
+        if (!input) return;
+        const text = input.value.trim();
+        if (!text) { alert('Lütfen yanıt metnini yazınız.'); return; }
+
+        const res = lmsStorage.replyMessage({
+            messageId: msgId,
+            sender: 'admin',
+            senderName: 'Kurs Öğretmeni',
+            text: text
+        });
+
+        if (res.success) {
+            input.value = '';
+            filterAndRenderMessages();
+        } else {
+            alert('Hata: ' + res.message);
+        }
+    }
+
+    function deleteAdminMessage(msgId) {
+        if (!confirm('Bu mesajı ve yazışma geçmişini silmek istediğinize emin misiniz?')) return;
+        lmsStorage.deleteMessage(msgId);
+        filterAndRenderMessages();
+        updateAdminUnreadBadge();
+    }
+
+    function openAdminDirectMessageModal(preselectedUserId = null) {
+        const users = lmsStorage.getAllUsers();
+        const sel = document.getElementById('formAdminMsgUser');
+        sel.innerHTML = '<option value="">— Kursiyer Seçin —</option>';
+        users.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.id;
+            opt.textContent = u.fullName + ' (@' + u.username + ')';
+            sel.appendChild(opt);
+        });
+
+        if (preselectedUserId) {
+            sel.value = preselectedUserId;
+        }
+
+        document.getElementById('formAdminMsgSubject').value = '';
+        document.getElementById('formAdminMsgBody').value = '';
+        document.getElementById('adminDirectMsgAlert').style.display = 'none';
+
+        openModal('adminDirectMessageModal');
+    }
+
+    function handleSendAdminDirectMessage(e) {
+        e.preventDefault();
+        const userId = document.getElementById('formAdminMsgUser').value;
+        const subject = document.getElementById('formAdminMsgSubject').value.trim();
+        const body = document.getElementById('formAdminMsgBody').value.trim();
+        const alertBox = document.getElementById('adminDirectMsgAlert');
+
+        if (!userId) {
+            alertBox.textContent = 'Lütfen bir kursiyer seçin.';
+            alertBox.style.display = 'block';
+            return;
+        }
+
+        const user = lmsStorage.getUserById(userId);
+        if (!user) {
+            alertBox.textContent = 'Kursiyer bulunamadı.';
+            alertBox.style.display = 'block';
+            return;
+        }
+
+        const classes = lmsStorage.getAllClasses();
+        const userClass = classes.find(c => c.id === user.classId);
+
+        const newMsg = {
+            id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+            userId: user.id,
+            userName: user.fullName || user.username,
+            userUsername: user.username,
+            classId: user.classId || null,
+            className: userClass ? userClass.name : '',
+            subject: subject,
+            message: body,
+            moduleRefId: null,
+            createdAt: new Date().toISOString(),
+            status: 'answered',
+            unreadByAdmin: false,
+            unreadByStudent: true,
+            replies: [
+                {
+                    id: 'rep_' + Date.now(),
+                    sender: 'admin',
+                    senderName: 'Kurs Öğretmeni',
+                    text: body,
+                    createdAt: new Date().toISOString()
+                }
+            ]
+        };
+
+        const all = lmsStorage.getAllMessages();
+        all.push(newMsg);
+        lmsStorage.saveAllMessages(all);
+
+        closeModal('adminDirectMessageModal');
+        alert('✓ Mesaj kursiyere başarıyla gönderildi!');
+        if (document.getElementById('tabMessages').style.display !== 'none') {
+            filterAndRenderMessages();
+        }
+    }
+
+    // ==================== AYARLAR ====================
+    const ADMIN_THEME_NAMES = {
+        'night-blue':    '🌌 Gece Mavisi',
+        'forest-green':  '🌲 Orman Yeşili',
+        'purple-sunset': '🌅 Mor Gün Batımı',
+        'amber-gold':    '⚡ Kehribar Ateşi',
+        'ocean-teal':    '🌊 Okyanus Turkuaz',
+        'clean-light':   '☀️ Modern Aydınlık'
+    };
+    const ALL_ADMIN_THEMES = Object.keys(ADMIN_THEME_NAMES);
+
+    let _selectedMenuLayout = 'two-column';
+    let _selectedMenuStyle = 'theme-adaptive';
+
+    function loadSettingsTab() {
+        const cfg = lmsStorage.getFirebaseConfig();
+        document.getElementById('fbEnabled').checked    = !!cfg.enabled;
+        document.getElementById('fbDatabaseURL').value  = cfg.databaseURL || '';
+        document.getElementById('fbApiKey').value       = cfg.apiKey || '';
+
+        const ts = lmsStorage.getThemeSettings();
+        const currentTheme = ts.theme || lmsStorage.getTheme();
+        _selectedMenuLayout = ts.menuLayout || 'two-column';
+        _selectedMenuStyle = ts.menuStyle || 'theme-adaptive';
+
+        // Checkbox: Kursiyer Menüsünde Tema Seçici
+        const allowSwitch = document.getElementById('settingAllowMenuThemeSwitch');
+        if (allowSwitch) allowSwitch.checked = (ts.allowMenuThemeSwitch !== false);
+
+        // Dropdown: Konum
+        const posEl = document.getElementById('settingMenuThemePosition');
+        if (posEl) posEl.value = ts.switcherPosition || 'both';
+
+        // Tema kartlarını güncelle
+        updateThemeCardsUI(currentTheme);
+
+        // Düzen ve Stil kartlarını güncelle
+        selectMenuLayout(_selectedMenuLayout, false);
+        selectMenuStyle(_selectedMenuStyle, false);
+
+        const adminCreds = lmsStorage.getAdminCreds();
+        const settingsUserEl = document.getElementById('settingsAdminUser');
+        if (settingsUserEl) settingsUserEl.value = adminCreds.username || 'admin';
+    }
+
+    function updateThemeCardsUI(activeTheme) {
+        ALL_ADMIN_THEMES.forEach(t => {
+            const card = document.getElementById('theme-card-' + t);
+            const chk  = document.getElementById('theme-check-' + t);
+            if (card) card.classList.toggle('selected', t === activeTheme);
+            if (chk)  chk.style.visibility = (t === activeTheme) ? 'visible' : 'hidden';
+        });
+
+        const badge = document.getElementById('activeThemeBadge');
+        if (badge) badge.textContent = 'Aktif: ' + (ADMIN_THEME_NAMES[activeTheme] || activeTheme);
+
+        updateThemePreviewMockup();
+    }
+
+    function applyTheme(name) {
+        lmsStorage.setTheme(name);
+        updateThemeCardsUI(name);
+    }
+
+    function selectMenuLayout(layout, doUpdate = true) {
+        _selectedMenuLayout = layout;
+        ['two-column', 'card-grid', 'compact'].forEach(l => {
+            const el = document.getElementById('choice-layout-' + l);
+            if (el) el.classList.toggle('active', l === layout);
+        });
+        if (doUpdate) updateThemePreviewMockup();
+    }
+
+    function selectMenuStyle(style, doUpdate = true) {
+        _selectedMenuStyle = style;
+        ['theme-adaptive', 'classic-retro', 'minimal'].forEach(s => {
+            const el = document.getElementById('choice-style-' + s);
+            if (el) el.classList.toggle('active', s === style);
+        });
+        if (doUpdate) updateThemePreviewMockup();
+    }
+
+    function handleSettingSwitchChange() {
+        updateThemePreviewMockup();
+    }
+
+    function handleMenuPositionChange() {
+        // no-op, saved on submit
+    }
+
+    function updateThemePreviewMockup() {
+        const mockup = document.getElementById('adminPreviewMockup');
+        const bar = document.getElementById('previewMockupBar');
+        const title = document.getElementById('previewMockupTitle');
+        const badge = document.getElementById('previewMockupBadge');
+        const lbl = document.getElementById('previewStyleName');
+        if (!mockup || !bar || !title || !badge) return;
+
+        if (lbl) {
+            const names = {
+                'theme-adaptive': 'Tema Uyumlu Modern',
+                'classic-retro': 'Klasik Retro Pembe-Mor',
+                'minimal': 'Minimalist Çizgili'
+            };
+            lbl.textContent = names[_selectedMenuStyle] || _selectedMenuStyle;
+        }
+
+        if (_selectedMenuStyle === 'classic-retro') {
+            mockup.style.background = '#fce4f3';
+            mockup.style.borderColor = '#4a044e';
+            mockup.style.borderRadius = '0px';
+            mockup.style.borderWidth = '1.5px';
+            bar.style.background = '#4a044e';
+            bar.style.width = '8px';
+            bar.style.borderRadius = '0px';
+            title.style.color = '#4a044e';
+            title.style.fontFamily = "Georgia, serif";
+            badge.style.color = '#e11d48';
+            badge.style.background = 'transparent';
+        } else if (_selectedMenuStyle === 'minimal') {
+            mockup.style.background = 'transparent';
+            mockup.style.border = 'none';
+            mockup.style.borderBottom = '1px solid var(--border-color)';
+            mockup.style.borderRadius = '0px';
+            bar.style.display = 'none';
+            title.style.color = 'var(--text-primary)';
+            title.style.fontFamily = "var(--font-primary)";
+            badge.style.color = 'var(--accent-blue)';
+            badge.style.background = 'transparent';
+        } else {
+            // theme-adaptive
+            mockup.style.background = 'var(--bg-input)';
+            mockup.style.border = '1px solid var(--border-color)';
+            mockup.style.borderRadius = 'var(--radius-sm)';
+            bar.style.display = 'block';
+            bar.style.background = 'var(--accent-blue)';
+            bar.style.width = '4px';
+            bar.style.borderRadius = '2px';
+            title.style.color = 'var(--text-primary)';
+            title.style.fontFamily = "var(--font-primary)";
+            badge.style.color = 'var(--accent-blue)';
+            badge.style.background = 'rgba(59,130,246,0.12)';
+        }
+    }
+
+    function saveAdminThemeSettings() {
+        const allowSwitch = document.getElementById('settingAllowMenuThemeSwitch').checked;
+        const pos = document.getElementById('settingMenuThemePosition').value;
+        const curTheme = lmsStorage.getTheme();
+
+        const updated = lmsStorage.saveThemeSettings({
+            theme: curTheme,
+            allowMenuThemeSwitch: allowSwitch,
+            menuLayout: _selectedMenuLayout,
+            menuStyle: _selectedMenuStyle,
+            switcherPosition: pos
+        });
+
+        alert('✓ Arayüz teması ve menü tasarım ayarları başarıyla kaydedildi!\n\n• Tema: ' + (ADMIN_THEME_NAMES[curTheme] || curTheme) + '\n• Menüde Değiştirici: ' + (allowSwitch ? 'Açık' : 'Kapalı') + '\n• Menü Düzeni: ' + _selectedMenuLayout + '\n• Menü Stili: ' + _selectedMenuStyle);
+    }
+
+    function saveFirebaseSettings()   { lmsStorage.saveFirebaseConfig({enabled: document.getElementById('fbEnabled').checked, databaseURL: document.getElementById('fbDatabaseURL').value.trim(), apiKey: document.getElementById('fbApiKey').value.trim()}); alert('Firebase ayarları kaydedildi.'); }
+    async function testFirebaseSync() { saveFirebaseSettings(); const res = await lmsStorage.pullFromFirebase(); if (res.success) { alert('✓ Senkronizasyon başarılı! '+res.count+' kursiyer eşitlendi.'); loadDashboardData(); } else alert('Senkronizasyon hatası: '+res.message); }
+    function handleImportBackup(e)    { const file=e.target.files[0]; if(!file)return; const r=new FileReader(); r.onload=ev=>{const res=lmsStorage.importBackupJSON(ev.target.result); alert(res.success?'✓ Yedek geri yüklendi! ('+res.count+' Kursiyer)':'Hata: '+res.message); if(res.success)loadDashboardData();}; r.readAsText(file); }
+
+    function exportCsvList() {
+        const users = lmsStorage.getAllUsers(), cls = lmsStorage.getAllClasses(), mods = getModules();
+        let csv = 'Ad Soyad;Kullanıcı Adı;Şifre;Sınıf;Tamamlanan;Yüzde;Son Aktiflik\n';
+        users.forEach(u => {
+            const c = (u.completedModuleIds||[]).length;
+            const pct = mods.length > 0 ? Math.round(c/mods.length*100) : 0;
+            const cl = cls.find(x => x.id === u.classId);
+            csv += '"'+u.fullName+'";"'+u.username+'";"'+u.password+'";"'+(cl?cl.name:'')+'";"'+c+'/'+mods.length+'";"'+'%'+pct+'";"'+(u.lastActive||'')+'"\n';
+        });
+        const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob), a = document.createElement('a');
+        a.href = url; a.download = 'kursiyer_listesi_'+new Date().toISOString().slice(0,10)+'.csv'; a.click(); URL.revokeObjectURL(url);
+    }
+
+    // ==================== YÖNETİCİ ŞİFRE DEĞİŞTİRME ====================
+    function openAdminPasswordModal() {
+        const creds = lmsStorage.getAdminCreds();
+        document.getElementById('modalAdminUser').value = creds.username || 'admin';
+        document.getElementById('modalCurrentPass').value = '';
+        document.getElementById('modalNewPass').value = '';
+        document.getElementById('modalNewPassConfirm').value = '';
+        const ab = document.getElementById('adminModalPasswordAlert');
+        ab.style.display = 'none';
+        openModal('adminPasswordModal');
+    }
+
+    function handleModalChangePassword(e) {
+        e.preventDefault();
+        const ab = document.getElementById('adminModalPasswordAlert');
+        const user = document.getElementById('modalAdminUser').value.trim();
+        const curPass = document.getElementById('modalCurrentPass').value;
+        const newPass = document.getElementById('modalNewPass').value;
+        const confirmPass = document.getElementById('modalNewPassConfirm').value;
+
+        if (newPass !== confirmPass) {
+            ab.className = 'alert-message alert-error';
+            ab.textContent = 'Yeni şifreler eşleşmiyor! Lütfen tekrar kontrol edin.';
+            ab.style.display = 'block';
+            return;
+        }
+
+        const res = lmsStorage.changeAdminPassword(curPass, newPass, user);
+        if (!res.success) {
+            ab.className = 'alert-message alert-error';
+            ab.textContent = res.message;
+            ab.style.display = 'block';
+            return;
+        }
+
+        ab.className = 'alert-message alert-success';
+        ab.textContent = '✓ ' + res.message;
+        ab.style.display = 'block';
+
+        setTimeout(() => {
+            closeModal('adminPasswordModal');
+            alert('✓ Yönetici şifreniz başarıyla değiştirildi!\n\nYeni kullanıcı adı: ' + res.creds.username);
+        }, 600);
+    }
+
+    function handleSettingsChangePassword(e) {
+        e.preventDefault();
+        const ab = document.getElementById('settingsPasswordAlert');
+        const user = document.getElementById('settingsAdminUser').value.trim();
+        const curPass = document.getElementById('settingsCurrentPass').value;
+        const newPass = document.getElementById('settingsNewPass').value;
+        const confirmPass = document.getElementById('settingsNewPassConfirm').value;
+
+        if (newPass !== confirmPass) {
+            ab.className = 'alert-message alert-error';
+            ab.textContent = 'Yeni şifreler eşleşmiyor! Lütfen tekrar kontrol edin.';
+            ab.style.display = 'block';
+            return;
+        }
+
+        const res = lmsStorage.changeAdminPassword(curPass, newPass, user);
+        if (!res.success) {
+            ab.className = 'alert-message alert-error';
+            ab.textContent = res.message;
+            ab.style.display = 'block';
+            return;
+        }
+
+        ab.className = 'alert-message alert-success';
+        ab.textContent = '✓ ' + res.message;
+        ab.style.display = 'block';
+
+        document.getElementById('settingsCurrentPass').value = '';
+        document.getElementById('settingsNewPass').value = '';
+        document.getElementById('settingsNewPassConfirm').value = '';
+
+        alert('✓ Yönetici şifreniz başarıyla değiştirildi!\n\nYeni kullanıcı adı: ' + res.creds.username);
+    }
+
+    // ==================== MODAL YARDIMCILARI ====================
+    function openModal(id)  { document.getElementById(id).classList.add('show'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+</script>
+</body>
+</html>

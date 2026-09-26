@@ -1,178 +1,1268 @@
-<html>
-	<head>
-		<title>edremithem</title>
-		<style type="text/css">
-		.pembe a
-		{
-			
-			background:#EB4E7E;
-		}
-		.mavi a
-		{
-			background:#0000FF;
-		}
-		.sari a
-		{
-			background:#FED051;
-		}
-		.mor a
-		{
-			background:#800080;
-		}
-		.mavik a
-		{
-			background:#000080;
-			}
-			.mavikk a
-		{
-			background:#FF00FF;
-			}
-		.kirmizi a
-		{
-			background:#FF0000;
-			}			
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edremit HEM - Bilgisayar İşletmenliği Kursu</title>
+    <link rel="stylesheet" href="css/lms-theme.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💻</text></svg>">
+    <!-- Tema ve Menü Tasarımı flaşını önle -->
+    <script>
+        (function() {
+            try {
+                const raw = localStorage.getItem('ehem_theme_settings');
+                const s = raw ? JSON.parse(raw) : null;
+                const th = (s && s.theme) || localStorage.getItem('ehem_theme') || 'night-blue';
+                document.documentElement.setAttribute('data-theme', th);
+                if (s && s.menuLayout) document.documentElement.setAttribute('data-menu-layout', s.menuLayout);
+                if (s && s.menuStyle) document.documentElement.setAttribute('data-menu-style', s.menuStyle);
+            } catch(e) {}
+        })();
+    </script>
+</head>
+<body>
 
+    <!-- SVG Gradients for Progress Ring -->
+    <svg width="0" height="0" style="position: absolute;">
+        <defs>
+            <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#3b82f6" />
+                <stop offset="100%" stop-color="#10b981" />
+            </linearGradient>
+        </defs>
+    </svg>
 
-			
-		.yesil a
-		{
-			background:#33CC00;
-		}
-		.yesilk a
-		{
-			background:#008080;
-		}
-		.siyah a
-		{
-			background:#0B0B0B;
-			}
-		.pembek a
-		{
-			background:#F466C5;
-			}	
-		.moris a
-		{
-			background:#E61876;
-			}	
-			
+    <!-- Üst Gezinme Çubuğu (Navbar) -->
+    <nav class="navbar" id="mainNavbar">
+        <a href="index.html" class="brand-container">
+            <div class="brand-logo">💻</div>
+            <div>
+                <div class="brand-title">BİLGİSAYAR İŞLETMENLİĞİ</div>
+                <div class="brand-subtitle">Alim Hoca</div>
+            </div>
+        </a>
 
-		.menu
-		{
-			list-style:none;
-			margin:0; padding-top:0;
-		}
-		
-		.menu li
-		{
-			
-			margin:5px;
-		}
-		.menu a 
-		{
-			font-size:20px;
-			text-decoration:none;  
-			 font-weight:bolder;
-			padding:5px; 
-			line-height:25px;
-			text-align:left;
-			padding:5px;
-			color:white;
-			border:0px solid black;
-			width:340px;
-			display:block;
-		}
-		
-		.menu a:hover
-		{
-			border-top:0px solid #090909;
-			border-right:0px solid #090909;
-			border-left:0px solid #090909;
-			border-bottom:1px solid #090909;
-		}
-		
-		</style>
-	</head>
-	<body>
-	<table width="800" border="0" align="center">
-  <tbody>
-    <tr>
-      <td align="center" valign="middle" bgcolor="#2F27ED"><h2 style="color: #F5F5F5">BİLGİSAYAR İŞLETMENLİĞİ KURSU</h2></td>
-    </tr>
-	              <td align="center">
-	  <ul class="menu" >
-		  <table width="800" border="0" align="center">
-  <tbody>
-    <tr>
-      <td> <li class="pembe"><a href="html/fare_klavye/fare_oyunu.html" target="new">1- FARE UYGULAMASI</a></li>
-			<li class="mavik"><a href="html/fare_klavye/klavye oyunu.html" target="new">2- KLAVYE UYGULAMASI<br>
-			</a></li>
-		<li class="pembe"><a href="html/fare_klavye/eslestir/ogrenci/1.tur.html" target="new">3- EŞLEŞTİRME UYGULAMASI</a></li>
-		  	<li class="mavik"><a href="html/giris/yon.html" target="new">4- YÖN TUŞU UYGULAMASI&nbsp;&nbsp;</a></li>
-		  	<li class="pembe"><a href="html/topudusurme/index.html" target="new">5- TOPU DÜŞÜRME OYUNU&nbsp;&nbsp;</a></li>
-			<li class="mavik"><a href="html/giris/sil.html" target="new">6- SİLME TUŞU UYGULAMASI&nbsp;&nbsp;</a></li>
-		  <li class="pembe"><a href="html/uzantilar/sinav.html" target="new">7- SİMGELERİ TANIMA&nbsp;&nbsp;</a></li>
-<li class="mavik"><a href="html/giris/gdk.html" target="new">8- GERİ DÖNÜŞÜM KUTUSU<br>
-			</a></li>
-		 <li class="pembe"><a href="html/giris/kopyala.html" target="new">9- KES - KOPYALA - YAPIŞTIR<br>
-			</a></li>
-		  <li class="mavik"><a href="html/giris/sistem.html" target="new">10- SİSTEM KURMA UYGULAMASI<br>
-			</a></li>
-		<li class="pembe"><a href="html/kur/index.html" target="new">11- DONANIM BİLGİSİ<br>
-			</a></li>
-<li class="pembe"><a href="html/bakim/sinav.html" target="new">12-BAKIM İŞLEMİ UYGULAMASI<br>
-			</a></li>
+        <div class="user-nav-actions" id="userNavActions">
+            <!-- Oturum durumuna göre dinamik doldurulur -->
+        </div>
+    </nav>
 
-		</td>
-		
-      <td>
-		 
+    <!-- GİRİŞ EKRANI (Oturum Açılmamışsa) -->
+    <div id="loginView" class="auth-wrapper" style="display: none;">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo-badge">🎓</div>
+                <h2 style="font-size: 24px; color: white; margin-bottom: 6px;">Kurs Portalı Girişi</h2>
+                <p style="font-size: 13px; color: var(--text-secondary);">Eğitim içeriklerine erişmek için giriş yapınız</p>
+            </div>
 
-<li class="mavik"><a href="html/bilgisayarinizi_taniyormusunuz/sinav.html" target="new">13-BİLGİSAYARI TANIMA<br>
-			</a></li>
-<li class="kirmizi"><a href="html/sinav/modul1.html" target="new">>>DENEME SINAVI-1<br>
+            <div class="auth-tabs">
+                <div class="auth-tab active" id="tabStudent" onclick="switchLoginTab('student')">Kursiyer Girişi</div>
+                <div class="auth-tab" id="tabAdmin" onclick="switchLoginTab('admin')">Yönetici Girişi</div>
+            </div>
 
-<li class="mavik"><a href="html/internet/internet.html" target="new">14-İNTERNETE GİRİŞ<br>
-			</a></li>
+            <div id="loginAlert" class="alert-message alert-error"></div>
 
-			</a></li>
-<li class="kirmizi"><a href="html/sinav/modul2.html" target="new">>>DENEME SINAVI-2<br>
-			</a></li>
+            <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+                <div class="form-group">
+                    <label class="form-label" id="usernameLabel">Kullanıcı Adı</label>
+                    <input type="text" id="loginUsername" class="form-control" placeholder="Kullanıcı adınızı girin" required autocomplete="username">
+                </div>
 
-<li class="mavik"><a href="html/word/word_ekrani.html" target="new">15-WORD PROGRAMI EKRANI<br>
-			</a></li>
-<li class="kirmizi"><a href="html/sinav/modul3/modul3.html" target="new">>>DENEME SINAVI-3<br>
-			</a></li>
-<li class="kirmizi"><a href="html/word/word_gorsel/etkilesimli_sinav.html" target="new">>>WORD GÖRSEL SINAVI<br>
-			</a></li>
+                <div class="form-group">
+                    <label class="form-label">Şifre</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="Şifrenizi girin" required autocomplete="current-password">
+                </div>
 
-<li class="mavik"><a href="html/excel/excelgiris.html" target="new">16-EXCEL' E GİRİŞ<br>
-			</a></li>
-<li class="kirmizi"><a href="html/excel/excel_gorsel/excel_gorsel.html" target="new">>>EXCEL GÖRSEL SINAVI<br>
-			</a></li>
-<li class="kirmizi"><a href="html/excel/excel_cozumlu/cozumlu.html" target="new">>>EXCEL ÇÖZÜMLÜ SORULARI<br>
-			</a></li>
-<li class="kirmizi"><a href="html/excel/D_Y_excel/dogru_yanlis.html" target="new">>>EXCEL DOĞRU-YANLIŞ TESTİ<br>
-			</a></li>
-<li class="kirmizi"><a href="html/excel/excel_email/excel_email_test.html" target="new">>>DENEME SINAVI-4<br>
-			</a></li>
-<li class="mavik"><a href="html/ppt/Tur_1.html" target="new">>>POWERPOİNT'E GİRİŞ<br>
-			</a></li>
-<li class="kirmizi"><a href="html/ppt/powerpoint.html" target="new">>>DENEME SINAVI-5<br>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; margin-top: 10px;">
+                    Oturum Aç ➔
+                </button>
+            </form>
 
-		</ul></td>
-    </tr>
-  </tbody>
-</table>
+            <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center;">
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Hızlı Giriş Demo Hesapları:</p>
+                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="quickFill('ahmet', '123')">
+                        👤 Ahmet (1. Seviye)
+                    </button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="quickFill('zeynep', '123')">
+                        👤 Zeynep (4. Seviye)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-		 
-			
-			
-	  
-	  </td>
-  </tbody>
-</table>
+    <!-- KURSİYER PORTAL EKRANI (Giriş Yapılmışsa) -->
+    <main id="portalView" class="main-content" style="display: none;">
+        
+        <!-- DUYURU BANNER ALANI -->
+        <div id="announcementsBanner" style="display:none;margin-bottom:16px;"></div>
 
-		
-		
-	</body>
+        <!-- İlerleme Özet Kartı (Hero) -->
+        <section class="progress-hero-card">
+            <div class="progress-hero-info">
+                <span class="progress-hero-badge">🚀 ÖĞRENME YOLCULUĞU</span>
+                <h1 class="progress-hero-title">Hoş Geldiniz, <span id="heroStudentName" style="color: var(--accent-blue);">Kursiyer</span>!</h1>
+                <p class="progress-hero-subtitle" id="heroStatusText">
+                    Kursunuz toplam 26 bölümden oluşmaktadır. Her bölümü tamamladıkça bir sonraki bölümün kilidi otomatik olarak açılacaktır.
+                </p>
+                
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="heroProgressBar" style="width: 0%;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+                    <span id="heroCompletedCount">0 / 26 Bölüm Tamamlandı</span>
+                    <span id="heroProgressPercent">%0 Başarı</span>
+                </div>
+            </div>
+
+            <div class="progress-hero-stats">
+                <div class="progress-circle-wrap">
+                    <svg class="progress-circle-svg" viewBox="0 0 100 100">
+                        <circle class="progress-circle-bg" cx="50" cy="50" r="42" />
+                        <circle class="progress-circle-bar" id="heroSvgCircle" cx="50" cy="50" r="42" stroke-dasharray="264" stroke-dashoffset="264" />
+                    </svg>
+                    <div class="progress-circle-text">
+                        <span id="heroCircleVal">0%</span>
+                        <span class="progress-circle-label">İLERLEME</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="btn btn-primary" id="continueNextBtn" onclick="launchNextModule()">
+                        ▶ Sıradaki Bölüme Başla
+                    </button>
+                    <button class="btn btn-ghost btn-sm" id="heroStudentMsgBtn" onclick="openStudentMessageModal()" style="display:flex;align-items:center;justify-content:center;gap:6px;">
+                        💬 Öğretmene Soru / Mesaj Yaz
+                        <span class="badge-unread-counter" id="heroStudentUnreadBadge" style="display:none;">0</span>
+                    </button>
+                    <a href="admin.html" id="adminQuickLink" class="btn btn-ghost btn-sm" style="display: none;">
+                        🛡️ Yönetici Paneli
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2 Sütunlu Menü Düzeni (Tüm Menü Ekranda Açık) -->
+        <div class="two-column-menu-wrapper" id="twoColumnMenu">
+            <!-- Sol Sütun: Bölüm 1 - 12 (Temel Beceriler & Donanım) -->
+            <div class="menu-column" id="menuColumnLeft">
+                <div class="menu-column-header">
+                    <span class="menu-column-title">📌 1. Kısım: Temel Beceriler & Donanım</span>
+                    <span class="menu-column-count" id="leftColumnCount">0 / 12</span>
+                </div>
+                <div id="leftItemsContainer" class="menu-scroll-container">
+                    <!-- JS ile doldurulur -->
+                </div>
+            </div>
+
+            <!-- Sağ Sütun: Bölüm 13 - 26 (Sistem, Ofis & Sınavlar) -->
+            <div class="menu-column" id="menuColumnRight">
+                <div class="menu-column-header">
+                    <span class="menu-column-title">💻 2. Kısım: Sistem, Ofis & Sınavlar</span>
+                    <span class="menu-column-count" id="rightColumnCount">0 / 14</span>
+                </div>
+                <div id="rightItemsContainer" class="menu-scroll-container">
+                    <!-- JS ile doldurulur -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TEMA & TASARIM PANELİ -->
+        <div class="theme-switcher-panel" id="themeSwitcherPanel">
+            <div class="theme-switcher-header" onclick="toggleThemeSwitcher()">
+                <span style="display:flex;align-items:center;gap:8px;">
+                    <span>🎨</span> <strong>Tema &amp; Menü Tasarımı</strong>
+                </span>
+                <span class="theme-switcher-chevron" id="themeSwitcherChevron">▼</span>
+            </div>
+            <div class="theme-switcher-body" id="themeSwitcherBody">
+                <div class="portal-switcher-tabs">
+                    <button class="portal-switcher-tab-btn active" id="tabBtnPortalTheme" onclick="switchPortalTab('theme')">
+                        <span>🎨</span> Renk Teması
+                    </button>
+                    <button class="portal-switcher-tab-btn" id="tabBtnPortalDesign" onclick="switchPortalTab('design')">
+                        <span>📐</span> Menü Tasarımı &amp; Düzen
+                    </button>
+                </div>
+
+                <!-- SEKME 1: RENK TEMASI -->
+                <div class="portal-tab-pane active" id="portalPaneTheme">
+                    <p class="theme-switcher-hint">Arayüz renklerini değiştirin. Tercihiniz anında uygulanır ve kaydedilir.</p>
+                    <div class="theme-pill-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;">
+                        <button class="theme-pill" id="pill-night-blue" onclick="portalApplyTheme('night-blue')">
+                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#3b82f6,#6366f1);"></span>
+                            🌌 Gece Mavisi
+                            <span class="theme-pill-check" id="pillcheck-night-blue">✓</span>
+                        </button>
+                        <button class="theme-pill" id="pill-forest-green" onclick="portalApplyTheme('forest-green')">
+                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#10b981,#22d3ee);"></span>
+                            🌲 Orman Yeşili
+                            <span class="theme-pill-check" id="pillcheck-forest-green">✓</span>
+                        </button>
+                        <button class="theme-pill" id="pill-purple-sunset" onclick="portalApplyTheme('purple-sunset')">
+                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#a855f7,#ec4899);"></span>
+                            🌅 Mor Gün Batımı
+                            <span class="theme-pill-check" id="pillcheck-purple-sunset">✓</span>
+                        </button>
+                        <button class="theme-pill" id="pill-amber-gold" onclick="portalApplyTheme('amber-gold')">
+                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#f59e0b,#ea580c);"></span>
+                            ⚡ Kehribar Ateşi
+                            <span class="theme-pill-check" id="pillcheck-amber-gold">✓</span>
+                        </button>
+                        <button class="theme-pill" id="pill-ocean-teal" onclick="portalApplyTheme('ocean-teal')">
+                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#06b6d4,#0284c7);"></span>
+                            🌊 Okyanus Turkuaz
+                            <span class="theme-pill-check" id="pillcheck-ocean-teal">✓</span>
+                        </button>
+                        <button class="theme-pill" id="pill-clean-light" onclick="portalApplyTheme('clean-light')">
+                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#2563eb,#4f46e5);border:1px solid #cbd5e1;"></span>
+                            ☀️ Modern Aydınlık
+                            <span class="theme-pill-check" id="pillcheck-clean-light">✓</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SEKME 2: MENÜ TASARIMI & DÜZENİ -->
+                <div class="portal-tab-pane" id="portalPaneDesign">
+                    <p class="theme-switcher-hint">Menünün yerleşim düzenini ve ders butonlarının tasarım stilini değiştirin.</p>
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Menü Yerleşim Düzeni</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-ghost btn-sm" id="btnLayoutTwoCol" onclick="portalApplyLayout('two-column')">📐 2 Sütunlu Dengeli</button>
+                            <button class="btn btn-ghost btn-sm" id="btnLayoutCardGrid" onclick="portalApplyLayout('card-grid')">🔲 Modern Kart Izgarası</button>
+                            <button class="btn btn-ghost btn-sm" id="btnLayoutCompact" onclick="portalApplyLayout('compact')">📋 Kompakt Hızlı Liste</button>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="font-size:12px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;">Menü Kart Tasarım Stili</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-ghost btn-sm" id="btnStyleAdaptive" onclick="portalApplyStyle('theme-adaptive')">🎨 Tema Uyumlu Modern</button>
+                            <button class="btn btn-ghost btn-sm" id="btnStyleRetro" onclick="portalApplyStyle('classic-retro')">🌸 Klasik Retro</button>
+                            <button class="btn btn-ghost btn-sm" id="btnStyleMinimal" onclick="portalApplyStyle('minimal')">◻️ Minimalist Çizgili</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="theme-switcher-footer">
+                    <span id="themeSwitcherCurrentLabel" style="font-size:11px;color:var(--text-muted);">Aktif Tema: Gece Mavisi</span>
+                    <a href="admin.html" style="font-size:11px;color:var(--accent-blue);text-decoration:none;">⚙️ Yönetici Paneli →</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- BASİT FOOTER -->
+    <footer class="site-footer">
+        <div class="site-footer-inner">
+            <div class="footer-brand">
+                <span style="font-size: 20px;">💻</span>
+                <div>
+                    <span class="footer-brand-title">Bilgisayar İşletmenliği Kursu</span>
+                    <span style="margin: 0 6px; color: var(--text-muted);">•</span>
+                    <span class="footer-brand-author">Alim Hoca</span>
+                </div>
+            </div>
+
+            <div class="footer-links">
+                <span style="color: var(--text-muted);">🎓 26 Bölümlük İnteraktif Eğitim</span>
+                <span style="color: var(--border-color);">|</span>
+                <a href="admin.html" class="footer-link">🛡️ Yönetici Girişi</a>
+                <span style="color: var(--border-color);">|</span>
+                <button type="button" class="footer-link" onclick="window.scrollTo({top: 0, behavior: 'smooth'})" style="background: none; border: none; cursor: pointer; font: inherit; padding: 0;">
+                    ⬆️ Başa Dön
+                </button>
+            </div>
+
+            <div class="footer-copy">
+                © 2026 Tüm Hakları Saklıdır.
+            </div>
+        </div>
+    </footer>
+
+    <!-- GÖMÜLÜ LMS OYNATICI (VIEWER MODAL) -->
+    <div id="lmsModal" class="lms-modal">
+        <div class="lms-viewer-bar">
+            <div class="lms-viewer-info">
+                <span class="lms-viewer-tag" id="modalModuleTag">BÖLÜM 1</span>
+                <span class="lms-viewer-title" id="modalModuleTitle">Fare Uygulaması</span>
+            </div>
+
+            <div class="lms-viewer-actions">
+                <button class="btn btn-success" id="modalCompleteBtn" onclick="markCurrentModuleCompleted()">
+                    ✓ Bölümü Tamamla ve Sonrakine Geç
+                </button>
+                <button class="btn btn-ghost btn-sm" onclick="openInNewTab()" title="Yeni Sekmede Aç">
+                    ↗ Ayrı Sekme
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="closeLmsModal()">
+                    ✕ Menüye Dön
+                </button>
+            </div>
+        </div>
+
+        <div class="lms-iframe-container">
+            <iframe id="lmsIframe" class="lms-iframe" src="" allowfullscreen></iframe>
+        </div>
+    </div>
+
+    <!-- MODAL: KURSİYER ÖĞRETMENE MESAJ / SORU SOR MODALI -->
+    <div id="studentMessageModal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 680px;">
+            <div class="modal-header">
+                <div>
+                    <h3 style="color: white; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                        <span>💬</span> Öğretmene Mesaj Gönder / Soru Sor
+                    </h3>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 3px;">
+                        Dersler, ödevler veya aklınıza takılan sorular hakkında öğretmeninizle doğrudan iletişim kurun.
+                    </p>
+                </div>
+                <button class="modal-close" onclick="closeStudentMessageModal()">&times;</button>
+            </div>
+
+            <!-- Sekme Seçimi -->
+            <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                <button type="button" class="btn btn-primary btn-sm" id="tabBtnStudentNewMsg" onclick="switchStudentMsgTab('new')">
+                    ✉️ Yeni Soru / Mesaj Yaz
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm" id="tabBtnStudentMsgList" onclick="switchStudentMsgTab('list')">
+                    📬 Mesajlarım &amp; Yanıtlar <span class="badge-unread-counter" id="studentMsgTabBadge" style="display:none;margin-left:4px;">0</span>
+                </button>
+            </div>
+
+            <!-- SEKME 1: YENİ MESAJ YAZ -->
+            <div id="studentMsgPaneNew">
+                <div id="studentMsgAlert" class="alert-message alert-error" style="display:none;margin-bottom:12px;"></div>
+                <form onsubmit="handleStudentSendMessage(event)">
+                    <div class="form-group">
+                        <label class="form-label">Konu / Soru Başlığı *</label>
+                        <input type="text" id="studentMsgSubject" class="form-control" placeholder="Örn: 5. Bölüm Klavye Çalışması hakkında soru" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">İlgili Ders Bölümü (İsteğe Bağlı)</label>
+                        <select id="studentMsgModuleRef" class="form-control">
+                            <option value="">— Genel Soru / İlgili Bölüm Yok —</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Mesajınız / Sorunuz *</label>
+                        <textarea id="studentMsgBody" class="form-control" rows="5" placeholder="Öğretmeninize iletmek istediğiniz soruyu detaylıca açıklayınız..." required></textarea>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                        <button type="button" class="btn btn-ghost" onclick="closeStudentMessageModal()">Kapat</button>
+                        <button type="submit" class="btn btn-primary" id="studentMsgSubmitBtn">
+                            Mesajı Öğretmene İlet ➔
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- SEKME 2: GEÇMİŞ MESAJLAR VE YANITLAR -->
+            <div id="studentMsgPaneList" style="display: none;">
+                <div id="studentMessagesEmpty" style="display: none; text-align: center; padding: 36px 16px; color: var(--text-muted);">
+                    <div style="font-size: 40px; margin-bottom: 10px;">📭</div>
+                    <div style="font-size: 15px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Henüz Mesajınız Yok</div>
+                    <p style="font-size: 13px; max-width: 360px; margin: 0 auto 16px;">
+                        Öğretmeninize sormak istediğiniz soruları veya mesajları buradan iletebilirsiniz.
+                    </p>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="switchStudentMsgTab('new')">
+                        ✉️ İlk Mesajınızı Yazın
+                    </button>
+                </div>
+                <div id="studentMessagesList" style="display: flex; flex-direction: column; gap: 14px; max-height: 60vh; overflow-y: auto; padding-right: 4px;"></div>
+                <div style="display: flex; justify-content: flex-end; margin-top: 18px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                    <button type="button" class="btn btn-ghost" onclick="closeStudentMessageModal()">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scriptler -->
+    <script src="js/modules-data.js"></script>
+    <script src="js/storage-service.js"></script>
+    <script>
+        let currentViewingModuleId = null;
+
+        // Temayı ve Menü Ayarlarını Başlat
+        (function() {
+            try {
+                lmsStorage.applyThemeSettings();
+            } catch(e) {}
+        })();
+
+        // ==================== PORTAL TEMA & TASARIM SEÇİCİ ====================
+        const THEME_NAMES = {
+            'night-blue':    '🌌 Gece Mavisi',
+            'forest-green':  '🌲 Orman Yeşili',
+            'purple-sunset': '🌅 Mor Gün Batımı',
+            'amber-gold':    '⚡ Kehribar Ateşi',
+            'ocean-teal':    '🌊 Okyanus Turkuaz',
+            'clean-light':   '☀️ Modern Aydınlık'
+        };
+        const ALL_THEMES = Object.keys(THEME_NAMES);
+
+        function portalApplyTheme(name) {
+            lmsStorage.setTheme(name);
+            syncPortalThemeUI();
+        }
+
+        function portalApplyLayout(layout) {
+            lmsStorage.saveThemeSettings({ menuLayout: layout });
+            syncPortalThemeUI();
+        }
+
+        function portalApplyStyle(style) {
+            lmsStorage.saveThemeSettings({ menuStyle: style });
+            syncPortalThemeUI();
+        }
+
+        function switchPortalTab(tab) {
+            const isTheme = tab === 'theme';
+            const btnTheme  = document.getElementById('tabBtnPortalTheme');
+            const btnDesign = document.getElementById('tabBtnPortalDesign');
+            const paneTheme = document.getElementById('portalPaneTheme');
+            const paneDesign= document.getElementById('portalPaneDesign');
+            if (btnTheme)  btnTheme.classList.toggle('active', isTheme);
+            if (btnDesign) btnDesign.classList.toggle('active', !isTheme);
+            if (paneTheme) paneTheme.classList.toggle('active', isTheme);
+            if (paneDesign) paneDesign.classList.toggle('active', !isTheme);
+        }
+
+        function syncPortalThemeUI() {
+            const ts = lmsStorage.getThemeSettings();
+            const curTheme = ts.theme || lmsStorage.getTheme();
+            const curLayout = ts.menuLayout || 'two-column';
+            const curStyle = ts.menuStyle || 'theme-adaptive';
+            const allowSwitch = ts.allowMenuThemeSwitch !== false;
+            const pos = ts.switcherPosition || 'both';
+
+            // Eğer yönetici menü içi tema seçiciyi kapattıysa menü altındaki paneli gizle
+            const panel = document.getElementById('themeSwitcherPanel');
+            if (panel) {
+                panel.style.display = allowSwitch ? 'block' : 'none';
+            }
+            const navBtn = document.getElementById('navThemeBtn');
+            if (navBtn) {
+                navBtn.style.display = (allowSwitch && pos !== 'bottom') ? 'inline-flex' : 'none';
+            }
+
+            // Tema Pill'lerini güncelle
+            ALL_THEMES.forEach(t => {
+                const pill  = document.getElementById('pill-' + t);
+                const check = document.getElementById('pillcheck-' + t);
+                if (pill)  pill.classList.toggle('active', t === curTheme);
+                if (check) check.style.visibility = (t === curTheme) ? 'visible' : 'hidden';
+            });
+
+            // Düzen Butonlarını güncelle
+            const layoutMap = {
+                'two-column': 'btnLayoutTwoCol',
+                'card-grid':  'btnLayoutCardGrid',
+                'compact':    'btnLayoutCompact'
+            };
+            Object.entries(layoutMap).forEach(([k, btnId]) => {
+                const b = document.getElementById(btnId);
+                if (b) {
+                    b.classList.toggle('btn-primary', k === curLayout);
+                    b.classList.toggle('btn-ghost', k !== curLayout);
+                }
+            });
+
+            // Stil Butonlarını güncelle
+            const styleMap = {
+                'theme-adaptive': 'btnStyleAdaptive',
+                'classic-retro':  'btnStyleRetro',
+                'minimal':        'btnStyleMinimal'
+            };
+            Object.entries(styleMap).forEach(([k, btnId]) => {
+                const b = document.getElementById(btnId);
+                if (b) {
+                    b.classList.toggle('btn-primary', k === curStyle);
+                    b.classList.toggle('btn-ghost', k !== curStyle);
+                }
+            });
+
+            const lbl = document.getElementById('themeSwitcherCurrentLabel');
+            if (lbl) lbl.textContent = 'Aktif Tema: ' + (THEME_NAMES[curTheme] || curTheme);
+        }
+
+        let _themePanelOpen = false;
+        function toggleThemeSwitcher() {
+            _themePanelOpen = !_themePanelOpen;
+            const body    = document.getElementById('themeSwitcherBody');
+            const chevron = document.getElementById('themeSwitcherChevron');
+            if (body)    body.style.display    = _themePanelOpen ? 'block' : 'none';
+            if (chevron) chevron.textContent    = _themePanelOpen ? '▲' : '▼';
+            if (_themePanelOpen) {
+                document.getElementById('themeSwitcherPanel')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        // Admin'in özel menüsü varsa COURSE_MODULES'u yerinde güncelle
+        (function() {
+            try {
+                const custom = lmsStorage.getCustomModules();
+                if (custom && Array.isArray(custom) && custom.length > 0) {
+                    COURSE_MODULES.length = 0;
+                    custom.forEach(m => COURSE_MODULES.push(m));
+                }
+            } catch(e) {}
+        })();
+
+        // Sayfa Yüklendiğinde Oturum Kontrolü
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthAndRender();
+
+            // Tema ve menü arayüzünü senkronize et
+            try {
+                syncPortalThemeUI();
+                const body = document.getElementById('themeSwitcherBody');
+                if (body) body.style.display = 'none';
+            } catch(e) {}
+
+            // Başka sekmede admin ayarları veya mesajlar güncellendiğinde anında uygula
+            window.addEventListener('storage', (e) => {
+                if (e.key === 'ehem_theme_settings' || e.key === 'ehem_theme') {
+                    lmsStorage.applyThemeSettings();
+                    syncPortalThemeUI();
+                }
+                if (e.key === 'ehem_messages_v1') {
+                    const session = lmsStorage.getCurrentSession();
+                    if (session && session.type === 'student') {
+                        updateStudentUnreadBadge(session.userId);
+                        const listPane = document.getElementById('studentMsgPaneList');
+                        if (listPane && listPane.style.display !== 'none') {
+                            renderStudentMessagesList();
+                        }
+                    }
+                }
+            });
+
+            // Alt pencereden veya iframe içinden gelebilecek tamamlama mesajlarını dinle
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.action === 'MODULE_FINISHED') {
+                    if (currentViewingModuleId) {
+                        markCurrentModuleCompleted();
+                    }
+                }
+            });
+        });
+
+        function checkAuthAndRender() {
+            const session = lmsStorage.getCurrentSession();
+            const loginView = document.getElementById('loginView');
+            const portalView = document.getElementById('portalView');
+            const userNavActions = document.getElementById('userNavActions');
+            const adminQuickLink = document.getElementById('adminQuickLink');
+
+            if (!session) {
+                // Giriş ekranını göster
+                loginView.style.display = 'flex';
+                portalView.style.display = 'none';
+                userNavActions.innerHTML = `
+                    <a href="admin.html" class="btn btn-ghost btn-sm">🛡️ Yönetici Paneli</a>
+                `;
+                return;
+            }
+
+            // Oturum Açılmış
+            loginView.style.display = 'none';
+            portalView.style.display = 'block';
+
+            const ts = lmsStorage.getThemeSettings();
+            const showNavTheme = (ts.allowMenuThemeSwitch !== false && ts.switcherPosition !== 'bottom');
+            const navThemeHtml = showNavTheme
+                ? `<button class="nav-theme-btn" id="navThemeBtn" onclick="toggleThemeSwitcher()" title="Tema ve Tasarım Değiştir">🎨 <span>Tema &amp; Tasarım</span></button>`
+                : '';
+
+            if (session.type === 'admin') {
+                // Yönetici oturumu
+                adminQuickLink.style.display = 'inline-flex';
+                userNavActions.innerHTML = `
+                    <div class="user-profile-pill">
+                        <div class="user-avatar" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">👑</div>
+                        <div class="user-details">
+                            <div class="user-name">${session.name}</div>
+                            <div class="user-role-badge" style="color: #f59e0b;">YÖNETİCİ</div>
+                        </div>
+                    </div>
+                    ${navThemeHtml}
+                    <a href="admin.html" class="btn btn-primary btn-sm">Yönetici Paneli</a>
+                    <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Çıkış</button>
+                `;
+                renderAdminPreviewRoadmap();
+            } else {
+                // Kursiyer oturumu
+                adminQuickLink.style.display = 'none';
+                const user = lmsStorage.getCurrentStudent();
+                if (!user) {
+                    lmsStorage.logout();
+                    checkAuthAndRender();
+                    return;
+                }
+
+                userNavActions.innerHTML = `
+                    <div class="user-profile-pill">
+                        <div class="user-avatar">${(user.fullName || 'K')[0].toUpperCase()}</div>
+                        <div class="user-details">
+                            <div class="user-name">${user.fullName}</div>
+                            <div class="user-role-badge">KURSİYER</div>
+                        </div>
+                    </div>
+                    <button class="nav-msg-btn" id="navStudentMsgBtn" onclick="openStudentMessageModal()" title="Öğretmene Mesaj Gönder / Yanıtları Gör">
+                        💬 <span>Öğretmene Mesaj</span>
+                        <span class="badge-unread-counter" id="navStudentUnreadBadge" style="display:none;">0</span>
+                    </button>
+                    ${navThemeHtml}
+                    <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Çıkış Yap</button>
+                `;
+
+                renderStudentRoadmap(user);
+                updateStudentUnreadBadge(user.id);
+            }
+        }
+
+        // ==================== GİRİŞ & OTURUM FONKSİYONLARI ====================
+
+        let activeTab = 'student';
+        function switchLoginTab(tab) {
+            activeTab = tab;
+            document.getElementById('tabStudent').classList.toggle('active', tab === 'student');
+            document.getElementById('tabAdmin').classList.toggle('active', tab === 'admin');
+            document.getElementById('loginAlert').style.display = 'none';
+
+            if (tab === 'admin') {
+                document.getElementById('usernameLabel').textContent = 'Yönetici Kullanıcı Adı';
+            } else {
+                document.getElementById('usernameLabel').textContent = 'Kullanıcı Adı';
+            }
+        }
+
+        function quickFill(user, pass) {
+            document.getElementById('loginUsername').value = user;
+            document.getElementById('loginPassword').value = pass;
+            if (user === 'admin') switchLoginTab('admin');
+            else switchLoginTab('student');
+        }
+
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUsername').value.trim();
+            const p = document.getElementById('loginPassword').value.trim();
+            const alertBox = document.getElementById('loginAlert');
+
+            const res = lmsStorage.login(u, p);
+            if (!res.success) {
+                alertBox.textContent = res.message;
+                alertBox.style.display = 'block';
+                return;
+            }
+
+            alertBox.style.display = 'none';
+            if (res.role === 'admin') {
+                window.location.href = 'admin.html';
+            } else {
+                checkAuthAndRender();
+            }
+        }
+
+        function handleLogout() {
+            lmsStorage.logout();
+            checkAuthAndRender();
+        }
+
+        // ==================== KURSİYER 2 SÜTUNLU & KAYAN MENÜ RENDER ====================
+
+        function renderStudentRoadmap(user) {
+            document.getElementById('heroStudentName').textContent = user.fullName.split(' ')[0] || user.fullName;
+
+            const completedSet = new Set(user.completedModuleIds || []);
+            const unlockedSet = new Set(user.unlockedModuleIds || [1]);
+
+            const completedCount = completedSet.size;
+            const totalModules = COURSE_MODULES.length; // 26
+            const percent = Math.round((completedCount / totalModules) * 100);
+
+            // Hero İstatistikleri
+            document.getElementById('heroProgressBar').style.width = percent + '%';
+            document.getElementById('heroCompletedCount').textContent = `${completedCount} / ${totalModules} Bölüm Tamamlandı`;
+            document.getElementById('heroProgressPercent').textContent = `%${percent} Başarı`;
+            document.getElementById('heroCircleVal').textContent = `${percent}%`;
+
+            // Dairesel SVG İlerleme Çubuğu
+            const circumference = 264;
+            const offset = circumference - (percent / 100) * circumference;
+            document.getElementById('heroSvgCircle').style.strokeDashoffset = offset;
+
+            // Sıradaki aktif bölümü bul
+            const nextActiveModule = COURSE_MODULES.find(m => unlockedSet.has(m.id) && !completedSet.has(m.id)) 
+                                  || COURSE_MODULES.find(m => unlockedSet.has(m.id)) 
+                                  || COURSE_MODULES[0];
+
+            if (completedCount >= totalModules) {
+                document.getElementById('heroStatusText').innerHTML = `
+                    <strong style="color: var(--accent-emerald);">🎉 Tebrikler! Kursun tüm 26 bölümünü başarıyla tamamladınız!</strong><br>
+                    Tüm modülleri tekrar oynayabilir ve bilgilerinizi tazeleyebilirsiniz.
+                `;
+                document.getElementById('continueNextBtn').textContent = "🏆 Kursu Tamamladınız";
+            } else if (nextActiveModule) {
+                document.getElementById('heroStatusText').textContent = `
+                    Sıradaki göreviniz: "${nextActiveModule.title}". Bu bölümü tamamlayarak kurs ilerlemenizi sürdürün.
+                `;
+                document.getElementById('continueNextBtn').textContent = `▶ Başla: ${nextActiveModule.title}`;
+                document.getElementById('continueNextBtn').onclick = () => openModuleInLms(nextActiveModule.id);
+            }
+
+            // Sütun Kapları
+            const leftContainer = document.getElementById('leftItemsContainer');
+            const rightContainer = document.getElementById('rightItemsContainer');
+            leftContainer.innerHTML = '';
+            rightContainer.innerHTML = '';
+
+            let leftCompleted = 0, leftTotal = 0;
+            let rightCompleted = 0, rightTotal = 0;
+
+            COURSE_MODULES.forEach(mod => {
+                const isCompleted = completedSet.has(mod.id);
+                const isUnlocked = unlockedSet.has(mod.id);
+                const isNextActive = isUnlocked && !isCompleted;
+
+                // menuPosition alanına göre sol/sağ dağıt
+                const goLeft = mod.menuPosition !== 'right';
+                if (goLeft) { leftTotal++; if (isCompleted) leftCompleted++; }
+                else        { rightTotal++; if (isCompleted) rightCompleted++; }
+
+                let cardClass = 'menu-item-card';
+                let badgeHtml = '';
+
+                if (isCompleted) {
+                    cardClass += ' completed';
+                    badgeHtml = `<span class="badge-item-status" style="color: #166534;">✓ TAMAM</span>`;
+                } else if (isNextActive) {
+                    cardClass += ' active-next';
+                    badgeHtml = `<span class="badge-item-status" style="color: #e11d48; font-weight: bold;">▶ BAŞLA</span>`;
+                } else {
+                    cardClass += ' locked';
+                    badgeHtml = `<span class="badge-item-status" style="color: #64748b;">🔒 KİLİTLİ</span>`;
+                }
+
+                const item = document.createElement('div');
+                item.className = cardClass;
+                item.id = `moduleItem_${mod.id}`;
+                item.title = `${mod.title} (${mod.category}) - ${mod.description}`;
+                item.setAttribute('data-category', mod.category.toLowerCase());
+                item.setAttribute('data-id', mod.id);
+                
+                if (isUnlocked) {
+                    item.onclick = () => openModuleInLms(mod.id);
+                } else {
+                    item.onclick = () => alert('Bu bölüm kilitlidir. Lütfen önceki bölümleri sırayla tamamlayınız.');
+                }
+
+                item.innerHTML = `
+                    <div class="menu-item-left">
+                        <div class="menu-item-title">${mod.title}</div>
+                    </div>
+                    <div class="menu-item-right">
+                        ${badgeHtml}
+                    </div>
+                `;
+
+                if (goLeft) {
+                    leftContainer.appendChild(item);
+                } else {
+                    rightContainer.appendChild(item);
+                }
+            });
+
+            // Sütun Başlık Sayıları
+            document.getElementById('leftColumnCount').textContent = `${leftCompleted} / ${leftTotal} Tamamlandı`;
+            document.getElementById('rightColumnCount').textContent = `${rightCompleted} / ${rightTotal} Tamamlandı`;
+
+            // Aktif bölüme otomatik kaydır
+            setTimeout(() => {
+                scrollToActiveModule();
+            }, 300);
+
+            // Kursiyere ait duyuruları göster
+            renderAnnouncementsBanner(user.id);
+        }
+
+        // Aktif/Sıradaki Bölüme Otomatik Kayan Fonksiyon
+        function scrollToActiveModule() {
+            const activeItem = document.querySelector('.menu-item-card.active-next');
+            if (activeItem) {
+                activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        // Duyuruları Banner Olarak Göster
+        function renderAnnouncementsBanner(userId) {
+            const banner = document.getElementById('announcementsBanner');
+            if (!banner) return;
+            const anns = lmsStorage.getAnnouncementsForUser(userId);
+            if (!anns.length) { banner.style.display = 'none'; return; }
+            const typeMap = {
+                info:    { bg: 'rgba(59,130,246,0.12)',   border: 'rgba(59,130,246,0.35)',   icon: 'ℹ️',  color: '#93c5fd' },
+                success: { bg: 'rgba(16,185,129,0.12)',   border: 'rgba(16,185,129,0.35)',   icon: '✅',  color: '#6ee7b7' },
+                warning: { bg: 'rgba(245,158,11,0.12)',   border: 'rgba(245,158,11,0.35)',   icon: '⚠️', color: '#fde68a' },
+                danger:  { bg: 'rgba(239,68,68,0.12)',    border: 'rgba(239,68,68,0.35)',    icon: '🚨', color: '#fca5a5' }
+            };
+            banner.innerHTML = anns.map(ann => {
+                const tm = typeMap[ann.type] || typeMap.info;
+                return `<div style="display:flex;align-items:flex-start;gap:12px;background:${tm.bg};border:1px solid ${tm.border};border-radius:12px;padding:14px 18px;margin-bottom:10px;">
+                    <span style="font-size:20px;flex-shrink:0;">${tm.icon}</span>
+                    <div style="flex:1;">
+                        <div style="font-weight:700;color:white;margin-bottom:4px;">${ann.title}</div>
+                        <div style="font-size:13px;color:${tm.color};line-height:1.6;">${ann.message.replace(/\n/g,'<br>')}</div>
+                    </div>
+                </div>`;
+            }).join('');
+            banner.style.display = 'block';
+        }
+
+        // Menü Filtreleme (Tümü, 1. Kısım, 2. Kısım, Sınavlar)
+        function filterMenuCategory(type, btn) {
+            document.querySelectorAll('.menu-filter-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            const colLeft = document.getElementById('menuColumnLeft');
+            const colRight = document.getElementById('menuColumnRight');
+            const allItems = document.querySelectorAll('.menu-item-card');
+
+            if (type === 'all') {
+                colLeft.style.display = 'flex';
+                colRight.style.display = 'flex';
+                allItems.forEach(el => el.style.display = 'flex');
+            } else if (type === 'part1') {
+                colLeft.style.display = 'flex';
+                colRight.style.display = 'none';
+                allItems.forEach(el => el.style.display = 'flex');
+            } else if (type === 'part2') {
+                colLeft.style.display = 'none';
+                colRight.style.display = 'flex';
+                allItems.forEach(el => el.style.display = 'flex');
+            } else if (type === 'exam') {
+                colLeft.style.display = 'flex';
+                colRight.style.display = 'flex';
+                allItems.forEach(el => {
+                    const title = el.querySelector('.menu-item-title').textContent.toLowerCase();
+                    const cat = el.getAttribute('data-category') || '';
+                    if (title.includes('sınav') || title.includes('test') || cat.includes('sınav')) {
+                        el.style.display = 'flex';
+                    } else {
+                        el.style.display = 'none';
+                    }
+                });
+            }
+        }
+
+        // Yönetici önizlemesi
+        function renderAdminPreviewRoadmap() {
+            document.getElementById('heroStudentName').textContent = 'Yönetici (Önizleme Modu)';
+            document.getElementById('heroStatusText').textContent = 'Şu anda yönetici oturumundasınız. Tüm eğitim bölümlerini test amacıyla doğrudan açabilirsiniz.';
+            document.getElementById('heroProgressBar').style.width = '100%';
+            document.getElementById('heroCompletedCount').textContent = '26 / 26 Bölüm Açık';
+            document.getElementById('heroProgressPercent').textContent = '%100';
+            document.getElementById('heroCircleVal').textContent = '👑';
+            document.getElementById('continueNextBtn').textContent = '🛡️ Yönetici Paneline Git';
+            document.getElementById('continueNextBtn').onclick = () => { window.location.href = 'admin.html'; };
+
+            const leftContainer = document.getElementById('leftItemsContainer');
+            const rightContainer = document.getElementById('rightItemsContainer');
+            leftContainer.innerHTML = '';
+            rightContainer.innerHTML = '';
+
+            COURSE_MODULES.forEach(mod => {
+                const goLeft = mod.menuPosition !== 'right';
+                const item = document.createElement('div');
+                item.className = 'menu-item-card active-next';
+                item.id = `moduleItem_${mod.id}`;
+                item.title = `${mod.title} - ${mod.description}`;
+                item.setAttribute('data-category', mod.category.toLowerCase());
+                item.onclick = () => openModuleInLms(mod.id);
+
+                item.innerHTML = `
+                    <div class="menu-item-left">
+                        <div class="menu-item-title">${mod.title}</div>
+                    </div>
+                    <div class="menu-item-right">
+                        <span class="badge-item-status" style="color: #e11d48; font-weight: bold;">AÇ ➔</span>
+                    </div>
+                `;
+
+                if (goLeft) {
+                    leftContainer.appendChild(item);
+                } else {
+                    rightContainer.appendChild(item);
+                }
+            });
+
+            const leftCount = COURSE_MODULES.filter(m => m.menuPosition !== 'right').length;
+            const rightCount = COURSE_MODULES.filter(m => m.menuPosition === 'right').length;
+            document.getElementById('leftColumnCount').textContent = `${leftCount} / ${leftCount} Açık`;
+            document.getElementById('rightColumnCount').textContent = `${rightCount} / ${rightCount} Açık`;
+        }
+
+        // ==================== LMS OYNATICI MODAL İŞLEMLERİ ====================
+
+        function openModuleInLms(moduleId) {
+            const mod = COURSE_MODULES.find(m => m.id === moduleId);
+            if (!mod) return;
+
+            currentViewingModuleId = moduleId;
+            document.getElementById('modalModuleTag').textContent = `BÖLÜM ${mod.id}`;
+            document.getElementById('modalModuleTitle').textContent = mod.title;
+            document.getElementById('lmsIframe').src = mod.path;
+
+            const modal = document.getElementById('lmsModal');
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeLmsModal() {
+            const modal = document.getElementById('lmsModal');
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                document.getElementById('lmsIframe').src = '';
+                currentViewingModuleId = null;
+                checkAuthAndRender();
+            }, 300);
+        }
+
+        function openInNewTab() {
+            if (!currentViewingModuleId) return;
+            const mod = COURSE_MODULES.find(m => m.id === currentViewingModuleId);
+            if (mod) {
+                window.open(mod.path, '_blank');
+            }
+        }
+
+        function markCurrentModuleCompleted() {
+            if (!currentViewingModuleId) return;
+            const session = lmsStorage.getCurrentSession();
+
+            if (session && session.type === 'student') {
+                const res = lmsStorage.completeModule(session.userId, currentViewingModuleId);
+                
+                if (res.unlockedNext) {
+                    const nextMod = COURSE_MODULES.find(m => m.id === res.unlockedNext);
+                    alert(`🎉 Tebrikler! ${currentViewingModuleId}. Bölümü tamamladınız!\n\nKilidi Açılan Sıradaki Bölüm:\n${nextMod ? nextMod.title : res.unlockedNext + '. Bölüm'}`);
+                    // Sonraki bölüme otomatik geç
+                    openModuleInLms(res.unlockedNext);
+                    return;
+                } else {
+                    alert('🏆 TEBRİKLER! Kursun tüm bölümlerini başarıyla bitirdiniz!');
+                    closeLmsModal();
+                    return;
+                }
+            } else {
+                alert('Yönetici önizlemesinde tamamlama kaydedilmez.');
+                closeLmsModal();
+            }
+        }
+
+        function launchNextModule() {
+            const user = lmsStorage.getCurrentStudent();
+            if (!user) return;
+            const unlockedSet = new Set(user.unlockedModuleIds || [1]);
+            const completedSet = new Set(user.completedModuleIds || []);
+
+            const next = COURSE_MODULES.find(m => unlockedSet.has(m.id) && !completedSet.has(m.id)) 
+                      || COURSE_MODULES.find(m => unlockedSet.has(m.id)) 
+                      || COURSE_MODULES[0];
+
+            if (next) openModuleInLms(next.id);
+        }
+
+        // ==================== KURSİYER - ÖĞRETMEN MESAJLAŞMA SİSTEMİ ====================
+
+        function updateStudentUnreadBadge(userId) {
+            if (!userId) {
+                const s = lmsStorage.getCurrentSession();
+                if (s && s.type === 'student') userId = s.userId;
+            }
+            if (!userId) return;
+
+            const unreadCount = lmsStorage.getUnreadMessageCountForStudent(userId);
+            
+            const navBadge = document.getElementById('navStudentUnreadBadge');
+            const heroBadge = document.getElementById('heroStudentUnreadBadge');
+            const tabBadge = document.getElementById('studentMsgTabBadge');
+
+            [navBadge, heroBadge, tabBadge].forEach(b => {
+                if (b) {
+                    if (unreadCount > 0) {
+                        b.textContent = unreadCount;
+                        b.style.display = 'inline-block';
+                    } else {
+                        b.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function populateStudentModuleDropdown() {
+            const sel = document.getElementById('studentMsgModuleRef');
+            if (!sel) return;
+            const curVal = sel.value;
+            sel.innerHTML = '<option value="">— Genel Soru / İlgili Bölüm Yok —</option>';
+            COURSE_MODULES.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.id;
+                opt.textContent = `${m.id}. Bölüm: ${m.title} (${m.category})`;
+                sel.appendChild(opt);
+            });
+            if (curVal) sel.value = curVal;
+        }
+
+        function openStudentMessageModal(defaultTab = null) {
+            const user = lmsStorage.getCurrentStudent();
+            if (!user) {
+                alert('Mesaj göndermek için kursiyer girişi yapmalısınız.');
+                return;
+            }
+
+            populateStudentModuleDropdown();
+
+            // Eğer okunmamış yanıt varsa doğrudan mesaj listesini aç
+            const unreadCount = lmsStorage.getUnreadMessageCountForStudent(user.id);
+            const targetTab = defaultTab || (unreadCount > 0 ? 'list' : 'new');
+            switchStudentMsgTab(targetTab);
+
+            const modal = document.getElementById('studentMessageModal');
+            if (modal) modal.classList.add('show');
+        }
+
+        function closeStudentMessageModal() {
+            const modal = document.getElementById('studentMessageModal');
+            if (modal) modal.classList.remove('show');
+            const user = lmsStorage.getCurrentStudent();
+            if (user) updateStudentUnreadBadge(user.id);
+        }
+
+        function switchStudentMsgTab(tab) {
+            const btnNew = document.getElementById('tabBtnStudentNewMsg');
+            const btnList = document.getElementById('tabBtnStudentMsgList');
+            const paneNew = document.getElementById('studentMsgPaneNew');
+            const paneList = document.getElementById('studentMsgPaneList');
+
+            if (tab === 'new') {
+                btnNew.classList.add('btn-primary');
+                btnNew.classList.remove('btn-ghost');
+                btnList.classList.add('btn-ghost');
+                btnList.classList.remove('btn-primary');
+                paneNew.style.display = 'block';
+                paneList.style.display = 'none';
+                document.getElementById('studentMsgAlert').style.display = 'none';
+            } else {
+                btnList.classList.add('btn-primary');
+                btnList.classList.remove('btn-ghost');
+                btnNew.classList.add('btn-ghost');
+                btnNew.classList.remove('btn-primary');
+                paneNew.style.display = 'none';
+                paneList.style.display = 'block';
+                renderStudentMessagesList();
+            }
+        }
+
+        function handleStudentSendMessage(e) {
+            e.preventDefault();
+            const user = lmsStorage.getCurrentStudent();
+            if (!user) return;
+
+            const subject = document.getElementById('studentMsgSubject').value.trim();
+            const moduleRefId = document.getElementById('studentMsgModuleRef').value || null;
+            const message = document.getElementById('studentMsgBody').value.trim();
+            const alertBox = document.getElementById('studentMsgAlert');
+
+            if (!subject || !message) {
+                alertBox.textContent = 'Lütfen konu başlığı ve mesajınızı doldurunuz.';
+                alertBox.style.display = 'block';
+                return;
+            }
+
+            const res = lmsStorage.sendMessageFromStudent({
+                userId: user.id,
+                subject,
+                message,
+                moduleRefId
+            });
+
+            if (!res.success) {
+                alertBox.textContent = res.message || 'Mesaj gönderilemedi!';
+                alertBox.style.display = 'block';
+                return;
+            }
+
+            // Formu temizle
+            document.getElementById('studentMsgSubject').value = '';
+            document.getElementById('studentMsgBody').value = '';
+            document.getElementById('studentMsgModuleRef').value = '';
+            alertBox.style.display = 'none';
+
+            alert('✓ Mesajınız öğretmeninize başarıyla iletildi!');
+            switchStudentMsgTab('list');
+            updateStudentUnreadBadge(user.id);
+        }
+
+        function renderStudentMessagesList() {
+            const user = lmsStorage.getCurrentStudent();
+            if (!user) return;
+
+            const listCont = document.getElementById('studentMessagesList');
+            const emptyCont = document.getElementById('studentMessagesEmpty');
+            if (!listCont || !emptyCont) return;
+
+            const msgs = lmsStorage.getMessagesForUser(user.id);
+
+            if (!msgs.length) {
+                listCont.innerHTML = '';
+                emptyCont.style.display = 'block';
+                return;
+            }
+
+            emptyCont.style.display = 'none';
+            listCont.innerHTML = '';
+
+            // En yeni mesaj en üstte
+            const sorted = msgs.slice().reverse();
+
+            sorted.forEach(msg => {
+                // Eğer okunmamış mesaj ise okundu işaretle
+                if (msg.unreadByStudent) {
+                    lmsStorage.markMessageAsReadByStudent(msg.id);
+                }
+
+                const card = document.createElement('div');
+                card.className = `message-card status-${msg.status}`;
+                card.style.background = 'var(--bg-input)';
+                card.style.border = '1px solid var(--border-color)';
+                card.style.borderRadius = 'var(--radius-md)';
+                card.style.padding = '16px';
+
+                // Modül referansı
+                let modBadge = '';
+                if (msg.moduleRefId) {
+                    const m = COURSE_MODULES.find(x => x.id === msg.moduleRefId);
+                    modBadge = `<span style="font-size: 11px; background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.3);">📌 ${m ? m.id + '. ' + m.title : msg.moduleRefId + '. Bölüm'}</span>`;
+                }
+
+                // Durum rozeti
+                let statusBadge = '';
+                if (msg.status === 'answered') {
+                    statusBadge = `<span style="font-size: 11px; font-weight: 700; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">✅ Öğretmen Yanıtladı</span>`;
+                } else {
+                    statusBadge = `<span style="font-size: 11px; font-weight: 700; background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.3);">⏳ Yanıt Bekleniyor</span>`;
+                }
+
+                const dateStr = new Date(msg.createdAt).toLocaleString('tr-TR', {
+                    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                });
+
+                // Konuşma dizisi (Replies)
+                let threadHtml = '';
+                if (msg.replies && msg.replies.length > 0) {
+                    const repliesHtml = msg.replies.map(rep => {
+                        const isTeacher = rep.sender === 'admin';
+                        const repDate = new Date(rep.createdAt).toLocaleString('tr-TR', {
+                            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                        });
+                        return `
+                            <div class="chat-bubble ${isTeacher ? 'teacher' : 'student'}">
+                                <div class="chat-bubble-header">
+                                    <span class="chat-bubble-sender">
+                                        ${isTeacher ? '👑 ' + (rep.senderName || 'Kurs Öğretmeni') : '👤 Siz (' + (rep.senderName || 'Kursiyer') + ')'}
+                                    </span>
+                                    <span>${repDate}</span>
+                                </div>
+                                <div style="color: var(--text-primary); white-space: pre-wrap;">${rep.text}</div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    threadHtml = `
+                        <div class="chat-thread" style="margin-top: 12px;">
+                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px;">💬 Konuşma Geçmişi:</div>
+                            ${repliesHtml}
+                        </div>
+                    `;
+                }
+
+                const safeMsgId = msg.id.replace(/'/g, "\\'");
+
+                card.innerHTML = `
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px;">
+                        <div>
+                            <div style="font-weight: 700; color: white; font-size: 15px; margin-bottom: 4px;">
+                                ${msg.subject}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                ${statusBadge}
+                                ${modBadge}
+                                <span style="font-size: 11px; color: var(--text-muted);">🕒 ${dateStr}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Öğrencinin İlk Sorusu -->
+                    <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 10px;">
+                        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px;">👤 Sizin Mesajınız:</div>
+                        <div style="font-size: 13px; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap;">${msg.message}</div>
+                    </div>
+
+                    <!-- Varsa Yanıtlar / Sohbet Akışı -->
+                    ${threadHtml}
+
+                    <!-- Takip Cevabı / Ek Soru Yazma Alanı -->
+                    <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border-color);">
+                        <div style="display: flex; gap: 8px; align-items: flex-end;">
+                            <textarea id="studentReplyInput_${safeMsgId}" class="form-control" rows="2" placeholder="Öğretmeninize ek bir yanıt veya teşekkür iletin..." style="font-size: 12px;"></textarea>
+                            <button type="button" class="btn btn-primary btn-sm" style="flex-shrink: 0; padding: 8px 14px;" onclick="handleStudentFollowupReply('${safeMsgId}')">
+                                Gönder ➔
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                listCont.appendChild(card);
+            });
+
+            updateStudentUnreadBadge(user.id);
+        }
+
+        function handleStudentFollowupReply(msgId) {
+            const user = lmsStorage.getCurrentStudent();
+            if (!user) return;
+
+            const input = document.getElementById(`studentReplyInput_${msgId}`);
+            if (!input) return;
+            const text = input.value.trim();
+            if (!text) {
+                alert('Lütfen bir mesaj yazınız.');
+                return;
+            }
+
+            const res = lmsStorage.replyMessage({
+                messageId: msgId,
+                sender: 'student',
+                senderName: user.fullName || user.username,
+                text: text
+            });
+
+            if (res.success) {
+                input.value = '';
+                renderStudentMessagesList();
+            } else {
+                alert('Yanıt gönderilemedi: ' + (res.message || 'Bilinmeyen hata'));
+            }
+        }
+    </script>
+</body>
 </html>
