@@ -642,6 +642,10 @@
                     lmsStorage.applyThemeSettings();
                     syncPortalThemeUI();
                 }
+                if (e.key === 'ehem_announcements_v1') {
+                    const student = lmsStorage.getCurrentStudent();
+                    if (student) renderAnnouncementsBanner(student.id);
+                }
                 if (e.key === 'ehem_messages_v1') {
                     const student = lmsStorage.getCurrentStudent();
                     if (student) {
@@ -663,6 +667,7 @@
                         checkAuthAndRender();
                         syncPortalThemeUI();
                         if (student) {
+                            renderAnnouncementsBanner(student.id);
                             updateStudentUnreadBadge(student.id);
                             const listPane = document.getElementById('studentMsgPaneList');
                             if (listPane && listPane.style.display !== 'none') {
@@ -694,6 +699,16 @@
                     }
                 }
             }, 4000);
+
+            // 8 saniyede bir buluttan duyuru ve sistem değişikliklerini canlı senkronize et
+            setInterval(() => {
+                const student = lmsStorage.getCurrentStudent();
+                if (student && lmsStorage.pullFromFirebase) {
+                    lmsStorage.pullFromFirebase().then(() => {
+                        renderAnnouncementsBanner(student.id);
+                    }).catch(() => {});
+                }
+            }, 8000);
 
             // Alt pencereden veya iframe içinden gelebilecek tamamlama mesajlarını dinle
             window.addEventListener('message', (event) => {
@@ -1000,24 +1015,48 @@
             const banner = document.getElementById('announcementsBanner');
             if (!banner) return;
             const anns = lmsStorage.getAnnouncementsForUser(userId);
-            if (!anns.length) { banner.style.display = 'none'; return; }
+            if (!anns || !anns.length) {
+                banner.style.display = 'none';
+                banner.innerHTML = '';
+                return;
+            }
             const typeMap = {
-                info:    { bg: 'rgba(59,130,246,0.12)',   border: 'rgba(59,130,246,0.35)',   icon: 'ℹ️',  color: '#93c5fd' },
-                success: { bg: 'rgba(16,185,129,0.12)',   border: 'rgba(16,185,129,0.35)',   icon: '✅',  color: '#6ee7b7' },
-                warning: { bg: 'rgba(245,158,11,0.12)',   border: 'rgba(245,158,11,0.35)',   icon: '⚠️', color: '#fde68a' },
-                danger:  { bg: 'rgba(239,68,68,0.12)',    border: 'rgba(239,68,68,0.35)',    icon: '🚨', color: '#fca5a5' }
+                info:    { bg: 'rgba(59,130,246,0.12)',   border: 'rgba(59,130,246,0.35)',   icon: 'ℹ️',  color: '#93c5fd', btnBg: 'rgba(59,130,246,0.22)' },
+                success: { bg: 'rgba(16,185,129,0.12)',   border: 'rgba(16,185,129,0.35)',   icon: '✅',  color: '#6ee7b7', btnBg: 'rgba(16,185,129,0.22)' },
+                warning: { bg: 'rgba(245,158,11,0.12)',   border: 'rgba(245,158,11,0.35)',   icon: '⚠️', color: '#fde68a', btnBg: 'rgba(245,158,11,0.22)' },
+                danger:  { bg: 'rgba(239,68,68,0.12)',    border: 'rgba(239,68,68,0.35)',    icon: '🚨', color: '#fca5a5', btnBg: 'rgba(239,68,68,0.22)' }
             };
             banner.innerHTML = anns.map(ann => {
                 const tm = typeMap[ann.type] || typeMap.info;
-                return `<div style="display:flex;align-items:flex-start;gap:12px;background:${tm.bg};border:1px solid ${tm.border};border-radius:12px;padding:14px 18px;margin-bottom:10px;">
-                    <span style="font-size:20px;flex-shrink:0;">${tm.icon}</span>
-                    <div style="flex:1;">
-                        <div style="font-weight:700;color:white;margin-bottom:4px;">${ann.title}</div>
-                        <div style="font-size:13px;color:${tm.color};line-height:1.6;">${ann.message.replace(/\n/g,'<br>')}</div>
+                const safeAnnId = (ann.id + '').replace(/'/g, "\\'");
+                return `<div id="annCard_${ann.id}" style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;background:${tm.bg};border:1px solid ${tm.border};border-radius:12px;padding:14px 18px;margin-bottom:10px;transition:all 0.25s ease;">
+                    <div style="display:flex;align-items:flex-start;gap:12px;flex:1;">
+                        <span style="font-size:22px;flex-shrink:0;margin-top:2px;">${tm.icon}</span>
+                        <div style="flex:1;">
+                            <div style="font-weight:700;color:white;margin-bottom:4px;font-size:15px;">${ann.title}</div>
+                            <div style="font-size:13px;color:${tm.color};line-height:1.6;">${ann.message.replace(/\n/g,'<br>')}</div>
+                        </div>
                     </div>
+                    <button type="button" onclick="handleDismissAnnouncement('${safeAnnId}')" title="Bu duyuruyu okudum, ekrandan kaldır" style="background:${tm.btnBg};border:1px solid ${tm.border};color:white;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;flex-shrink:0;margin-top:2px;transition:all 0.2s ease;">
+                        ✓ Okudum
+                    </button>
                 </div>`;
             }).join('');
             banner.style.display = 'block';
+        }
+
+        function handleDismissAnnouncement(annId) {
+            const student = lmsStorage.getCurrentStudent();
+            if (!student) return;
+            const card = document.getElementById('annCard_' + annId);
+            if (card) {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(-8px)';
+            }
+            setTimeout(() => {
+                lmsStorage.dismissAnnouncement(annId, student.id);
+                renderAnnouncementsBanner(student.id);
+            }, 200);
         }
 
         // Menü Filtreleme (Tümü, 1. Kısım, 2. Kısım, Sınavlar)

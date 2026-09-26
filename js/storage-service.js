@@ -1826,19 +1826,29 @@ class StorageService {
             // 2. Sınıflar
             const classesRes = await fetch(`${baseUrl}/classes.json${authParam}`);
             if (classesRes.ok) {
-                const classesData = await classesRes.json();
-                if (classesData && Array.isArray(classesData) && classesData.length > 0) {
-                    localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(classesData));
+                const classesRaw = await classesRes.json();
+                let clsList = [];
+                if (Array.isArray(classesRaw)) {
+                    clsList = classesRaw.filter(Boolean);
+                } else if (classesRaw && typeof classesRaw === 'object') {
+                    clsList = Object.values(classesRaw).filter(Boolean);
+                }
+                if (clsList.length > 0) {
+                    localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(clsList));
                 }
             }
 
-            // 3. Duyurular
+            // 3. Duyurular (Bulutta silinmişse veya null ise yereldeki duyuruları da temizle)
             const annsRes = await fetch(`${baseUrl}/announcements.json${authParam}`);
             if (annsRes.ok) {
-                const annsData = await annsRes.json();
-                if (annsData && Array.isArray(annsData) && annsData.length > 0) {
-                    localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(annsData));
+                const annsRaw = await annsRes.json();
+                let annList = [];
+                if (Array.isArray(annsRaw)) {
+                    annList = annsRaw.filter(Boolean);
+                } else if (annsRaw && typeof annsRaw === 'object') {
+                    annList = Object.values(annsRaw).filter(Boolean);
                 }
+                localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(annList));
             }
 
             // 4. Mesajlar
@@ -2101,8 +2111,9 @@ class StorageService {
     }
 
     saveAllAnnouncements(anns) {
-        localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(anns));
-        this.syncCollectionToFirebase('announcements', anns);
+        const clean = Array.isArray(anns) ? anns : [];
+        localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(clean));
+        this.syncCollectionToFirebase('announcements', clean);
     }
 
     addAnnouncement({ title, message, classId = null, type = 'info', expiryDate = null }) {
@@ -2128,20 +2139,51 @@ class StorageService {
         return { success: true };
     }
 
+    deleteAllAnnouncements() {
+        this.saveAllAnnouncements([]);
+        return { success: true };
+    }
+
+    getDismissedAnnouncementIds(userId) {
+        if (!userId) return [];
+        try {
+            const raw = localStorage.getItem('ehem_dismissed_anns_' + userId);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    dismissAnnouncement(annId, userId) {
+        if (!annId || !userId) return { success: false };
+        const list = this.getDismissedAnnouncementIds(userId);
+        if (!list.includes(annId)) {
+            list.push(annId);
+            localStorage.setItem('ehem_dismissed_anns_' + userId, JSON.stringify(list));
+        }
+        return { success: true };
+    }
+
     /**
      * Belirli bir kursiyer için aktif duyuruları döndürür.
      * classId null ise "tüm kursiyerler" duyurularını da alır.
+     * Kursiyerin "Okudum" diyerek kapattığı duyurular hariç tutulur.
      */
     getAnnouncementsForUser(userId) {
-        const user = this.getUserById(userId);
+        const user = this.getUserById(userId) || this.getCurrentStudent();
         const anns = this.getAllAnnouncements();
+        const dismissed = this.getDismissedAnnouncementIds(userId);
         const now = new Date();
+
         return anns.filter(a => {
+            if (!a || !a.id) return false;
+            // Kullanıcı bu duyuruyu okudum diyerek kapattıysa gösterme
+            if (dismissed.includes(a.id)) return false;
             // Süresi dolmuş mu?
             if (a.expiryDate && new Date(a.expiryDate) < now) return false;
-            // Hedef kontrolü
-            if (a.classId === null) return true; // Herkese
-            return user && user.classId === a.classId;
+            // Hedef kontrolü: classId null veya boş ise herkese açıktır
+            if (!a.classId || a.classId === null) return true;
+            return user && user.classId && String(user.classId).trim() === String(a.classId).trim();
         });
     }
 
