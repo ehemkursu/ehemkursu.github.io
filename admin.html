@@ -506,8 +506,9 @@
                     <label class="form-label">Web API Key</label>
                     <input type="text" id="fbApiKey" class="form-control" placeholder="AIzaSy...">
                 </div>
-                <div style="display:flex;gap:10px;">
-                    <button class="btn btn-primary btn-sm" onclick="saveFirebaseSettings()">Kaydet</button>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button class="btn btn-primary btn-sm" onclick="saveFirebaseSettings()">💾 Ayarları Kaydet</button>
+                    <button class="btn btn-success btn-sm" onclick="handleForcePushToFirebase()">☁️ Mevcut Verileri Buluta Yükle</button>
                     <button class="btn btn-ghost btn-sm" onclick="testFirebaseSync()">🔄 Buluttan Veri Çek</button>
                 </div>
             </div>
@@ -995,7 +996,18 @@
         document.getElementById('adminLoginSection').style.display = ok ? 'none' : 'flex';
         document.getElementById('adminDashboardSection').style.display = ok ? 'block' : 'none';
         document.getElementById('adminNavActions').style.display = ok ? 'flex' : 'none';
-        if (ok) { loadDashboardData(); rebuildClassDropdowns(); }
+        if (ok) {
+            loadDashboardData();
+            rebuildClassDropdowns();
+            if (lmsStorage.pullFromFirebase) {
+                lmsStorage.pullFromFirebase().then(res => {
+                    if (res && res.success) {
+                        loadDashboardData();
+                        rebuildClassDropdowns();
+                    }
+                });
+            }
+        }
     }
 
     function handleAdminLoginSubmit(e) {
@@ -2305,6 +2317,19 @@
             alert('Firebase ayarları kaydedildi.');
         }
     }
+
+    async function handleForcePushToFirebase() {
+        const users = lmsStorage.getAllUsers();
+        if (!confirm('Şu an bu bilgisayardaki ' + users.length + ' kursiyer ve sınıflar Firebase bulut veritabanına yüklenecek. Onaylıyor musunuz?')) return;
+        const res = await lmsStorage.pushAllToFirebase();
+        if (res.success) {
+            alert('✓ Harika! ' + users.length + ' kursiyer, sınıflar ve tüm ayarlarınız başarıyla Firebase bulutuna aktarıldı!\n\nArtık diğer tüm bilgisayarlar ve öğrenciler anında bu verileri görebilir.');
+            loadDashboardData();
+        } else {
+            alert('Buluta yükleme başarısız: ' + res.message);
+        }
+    }
+
     async function testFirebaseSync() {
         const res = await lmsStorage.pullFromFirebase();
         if (res.success) {

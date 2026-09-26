@@ -22,6 +22,12 @@ const DEFAULT_ADMIN = {
     name: 'Kurs Yöneticisi'
 };
 
+const DEFAULT_FIREBASE_CONFIG = {
+    enabled: true,
+    databaseURL: 'https://bilisimkursum-b2f17-default-rtdb.europe-west1.firebasedatabase.app',
+    apiKey: ''
+};
+
 const INITIAL_USERS = [
     {
         id: 'usr_1',
@@ -545,9 +551,19 @@ class StorageService {
 
     getFirebaseConfig() {
         try {
-            return JSON.parse(localStorage.getItem(STORAGE_KEYS.FIREBASE_CONFIG)) || { enabled: false };
+            const raw = localStorage.getItem(STORAGE_KEYS.FIREBASE_CONFIG);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && parsed.databaseURL) {
+                    if (parsed.databaseURL.includes('firebaseio.com')) {
+                        parsed.databaseURL = DEFAULT_FIREBASE_CONFIG.databaseURL;
+                    }
+                    return parsed;
+                }
+            }
+            return DEFAULT_FIREBASE_CONFIG;
         } catch (e) {
-            return { enabled: false };
+            return DEFAULT_FIREBASE_CONFIG;
         }
     }
 
@@ -593,9 +609,17 @@ class StorageService {
             const usersRes = await fetch(`${baseUrl}/kursiyerler.json${authParam}`);
             if (usersRes.ok) {
                 const usersData = await usersRes.json();
-                if (usersData && Array.isArray(usersData)) {
+                if (usersData && Array.isArray(usersData) && usersData.length > 0) {
                     localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(usersData));
                     count = usersData.length;
+                } else if (!usersData || (Array.isArray(usersData) && usersData.length === 0)) {
+                    // Bulut henüz boş. Eğer bu cihazda 2'den fazla kullanıcı varsa (1. bilgisayarın 42 kullanıcısı) buluta aktar!
+                    const localUsers = this.getAllUsers();
+                    if (localUsers.length > 2) {
+                        console.log('Firebase boş tespit edildi, yereldeki ' + localUsers.length + ' kursiyer Firebase buluta aktarılıyor...');
+                        await this.pushAllToFirebase();
+                        return { success: true, count: localUsers.length };
+                    }
                 }
             }
 
@@ -603,7 +627,7 @@ class StorageService {
             const classesRes = await fetch(`${baseUrl}/classes.json${authParam}`);
             if (classesRes.ok) {
                 const classesData = await classesRes.json();
-                if (classesData && Array.isArray(classesData)) {
+                if (classesData && Array.isArray(classesData) && classesData.length > 0) {
                     localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(classesData));
                 }
             }
@@ -612,7 +636,7 @@ class StorageService {
             const annsRes = await fetch(`${baseUrl}/announcements.json${authParam}`);
             if (annsRes.ok) {
                 const annsData = await annsRes.json();
-                if (annsData && Array.isArray(annsData)) {
+                if (annsData && Array.isArray(annsData) && annsData.length > 0) {
                     localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(annsData));
                 }
             }
@@ -621,7 +645,7 @@ class StorageService {
             const msgsRes = await fetch(`${baseUrl}/messages.json${authParam}`);
             if (msgsRes.ok) {
                 const msgsData = await msgsRes.json();
-                if (msgsData && Array.isArray(msgsData)) {
+                if (msgsData && Array.isArray(msgsData) && msgsData.length > 0) {
                     localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(msgsData));
                 }
             }

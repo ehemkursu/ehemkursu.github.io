@@ -616,6 +616,11 @@
         // Sayfa Yüklendiğinde Oturum Kontrolü
         document.addEventListener('DOMContentLoaded', () => {
             checkAuthAndRender();
+            if (lmsStorage.pullFromFirebase) {
+                lmsStorage.pullFromFirebase().then(() => {
+                    checkAuthAndRender();
+                });
+            }
 
             // Tema ve menü arayüzünü senkronize et
             try {
@@ -774,13 +779,18 @@
             else switchLoginTab('student');
         }
 
-        function handleLoginSubmit(e) {
+        async function handleLoginSubmit(e) {
             e.preventDefault();
             const u = document.getElementById('loginUsername').value.trim();
             const p = document.getElementById('loginPassword').value.trim();
             const alertBox = document.getElementById('loginAlert');
 
-            const res = lmsStorage.login(u, p);
+            let res = lmsStorage.login(u, p);
+            if (!res.success && lmsStorage.pullFromFirebase) {
+                await lmsStorage.pullFromFirebase();
+                res = lmsStorage.login(u, p);
+            }
+
             if (!res.success) {
                 alertBox.textContent = res.message;
                 alertBox.style.display = 'block';
