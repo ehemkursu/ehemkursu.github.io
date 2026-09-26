@@ -520,9 +520,9 @@
                     syncPortalThemeUI();
                 }
                 if (e.key === 'ehem_messages_v1') {
-                    const session = lmsStorage.getCurrentSession();
-                    if (session && session.type === 'student') {
-                        updateStudentUnreadBadge(session.userId);
+                    const student = lmsStorage.getCurrentStudent();
+                    if (student) {
+                        updateStudentUnreadBadge(student.id);
                         const listPane = document.getElementById('studentMsgPaneList');
                         if (listPane && listPane.style.display !== 'none') {
                             renderStudentMessagesList();
@@ -530,6 +530,22 @@
                     }
                 }
             });
+
+            // 3 saniyede bir canlı mesaj kontrolü (farklı pencere ve sekmeler için)
+            setInterval(() => {
+                const student = lmsStorage.getCurrentStudent();
+                if (student) {
+                    updateStudentUnreadBadge(student.id);
+                    const listPane = document.getElementById('studentMsgPaneList');
+                    if (listPane && listPane.style.display !== 'none') {
+                        const active = document.activeElement;
+                        const isTyping = active && (active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && active.type === 'text'));
+                        if (!isTyping) {
+                            renderStudentMessagesList();
+                        }
+                    }
+                }
+            }, 3000);
 
             // Alt pencereden veya iframe içinden gelebilecek tamamlama mesajlarını dinle
             window.addEventListener('message', (event) => {
@@ -542,25 +558,12 @@
         });
 
         function checkAuthAndRender() {
-            const session = lmsStorage.getCurrentSession();
+            const student = lmsStorage.getCurrentStudent();
+            const admin = lmsStorage.getCurrentAdmin();
             const loginView = document.getElementById('loginView');
             const portalView = document.getElementById('portalView');
             const userNavActions = document.getElementById('userNavActions');
             const adminQuickLink = document.getElementById('adminQuickLink');
-
-            if (!session) {
-                // Giriş ekranını göster
-                loginView.style.display = 'flex';
-                portalView.style.display = 'none';
-                userNavActions.innerHTML = `
-                    <a href="admin.html" class="btn btn-ghost btn-sm">🛡️ Yönetici Paneli</a>
-                `;
-                return;
-            }
-
-            // Oturum Açılmış
-            loginView.style.display = 'none';
-            portalView.style.display = 'block';
 
             const ts = lmsStorage.getThemeSettings();
             const showNavTheme = (ts.allowMenuThemeSwitch !== false && ts.switcherPosition !== 'bottom');
@@ -568,37 +571,17 @@
                 ? `<button class="nav-theme-btn" id="navThemeBtn" onclick="toggleThemeSwitcher()" title="Tema ve Tasarım Değiştir">🎨 <span>Tema &amp; Tasarım</span></button>`
                 : '';
 
-            if (session.type === 'admin') {
-                // Yönetici oturumu
-                adminQuickLink.style.display = 'inline-flex';
-                userNavActions.innerHTML = `
-                    <div class="user-profile-pill">
-                        <div class="user-avatar" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">👑</div>
-                        <div class="user-details">
-                            <div class="user-name">${session.name}</div>
-                            <div class="user-role-badge" style="color: #f59e0b;">YÖNETİCİ</div>
-                        </div>
-                    </div>
-                    ${navThemeHtml}
-                    <a href="admin.html" class="btn btn-primary btn-sm">Yönetici Paneli</a>
-                    <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Çıkış</button>
-                `;
-                renderAdminPreviewRoadmap();
-            } else {
-                // Kursiyer oturumu
+            if (student) {
+                // Kursiyer oturumu (Öncelikli)
+                loginView.style.display = 'none';
+                portalView.style.display = 'block';
                 adminQuickLink.style.display = 'none';
-                const user = lmsStorage.getCurrentStudent();
-                if (!user) {
-                    lmsStorage.logout();
-                    checkAuthAndRender();
-                    return;
-                }
 
                 userNavActions.innerHTML = `
                     <div class="user-profile-pill">
-                        <div class="user-avatar">${(user.fullName || 'K')[0].toUpperCase()}</div>
+                        <div class="user-avatar">${(student.fullName || 'K')[0].toUpperCase()}</div>
                         <div class="user-details">
-                            <div class="user-name">${user.fullName}</div>
+                            <div class="user-name">${student.fullName}</div>
                             <div class="user-role-badge">KURSİYER</div>
                         </div>
                     </div>
@@ -610,9 +593,38 @@
                     <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Çıkış Yap</button>
                 `;
 
-                renderStudentRoadmap(user);
-                updateStudentUnreadBadge(user.id);
+                renderStudentRoadmap(student);
+                updateStudentUnreadBadge(student.id);
+                return;
             }
+
+            if (admin) {
+                // Yönetici oturumu önizleme modu
+                loginView.style.display = 'none';
+                portalView.style.display = 'block';
+                adminQuickLink.style.display = 'inline-flex';
+                userNavActions.innerHTML = `
+                    <div class="user-profile-pill">
+                        <div class="user-avatar" style="background: linear-gradient(135deg, #f59e0b, #ef4444);">👑</div>
+                        <div class="user-details">
+                            <div class="user-name">${admin.name}</div>
+                            <div class="user-role-badge" style="color: #f59e0b;">YÖNETİCİ</div>
+                        </div>
+                    </div>
+                    ${navThemeHtml}
+                    <a href="admin.html" class="btn btn-primary btn-sm">Yönetici Paneli</a>
+                    <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Çıkış</button>
+                `;
+                renderAdminPreviewRoadmap();
+                return;
+            }
+
+            // Oturum yoksa Giriş Ekranı
+            loginView.style.display = 'flex';
+            portalView.style.display = 'none';
+            userNavActions.innerHTML = `
+                <a href="admin.html" class="btn btn-ghost btn-sm">🛡️ Yönetici Paneli</a>
+            `;
         }
 
         // ==================== GİRİŞ & OTURUM FONKSİYONLARI ====================
@@ -660,7 +672,9 @@
         }
 
         function handleLogout() {
-            lmsStorage.logout();
+            lmsStorage.logoutStudent();
+            const admin = lmsStorage.getCurrentAdmin();
+            if (!admin) lmsStorage.logout();
             checkAuthAndRender();
         }
 
@@ -1063,12 +1077,18 @@
         function handleStudentSendMessage(e) {
             e.preventDefault();
             const user = lmsStorage.getCurrentStudent();
-            if (!user) return;
+            const alertBox = document.getElementById('studentMsgAlert');
+            if (!user) {
+                if (alertBox) {
+                    alertBox.textContent = 'Oturum bilgisi doğrulanamadı. Lütfen sayfayı yenileyiniz.';
+                    alertBox.style.display = 'block';
+                }
+                return;
+            }
 
             const subject = document.getElementById('studentMsgSubject').value.trim();
             const moduleRefId = document.getElementById('studentMsgModuleRef').value || null;
             const message = document.getElementById('studentMsgBody').value.trim();
-            const alertBox = document.getElementById('studentMsgAlert');
 
             if (!subject || !message) {
                 alertBox.textContent = 'Lütfen konu başlığı ve mesajınızı doldurunuz.';
@@ -1098,6 +1118,7 @@
             alert('✓ Mesajınız öğretmeninize başarıyla iletildi!');
             switchStudentMsgTab('list');
             updateStudentUnreadBadge(user.id);
+            renderStudentMessagesList();
         }
 
         function renderStudentMessagesList() {
@@ -1123,10 +1144,8 @@
             const sorted = msgs.slice().reverse();
 
             sorted.forEach(msg => {
-                // Eğer okunmamış mesaj ise okundu işaretle
-                if (msg.unreadByStudent) {
-                    lmsStorage.markMessageAsReadByStudent(msg.id);
-                }
+                // Mesajı okundu işaretle
+                lmsStorage.markMessageAsReadByStudent(msg.id, user.id);
 
                 const card = document.createElement('div');
                 card.className = `message-card status-${msg.status}`;
@@ -1134,6 +1153,16 @@
                 card.style.border = '1px solid var(--border-color)';
                 card.style.borderRadius = 'var(--radius-md)';
                 card.style.padding = '16px';
+
+                // Hedef rozeti
+                let targetBadge = '';
+                if (msg.targetType === 'all') {
+                    targetBadge = `<span style="font-size: 11px; font-weight: 700; background: rgba(147, 51, 234, 0.15); color: #c084fc; padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(147, 51, 234, 0.3);">📢 Genel Mesaj</span>`;
+                } else if (msg.targetType === 'class') {
+                    targetBadge = `<span style="font-size: 11px; font-weight: 700; background: rgba(59, 130, 246, 0.15); color: #93c5fd; padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(59, 130, 246, 0.3);">🏫 Sınıfınıza Özel Mesaj</span>`;
+                } else if (msg.origin === 'admin') {
+                    targetBadge = `<span style="font-size: 11px; font-weight: 700; background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">👤 Size Özel Mesaj</span>`;
+                }
 
                 // Modül referansı
                 let modBadge = '';
@@ -1166,7 +1195,7 @@
                             <div class="chat-bubble ${isTeacher ? 'teacher' : 'student'}">
                                 <div class="chat-bubble-header">
                                     <span class="chat-bubble-sender">
-                                        ${isTeacher ? '👑 ' + (rep.senderName || 'Kurs Öğretmeni') : '👤 Siz (' + (rep.senderName || 'Kursiyer') + ')'}
+                                        ${isTeacher ? '👑 ' + (rep.senderName || 'Kurs Öğretmeni') : '👤 ' + (rep.senderId === user.id ? 'Siz' : (rep.senderName || 'Kursiyer'))}
                                     </span>
                                     <span>${repDate}</span>
                                 </div>
@@ -1184,6 +1213,7 @@
                 }
 
                 const safeMsgId = msg.id.replace(/'/g, "\\'");
+                const isFromTeacher = msg.origin === 'admin';
 
                 card.innerHTML = `
                     <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px;">
@@ -1192,6 +1222,7 @@
                                 ${msg.subject}
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                ${targetBadge}
                                 ${statusBadge}
                                 ${modBadge}
                                 <span style="font-size: 11px; color: var(--text-muted);">🕒 ${dateStr}</span>
@@ -1199,9 +1230,11 @@
                         </div>
                     </div>
 
-                    <!-- Öğrencinin İlk Sorusu -->
+                    <!-- İlk Mesaj İçeriği -->
                     <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-top: 10px;">
-                        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px;">👤 Sizin Mesajınız:</div>
+                        <div style="font-size: 11px; color: ${isFromTeacher ? 'var(--accent-blue)' : 'var(--text-muted)'}; font-weight: 700; margin-bottom: 4px;">
+                            ${isFromTeacher ? '👑 Kurs Öğretmeninin Mesajı:' : '👤 Sizin Sorunuz / Mesajınız:'}
+                        </div>
                         <div style="font-size: 13px; color: var(--text-primary); line-height: 1.5; white-space: pre-wrap;">${msg.message}</div>
                     </div>
 
@@ -1211,7 +1244,7 @@
                     <!-- Takip Cevabı / Ek Soru Yazma Alanı -->
                     <div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--border-color);">
                         <div style="display: flex; gap: 8px; align-items: flex-end;">
-                            <textarea id="studentReplyInput_${safeMsgId}" class="form-control" rows="2" placeholder="Öğretmeninize ek bir yanıt veya teşekkür iletin..." style="font-size: 12px;"></textarea>
+                            <textarea id="studentReplyInput_${safeMsgId}" class="form-control" rows="2" placeholder="Öğretmeninize bir yanıt veya teşekkür yazın..." style="font-size: 12px;"></textarea>
                             <button type="button" class="btn btn-primary btn-sm" style="flex-shrink: 0; padding: 8px 14px;" onclick="handleStudentFollowupReply('${safeMsgId}')">
                                 Gönder ➔
                             </button>
@@ -1240,6 +1273,7 @@
             const res = lmsStorage.replyMessage({
                 messageId: msgId,
                 sender: 'student',
+                senderId: user.id,
                 senderName: user.fullName || user.username,
                 text: text
             });

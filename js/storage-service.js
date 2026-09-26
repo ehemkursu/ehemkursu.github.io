@@ -6,6 +6,8 @@
 const STORAGE_KEYS = {
     USERS: 'ehem_users_db_v1',
     SESSION: 'ehem_current_session_v1',
+    ADMIN_SESSION: 'ehem_admin_session_v1',
+    STUDENT_SESSION: 'ehem_student_session_v1',
     ADMIN_CREDS: 'ehem_admin_creds_v1',
     FIREBASE_CONFIG: 'ehem_firebase_config_v1',
     CLASSES: 'ehem_classes_db_v1',
@@ -163,6 +165,7 @@ class StorageService {
                 username: adminCreds.username,
                 loginTime: new Date().toISOString()
             };
+            localStorage.setItem(STORAGE_KEYS.ADMIN_SESSION, JSON.stringify(session));
             localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(session));
             return { success: true, role: 'admin', session };
         }
@@ -183,6 +186,7 @@ class StorageService {
                 username: user.username,
                 loginTime: new Date().toISOString()
             };
+            localStorage.setItem(STORAGE_KEYS.STUDENT_SESSION, JSON.stringify(session));
             localStorage.setItem(STORAGE_KEYS.SESSION, JSON.stringify(session));
             return { success: true, role: 'student', user, session };
         }
@@ -195,6 +199,24 @@ class StorageService {
 
     logout() {
         localStorage.removeItem(STORAGE_KEYS.SESSION);
+        localStorage.removeItem(STORAGE_KEYS.STUDENT_SESSION);
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_SESSION);
+    }
+
+    logoutStudent() {
+        localStorage.removeItem(STORAGE_KEYS.STUDENT_SESSION);
+        const s = this.getCurrentSession();
+        if (s && s.type === 'student') {
+            localStorage.removeItem(STORAGE_KEYS.SESSION);
+        }
+    }
+
+    logoutAdmin() {
+        localStorage.removeItem(STORAGE_KEYS.ADMIN_SESSION);
+        const s = this.getCurrentSession();
+        if (s && s.type === 'admin') {
+            localStorage.removeItem(STORAGE_KEYS.SESSION);
+        }
     }
 
     getCurrentSession() {
@@ -205,10 +227,33 @@ class StorageService {
         }
     }
 
+    getCurrentAdmin() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.ADMIN_SESSION);
+            if (raw) return JSON.parse(raw);
+            const s = this.getCurrentSession();
+            if (s && s.type === 'admin') return s;
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     getCurrentStudent() {
-        const session = this.getCurrentSession();
-        if (!session || session.type !== 'student') return null;
-        return this.getUserById(session.userId);
+        try {
+            let studentSession = null;
+            const raw = localStorage.getItem(STORAGE_KEYS.STUDENT_SESSION);
+            if (raw) {
+                studentSession = JSON.parse(raw);
+            } else {
+                const s = this.getCurrentSession();
+                if (s && s.type === 'student') studentSession = s;
+            }
+            if (!studentSession || !studentSession.userId) return null;
+            return this.getUserById(studentSession.userId);
+        } catch (e) {
+            return null;
+        }
     }
 
     // ==================== KURSİYER (KULLANICI) İŞLEMLERİ ====================
@@ -805,8 +850,18 @@ class StorageService {
     }
 
     getMessagesForUser(userId) {
+        const user = this.getUserById(userId);
+        if (!user) return [];
         const messages = this.getAllMessages();
-        return messages.filter(m => m.userId === userId);
+        return messages.filter(m => {
+            // 1. Doğrudan bu kursiyere ait mesaj (kursiyerin sorduğu veya öğretmenin ona özel yazdığı)
+            if (m.userId === userId) return true;
+            // 2. Tüm kursiyerlere gönderilen genel mesaj
+            if (m.targetType === 'all') return true;
+            // 3. Kursiyerin sınıfına gönderilen mesaj
+            if (m.targetType === 'class' && m.classId && user.classId === m.classId) return true;
+            return false;
+        });
     }
 
     getUnreadMessageCountForAdmin() {
@@ -815,8 +870,17 @@ class StorageService {
     }
 
     getUnreadMessageCountForStudent(userId) {
-        const messages = this.getAllMessages();
-        return messages.filter(m => m.userId === userId && m.unreadByStudent).length;
+        const user = this.getUserById(userId);
+        if (!user) return 0;
+        const msgs = this.getMessagesForUser(userId);
+        return msgs.filter(m => {
+            if (m.targetType === 'student' || !m.targetType) {
+                return !!m.unreadByStudent;
+            }
+            // Genel veya sınıf mesajı ise öğrencinin okuyup okumadığına bak
+            const reads = Array.isArray(m.readByStudentIds) ? m.readByStudentIds : [];
+            return !reads.includes(userId);
+        }).length;
     }
 
     sendMessageFromStudent({ userId, subject, message, moduleRefId = null }) {
@@ -835,6 +899,9 @@ class StorageService {
         const messages = this.getAllMessages();
         const newMsg = {
             id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+            origin: 'student',
+            targetType: 'student',
+            targetId: user.id,
             userId: user.id,
             userName: user.fullName || user.username,
             userUsername: user.username,
@@ -847,6 +914,7 @@ class StorageService {
             status: 'pending', // 'pending' (Cevap Bekliyor) | 'answered' (Cevaplandı)
             unreadByAdmin: true,
             unreadByStudent: false,
+            readByStudentIds: [user.id],
             replies: []
         };
 
@@ -855,7 +923,102 @@ class StorageService {
         return { success: true, message: newMsg };
     }
 
-    replyMessage({ messageId, sender = 'admin', senderName = 'Kurs Öğretmeni', text }) {
+    sendMessageFromAdmin({ targetType = 'all', targetId = null, subject, message }) {
+        const trimSubject = (subject || '').trim();
+        const trimMessage = (message || '').trim();
+        if (!trimSubject || !trimMessage) {
+            return { success: false, message: 'Konusu ve mesaj içeriği zorunludur.' };
+        }
+
+        const messages = this.getAllMessages();
+        let newMsg = null;
+
+        if (targetType === 'all') {
+            newMsg = {
+                id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                origin: 'admin',
+                targetType: 'all',
+                targetId: null,
+                targetName: 'Tüm Kursiyerler',
+                userId: null,
+                userName: 'Tüm Kursiyerler',
+                userUsername: 'tüm',
+                classId: null,
+                className: 'Tüm Sınıflar',
+                subject: trimSubject,
+                message: trimMessage,
+                moduleRefId: null,
+                createdAt: new Date().toISOString(),
+                status: 'answered',
+                unreadByAdmin: false,
+                unreadByStudent: true,
+                readByStudentIds: [],
+                replies: []
+            };
+        } else if (targetType === 'class') {
+            const classes = this.getAllClasses();
+            const cls = classes.find(c => c.id === targetId);
+            if (!cls) return { success: false, message: 'Seçilen sınıf bulunamadı.' };
+
+            newMsg = {
+                id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                origin: 'admin',
+                targetType: 'class',
+                targetId: cls.id,
+                targetName: cls.name,
+                userId: null,
+                userName: cls.name + ' Sınıfı',
+                userUsername: 'sınıf',
+                classId: cls.id,
+                className: cls.name,
+                subject: trimSubject,
+                message: trimMessage,
+                moduleRefId: null,
+                createdAt: new Date().toISOString(),
+                status: 'answered',
+                unreadByAdmin: false,
+                unreadByStudent: true,
+                readByStudentIds: [],
+                replies: []
+            };
+        } else if (targetType === 'student') {
+            const user = this.getUserById(targetId);
+            if (!user) return { success: false, message: 'Seçilen kursiyer bulunamadı.' };
+
+            const classes = this.getAllClasses();
+            const userClass = classes.find(c => c.id === user.classId);
+
+            newMsg = {
+                id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                origin: 'admin',
+                targetType: 'student',
+                targetId: user.id,
+                targetName: user.fullName || user.username,
+                userId: user.id,
+                userName: user.fullName || user.username,
+                userUsername: user.username,
+                classId: user.classId || null,
+                className: userClass ? userClass.name : '',
+                subject: trimSubject,
+                message: trimMessage,
+                moduleRefId: null,
+                createdAt: new Date().toISOString(),
+                status: 'answered',
+                unreadByAdmin: false,
+                unreadByStudent: true,
+                readByStudentIds: [],
+                replies: []
+            };
+        } else {
+            return { success: false, message: 'Geçersiz hedef türü.' };
+        }
+
+        messages.push(newMsg);
+        this.saveAllMessages(messages);
+        return { success: true, message: newMsg };
+    }
+
+    replyMessage({ messageId, sender = 'admin', senderName = 'Kurs Öğretmeni', text, senderId = null }) {
         const trimText = (text || '').trim();
         if (!trimText) return { success: false, message: 'Yanıt metni boş olamaz.' };
 
@@ -868,6 +1031,7 @@ class StorageService {
         const replyObj = {
             id: 'rep_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
             sender: sender, // 'admin' | 'student'
+            senderId: senderId,
             senderName: senderName || (sender === 'admin' ? 'Kurs Öğretmeni' : msg.userName),
             text: trimText,
             createdAt: new Date().toISOString()
@@ -879,10 +1043,15 @@ class StorageService {
             msg.status = 'answered';
             msg.unreadByStudent = true;
             msg.unreadByAdmin = false;
+            msg.readByStudentIds = []; // Yeniden bildirim tetiklensin
         } else {
             msg.status = 'pending';
             msg.unreadByAdmin = true;
             msg.unreadByStudent = false;
+            if (!msg.readByStudentIds) msg.readByStudentIds = [];
+            if (senderId && !msg.readByStudentIds.includes(senderId)) {
+                msg.readByStudentIds.push(senderId);
+            }
         }
 
         this.saveAllMessages(messages);
@@ -899,13 +1068,21 @@ class StorageService {
         return { success: true };
     }
 
-    markMessageAsReadByStudent(messageId) {
+    markMessageAsReadByStudent(messageId, studentId = null) {
         const messages = this.getAllMessages();
         const msg = messages.find(m => m.id === messageId);
-        if (msg && msg.unreadByStudent) {
-            msg.unreadByStudent = false;
-            this.saveAllMessages(messages);
+        if (!msg) return { success: false };
+
+        if (!msg.readByStudentIds) msg.readByStudentIds = [];
+        if (studentId && !msg.readByStudentIds.includes(studentId)) {
+            msg.readByStudentIds.push(studentId);
         }
+
+        if (msg.targetType === 'student' || !msg.targetType) {
+            msg.unreadByStudent = false;
+        }
+
+        this.saveAllMessages(messages);
         return { success: true };
     }
 
@@ -914,6 +1091,39 @@ class StorageService {
         messages = messages.filter(m => m.id !== messageId);
         this.saveAllMessages(messages);
         return { success: true };
+    }
+
+    deleteMessagesBulk(messageIds) {
+        if (!Array.isArray(messageIds) || messageIds.length === 0) return { success: true, count: 0 };
+        const idSet = new Set(messageIds);
+        let messages = this.getAllMessages();
+        const initialCount = messages.length;
+        messages = messages.filter(m => !idSet.has(m.id));
+        this.saveAllMessages(messages);
+        return { success: true, count: initialCount - messages.length };
+    }
+
+    deleteMessagesByClass(classId) {
+        let messages = this.getAllMessages();
+        const initialCount = messages.length;
+        if (classId === 'all_general') {
+            // Yalnızca genel duyuru/mesajları sil
+            messages = messages.filter(m => m.targetType !== 'all');
+        } else if (classId === 'none') {
+            // Sınıfsızları sil
+            messages = messages.filter(m => m.classId || m.targetType === 'all');
+        } else {
+            // Belirtilen sınıfı sil
+            messages = messages.filter(m => m.classId !== classId);
+        }
+        this.saveAllMessages(messages);
+        return { success: true, count: initialCount - messages.length };
+    }
+
+    deleteAllMessages() {
+        const count = this.getAllMessages().length;
+        this.saveAllMessages([]);
+        return { success: true, count };
     }
 }
 

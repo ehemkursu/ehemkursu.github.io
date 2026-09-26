@@ -152,13 +152,13 @@
                 <h2 style="color:white;font-size:20px;margin-bottom:4px;display:flex;align-items:center;gap:8px;">
                     <span>💬</span> Kursiyer Mesajları &amp; Soru-Cevap
                 </h2>
-                <p style="color:var(--text-secondary);font-size:13px;">Kursiyerlerden gelen soruları, takıldıkları bölümleri ve mesajları yanıtlayın.</p>
+                <p style="color:var(--text-secondary);font-size:13px;">Tüm kursiyerlere, bir sınıfa veya tek bir kursiyere mesaj gönderin; gelen soruları yanıtlayın.</p>
             </div>
-            <button class="btn btn-primary" onclick="openAdminDirectMessageModal()">✉️ Kursiyere Mesaj Yaz</button>
+            <button class="btn btn-primary" onclick="openAdminDirectMessageModal()">✉️ Yeni Mesaj Gönder</button>
         </div>
 
         <!-- Filtre ve Arama Araç Çubuğu -->
-        <div class="table-card" style="margin-bottom:18px;padding:14px 18px;">
+        <div class="table-card" style="margin-bottom:14px;padding:14px 18px;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                 <div style="flex:1;min-width:240px;">
                     <input type="text" id="messageSearchInput" class="form-control" placeholder="🔍 Kursiyer adı, konu veya mesaj içeriğinde ara..." oninput="filterAndRenderMessages()">
@@ -170,16 +170,40 @@
                         <option value="answered">🟢 Yanıtlananlar</option>
                     </select>
                     <select id="messageFilterClass" class="form-control" style="width:auto;" onchange="filterAndRenderMessages()">
-                        <option value="all">Tüm Sınıflar</option>
+                        <option value="all">Tüm Hedefler / Sınıflar</option>
+                        <option value="general">📢 Genel Mesajlar (Tüm Kursiyerler)</option>
+                        <option value="none">Sınıfsız Kursiyerler</option>
                     </select>
                 </div>
             </div>
         </div>
 
+        <!-- Toplu İşlem & Seçim Araç Çubuğu -->
+        <div class="msg-bulk-toolbar" id="msgBulkToolbar">
+            <div class="msg-bulk-select-group">
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin:0;">
+                    <input type="checkbox" id="msgSelectAll" class="msg-checkbox" onchange="toggleSelectAllMessages(this.checked)">
+                    <span>Tümünü Seç</span>
+                </label>
+                <span class="msg-count-badge" id="msgSelectedCountBadge">0 seçildi</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <button type="button" class="btn btn-danger btn-sm" id="btnDeleteSelectedMsgs" onclick="handleDeleteSelectedMessages()" disabled style="opacity:0.5;padding:6px 12px;font-size:12.5px;">
+                    🗑️ Seçilenleri Sil
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="openDeleteByClassModal()" style="padding:6px 12px;font-size:12.5px;">
+                    🏫 Sınıfa Göre Toplu Sil
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="handleDeleteAllMessages()" style="color:#f87171;padding:6px 12px;font-size:12.5px;" title="Tüm mesaj geçmişini sil">
+                    🧹 Tümünü Temizle
+                </button>
+            </div>
+        </div>
+
         <div id="messagesEmpty" style="display:none;text-align:center;padding:60px 20px;color:var(--text-muted);">
             <div style="font-size:52px;margin-bottom:14px;">💬</div>
-            <p style="font-size:16px;color:white;margin-bottom:8px;">Henüz kursiyer mesajı yok.</p>
-            <p style="font-size:13px;">Kursiyerler portaldan soru sorduğunda veya mesaj ilettiğinde burada görünecektir.</p>
+            <p style="font-size:16px;color:white;margin-bottom:8px;">Henüz mesaj bulunmuyor.</p>
+            <p style="font-size:13px;">Yukarıdaki "Yeni Mesaj Gönder" butonuyla öğrencilere mesaj iletebilir veya öğrencilerin sorularını burada görebilirsiniz.</p>
         </div>
 
         <div id="messagesList" style="display:flex;flex-direction:column;gap:16px;"></div>
@@ -759,36 +783,92 @@
     </div>
 </div>
 
-<!-- MODAL: KURSİYERE DOĞRUDAN MESAJ GÖNDER -->
+<!-- MODAL: YENİ MESAJ GÖNDER (TÜMÜ / SINIF / KURSİYER) -->
 <div id="adminDirectMessageModal" class="modal-overlay">
-    <div class="modal-content" style="max-width:540px;">
+    <div class="modal-content" style="max-width:560px;">
         <div class="modal-header">
             <h3 style="color:white;font-size:18px;display:flex;align-items:center;gap:8px;">
-                <span>✉️</span> Kursiyere Mesaj Gönder
+                <span>✉️</span> Yeni Mesaj Gönder
             </h3>
             <button class="modal-close" onclick="closeModal('adminDirectMessageModal')">&times;</button>
         </div>
-        <div id="adminDirectMsgAlert" class="alert-message alert-error"></div>
+        <div id="adminDirectMsgAlert" class="alert-message alert-error" style="display:none;margin-bottom:12px;"></div>
         <form onsubmit="handleSendAdminDirectMessage(event)">
             <div class="form-group">
-                <label class="form-label">Kursiyer Seçin</label>
-                <select id="formAdminMsgUser" class="form-control" required>
+                <label class="form-label">Mesajın İletileceği Hedef *</label>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:6px;">
+                    <label class="target-choice-card" id="lblTargetAll" onclick="selectAdminMsgTarget('all')" style="border:1px solid var(--accent-blue);background:rgba(59,130,246,0.12);padding:10px 8px;border-radius:8px;cursor:pointer;text-align:center;font-size:12.5px;font-weight:600;color:white;display:flex;flex-direction:column;align-items:center;gap:4px;">
+                        <input type="radio" name="adminMsgTargetType" value="all" checked style="display:none;">
+                        <span style="font-size:18px;">👥</span>
+                        <span>Tüm Kursiyerler</span>
+                    </label>
+                    <label class="target-choice-card" id="lblTargetClass" onclick="selectAdminMsgTarget('class')" style="border:1px solid var(--border-color);background:var(--bg-input);padding:10px 8px;border-radius:8px;cursor:pointer;text-align:center;font-size:12.5px;font-weight:600;color:var(--text-secondary);display:flex;flex-direction:column;align-items:center;gap:4px;">
+                        <input type="radio" name="adminMsgTargetType" value="class" style="display:none;">
+                        <span style="font-size:18px;">🏫</span>
+                        <span>Sınıfa Göre</span>
+                    </label>
+                    <label class="target-choice-card" id="lblTargetStudent" onclick="selectAdminMsgTarget('student')" style="border:1px solid var(--border-color);background:var(--bg-input);padding:10px 8px;border-radius:8px;cursor:pointer;text-align:center;font-size:12.5px;font-weight:600;color:var(--text-secondary);display:flex;flex-direction:column;align-items:center;gap:4px;">
+                        <input type="radio" name="adminMsgTargetType" value="student" style="display:none;">
+                        <span style="font-size:18px;">👤</span>
+                        <span>Tek Kursiyer</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Sınıf Seçim Dropdown (Sadece 'class' seçiliyken görünür) -->
+            <div class="form-group" id="adminMsgClassGroup" style="display:none;">
+                <label class="form-label">Sınıf Seçin *</label>
+                <select id="formAdminMsgClass" class="form-control">
+                    <option value="">— Sınıf Seçin —</option>
+                </select>
+            </div>
+
+            <!-- Kursiyer Seçim Dropdown (Sadece 'student' seçiliyken görünür) -->
+            <div class="form-group" id="adminMsgUserGroup" style="display:none;">
+                <label class="form-label">Kursiyer Seçin *</label>
+                <select id="formAdminMsgUser" class="form-control">
                     <option value="">— Kursiyer Seçin —</option>
                 </select>
             </div>
+
             <div class="form-group">
-                <label class="form-label">Konu Başlığı</label>
-                <input type="text" id="formAdminMsgSubject" class="form-control" placeholder="Örn: Ders İlerlemesi, Tebrik, Ödev..." required>
+                <label class="form-label">Konu / Başlık *</label>
+                <input type="text" id="formAdminMsgSubject" class="form-control" placeholder="Örn: Hafta Sonu Uygulama Sınavı Hakkında" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Mesaj İçeriği</label>
-                <textarea id="formAdminMsgBody" class="form-control" rows="5" placeholder="Kursiyere iletmek istediğiniz mesajınızı yazın..." required></textarea>
+                <label class="form-label">Mesaj İçeriği *</label>
+                <textarea id="formAdminMsgBody" class="form-control" rows="5" placeholder="Kursiyerlerinize iletmek istediğiniz mesajınızı yazın..." required></textarea>
             </div>
             <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:24px;">
                 <button type="button" class="btn btn-ghost" onclick="closeModal('adminDirectMessageModal')">İptal</button>
                 <button type="submit" class="btn btn-primary">Mesajı Gönder ➔</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- MODAL: SINIF MESAJLARINI TOPLU SİL -->
+<div id="adminDeleteClassMessagesModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:440px;">
+        <div class="modal-header">
+            <h3 style="color:#ef4444;font-size:17px;display:flex;align-items:center;gap:8px;">
+                <span>🗑️</span> Sınıfa Göre Mesajları Toplu Sil
+            </h3>
+            <button class="modal-close" onclick="closeModal('adminDeleteClassMessagesModal')">&times;</button>
+        </div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
+            Seçeceğiniz hedefteki tüm mesajlar ve yanıt geçmişi kalıcı olarak silinecektir.
+        </p>
+        <div class="form-group">
+            <label class="form-label">Silinecek Grubu / Sınıfı Seçin</label>
+            <select id="formDeleteMsgClassSelect" class="form-control">
+                <option value="">— Hedef Seçin —</option>
+            </select>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px;">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('adminDeleteClassMessagesModal')">İptal</button>
+            <button type="button" class="btn btn-danger" onclick="executeDeleteMessagesByClass()">Bu Grubun Mesajlarını Sil</button>
+        </div>
     </div>
 </div>
 
@@ -841,11 +921,35 @@
     document.addEventListener('DOMContentLoaded', () => {
         initInitialModuleOptions();
         checkAdminAuth();
+
+        // Başka sekmede öğrenci mesaj gönderdiğinde veya mesaj silindiğinde anında güncelle
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'ehem_messages_v1') {
+                updateAdminUnreadBadge();
+                const tabMsg = document.getElementById('tabMessages');
+                if (tabMsg && tabMsg.style.display !== 'none') {
+                    filterAndRenderMessages(true);
+                }
+            }
+        });
+
+        // 3 saniyede bir otomatik canlı kontrol (farklı pencere ve sekmeler arası senkronizasyon için)
+        setInterval(() => {
+            updateAdminUnreadBadge();
+            const tabMsg = document.getElementById('tabMessages');
+            if (tabMsg && tabMsg.style.display !== 'none') {
+                const active = document.activeElement;
+                const isTyping = active && (active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && active.type === 'text'));
+                if (!isTyping) {
+                    filterAndRenderMessages(true);
+                }
+            }
+        }, 3000);
     });
 
     function checkAdminAuth() {
-        const s = lmsStorage.getCurrentSession();
-        const ok = s && s.type === 'admin';
+        const s = lmsStorage.getCurrentAdmin();
+        const ok = !!(s && (s.type === 'admin' || s.username));
         document.getElementById('adminLoginSection').style.display = ok ? 'none' : 'flex';
         document.getElementById('adminDashboardSection').style.display = ok ? 'block' : 'none';
         document.getElementById('adminNavActions').style.display = ok ? 'flex' : 'none';
@@ -860,7 +964,7 @@
         else { ab.textContent = 'Yönetici bilgileri hatalı!'; ab.style.display = 'block'; }
     }
 
-    function handleAdminLogout() { lmsStorage.logout(); checkAdminAuth(); }
+    function handleAdminLogout() { lmsStorage.logoutAdmin(); checkAdminAuth(); }
 
     function initInitialModuleOptions() {
         const sel = document.getElementById('formInitialModule');
@@ -1435,6 +1539,9 @@
     }
 
     // ==================== KURSİYER MESAJLARI & SORU-CEVAP ====================
+    let selectedMessageIds = new Set();
+    let currentAdminMsgTarget = 'all';
+
     function updateAdminUnreadBadge() {
         const badge = document.getElementById('adminUnreadBadge');
         if (!badge) return;
@@ -1453,7 +1560,9 @@
         const sel = document.getElementById('messageFilterClass');
         if (sel) {
             const curVal = sel.value;
-            sel.innerHTML = '<option value="all">Tüm Sınıflar</option><option value="none">Sınıfsız</option>';
+            sel.innerHTML = '<option value="all">Tüm Hedefler / Sınıflar</option>'
+                + '<option value="general">📢 Genel Mesajlar (Tüm Kursiyerler)</option>'
+                + '<option value="none">Sınıfsız Kursiyerler</option>';
             cls.forEach(c => {
                 const opt = document.createElement('option');
                 opt.value = c.id;
@@ -1463,11 +1572,119 @@
             if (curVal) sel.value = curVal;
         }
 
+        selectedMessageIds.clear();
         filterAndRenderMessages();
         updateAdminUnreadBadge();
     }
 
-    function filterAndRenderMessages() {
+    function selectAdminMsgTarget(type) {
+        currentAdminMsgTarget = type;
+        const lblAll = document.getElementById('lblTargetAll');
+        const lblClass = document.getElementById('lblTargetClass');
+        const lblStudent = document.getElementById('lblTargetStudent');
+        const grpClass = document.getElementById('adminMsgClassGroup');
+        const grpUser = document.getElementById('adminMsgUserGroup');
+
+        if (lblAll) {
+            lblAll.style.border = type === 'all' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)';
+            lblAll.style.background = type === 'all' ? 'rgba(59,130,246,0.12)' : 'var(--bg-input)';
+            lblAll.style.color = type === 'all' ? 'white' : 'var(--text-secondary)';
+        }
+        if (lblClass) {
+            lblClass.style.border = type === 'class' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)';
+            lblClass.style.background = type === 'class' ? 'rgba(59,130,246,0.12)' : 'var(--bg-input)';
+            lblClass.style.color = type === 'class' ? 'white' : 'var(--text-secondary)';
+        }
+        if (lblStudent) {
+            lblStudent.style.border = type === 'student' ? '1px solid var(--accent-blue)' : '1px solid var(--border-color)';
+            lblStudent.style.background = type === 'student' ? 'rgba(59,130,246,0.12)' : 'var(--bg-input)';
+            lblStudent.style.color = type === 'student' ? 'white' : 'var(--text-secondary)';
+        }
+
+        if (grpClass) grpClass.style.display = type === 'class' ? 'block' : 'none';
+        if (grpUser) grpUser.style.display = type === 'student' ? 'block' : 'none';
+    }
+
+    function openAdminDirectMessageModal(preselectedUserId = null) {
+        // Kursiyerleri yükle
+        const users = lmsStorage.getAllUsers();
+        const selUser = document.getElementById('formAdminMsgUser');
+        selUser.innerHTML = '<option value="">— Kursiyer Seçin —</option>';
+        users.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.id;
+            opt.textContent = u.fullName + ' (@' + u.username + ')';
+            selUser.appendChild(opt);
+        });
+
+        // Sınıfları yükle
+        const classes = lmsStorage.getAllClasses();
+        const selClass = document.getElementById('formAdminMsgClass');
+        selClass.innerHTML = '<option value="">— Sınıf Seçin —</option>';
+        classes.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = '🏫 ' + c.name;
+            selClass.appendChild(opt);
+        });
+
+        if (preselectedUserId) {
+            selectAdminMsgTarget('student');
+            selUser.value = preselectedUserId;
+        } else {
+            selectAdminMsgTarget('all');
+        }
+
+        document.getElementById('formAdminMsgSubject').value = '';
+        document.getElementById('formAdminMsgBody').value = '';
+        document.getElementById('adminDirectMsgAlert').style.display = 'none';
+
+        openModal('adminDirectMessageModal');
+    }
+
+    function handleSendAdminDirectMessage(e) {
+        e.preventDefault();
+        const subject = document.getElementById('formAdminMsgSubject').value.trim();
+        const body = document.getElementById('formAdminMsgBody').value.trim();
+        const alertBox = document.getElementById('adminDirectMsgAlert');
+
+        let targetId = null;
+        if (currentAdminMsgTarget === 'class') {
+            targetId = document.getElementById('formAdminMsgClass').value;
+            if (!targetId) {
+                alertBox.textContent = 'Lütfen bir sınıf seçiniz.';
+                alertBox.style.display = 'block';
+                return;
+            }
+        } else if (currentAdminMsgTarget === 'student') {
+            targetId = document.getElementById('formAdminMsgUser').value;
+            if (!targetId) {
+                alertBox.textContent = 'Lütfen bir kursiyer seçiniz.';
+                alertBox.style.display = 'block';
+                return;
+            }
+        }
+
+        const res = lmsStorage.sendMessageFromAdmin({
+            targetType: currentAdminMsgTarget,
+            targetId: targetId,
+            subject: subject,
+            message: body
+        });
+
+        if (!res.success) {
+            alertBox.textContent = res.message || 'Mesaj gönderilemedi!';
+            alertBox.style.display = 'block';
+            return;
+        }
+
+        closeModal('adminDirectMessageModal');
+        alert('✓ Mesaj başarıyla iletildi!');
+        filterAndRenderMessages();
+        updateAdminUnreadBadge();
+    }
+
+    function filterAndRenderMessages(isAutoRefresh = false) {
         const allMsgs = lmsStorage.getAllMessages();
         const q = (document.getElementById('messageSearchInput')?.value || '').toLowerCase().trim();
         const statusFilter = document.getElementById('messageFilterStatus')?.value || 'all';
@@ -1480,8 +1697,11 @@
 
         let filtered = allMsgs.slice().reverse().filter(m => {
             if (statusFilter !== 'all' && m.status !== statusFilter) return false;
-            if (classFilter === 'none' && m.classId) return false;
-            if (classFilter !== 'all' && classFilter !== 'none' && m.classId !== classFilter) return false;
+            if (classFilter === 'general' && m.targetType !== 'all') return false;
+            if (classFilter === 'none' && (m.classId || m.targetType === 'all')) return false;
+            if (classFilter !== 'all' && classFilter !== 'general' && classFilter !== 'none') {
+                if (m.classId !== classFilter) return false;
+            }
             if (q) {
                 const matchName = (m.userName || '').toLowerCase().includes(q);
                 const matchUser = (m.userUsername || '').toLowerCase().includes(q);
@@ -1496,6 +1716,7 @@
         if (filtered.length === 0) {
             empty.style.display = 'block';
             list.style.display = 'none';
+            updateSelectedMessagesCount();
             return;
         }
 
@@ -1505,6 +1726,7 @@
         filtered.forEach(msg => {
             const card = document.createElement('div');
             card.className = 'message-card ' + (msg.status === 'answered' ? 'status-answered' : 'status-pending');
+            card.id = 'msgCard_' + msg.id;
 
             const isPending = msg.status === 'pending';
             const statusBadge = isPending
@@ -1512,7 +1734,21 @@
                 : '<span style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">🟢 Yanıtlandı</span>';
 
             const unreadDot = msg.unreadByAdmin
-                ? '<span style="background:#ef4444;color:white;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;">YENİ</span>'
+                ? '<span style="background:#ef4444;color:white;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;animation:pulseBadge 1.5s infinite;">YENİ</span>'
+                : '';
+
+            // Hedef Rozeti
+            let targetBadge = '';
+            if (msg.targetType === 'all') {
+                targetBadge = '<span style="background:rgba(147,51,234,0.15);color:#c084fc;border:1px solid rgba(147,51,234,0.3);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">📢 Genel Mesaj (Tüm Kursiyerler)</span>';
+            } else if (msg.targetType === 'class') {
+                targetBadge = '<span style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">🏫 Sınıf: ' + (msg.className || 'Belirtilmemiş') + '</span>';
+            } else if (msg.className) {
+                targetBadge = '<span style="background:rgba(255,255,255,0.06);color:var(--text-secondary);padding:2px 8px;border-radius:6px;font-size:11px;">🏫 ' + msg.className + '</span>';
+            }
+
+            const originBadge = msg.origin === 'admin'
+                ? '<span style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;">👑 Öğretmen Başlattı</span>'
                 : '';
 
             const refMod = msg.moduleRefId ? mods.find(m => m.id === msg.moduleRefId) : null;
@@ -1520,11 +1756,9 @@
                 ? '<span style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;">📌 Bölüm ' + refMod.id + ': ' + refMod.title + '</span>'
                 : '';
 
-            const classBadge = msg.className
-                ? '<span style="background:rgba(255,255,255,0.06);color:var(--text-secondary);padding:2px 8px;border-radius:6px;font-size:11px;">🏫 ' + msg.className + '</span>'
-                : '<span style="color:var(--text-muted);font-size:11px;">(Sınıfsız)</span>';
-
             const dateStr = new Date(msg.createdAt).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            const isChecked = selectedMessageIds.has(msg.id);
 
             let repliesHtml = '';
             if (msg.replies && msg.replies.length > 0) {
@@ -1537,7 +1771,7 @@
                         + '<span class="chat-bubble-sender">' + (isTeacher ? '👑 Kurs Öğretmeni' : '👤 ' + (r.senderName || msg.userName)) + '</span>'
                         + '<span>' + repDate + '</span>'
                         + '</div>'
-                        + '<div style="color:var(--text-primary);">' + r.text.replace(/\n/g, '<br>') + '</div>'
+                        + '<div style="color:var(--text-primary);white-space:pre-wrap;">' + r.text + '</div>'
                         + '</div>';
                 });
                 repliesHtml += '</div>';
@@ -1545,16 +1779,18 @@
 
             card.innerHTML =
                 '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap;">'
-                + '<div style="display:flex;align-items:center;gap:10px;">'
+                + '<div style="display:flex;align-items:center;gap:12px;">'
+                + '<input type="checkbox" class="msg-checkbox msg-row-check" value="' + msg.id + '" ' + (isChecked ? 'checked' : '') + ' onchange="toggleSingleMessageSelect(\'' + msg.id + '\', this.checked)">'
                 + '<div class="user-avatar" style="width:36px;height:36px;font-size:14px;">' + (msg.userName || 'K')[0].toUpperCase() + '</div>'
                 + '<div>'
-                + '<div style="display:flex;align-items:center;gap:8px;">'
+                + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
                 + '<span style="font-weight:700;color:white;font-size:15px;">' + msg.userName + '</span>'
-                + '<code style="color:#93c5fd;font-size:12px;">@' + msg.userUsername + '</code>'
+                + (msg.userUsername && msg.userUsername !== 'tüm' ? '<code style="color:#93c5fd;font-size:12px;">@' + msg.userUsername + '</code>' : '')
                 + unreadDot
+                + originBadge
                 + '</div>'
-                + '<div style="display:flex;align-items:center;gap:8px;margin-top:2px;">'
-                + classBadge
+                + '<div style="display:flex;align-items:center;gap:8px;margin-top:2px;flex-wrap:wrap;">'
+                + targetBadge
                 + '<span style="color:var(--text-muted);font-size:11px;">📅 ' + dateStr + '</span>'
                 + '</div></div></div>'
                 + '<div style="display:flex;align-items:center;gap:8px;">'
@@ -1565,13 +1801,13 @@
                 + '<h3 style="color:white;font-size:16px;font-weight:700;margin:0;">' + msg.subject + '</h3>'
                 + refBadge
                 + '</div>'
-                + '<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:10px;padding:14px;color:var(--text-primary);font-size:13.5px;line-height:1.6;margin-bottom:12px;">'
-                + msg.message.replace(/\n/g, '<br>')
+                + '<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:10px;padding:14px;color:var(--text-primary);font-size:13.5px;line-height:1.6;margin-bottom:12px;white-space:pre-wrap;">'
+                + msg.message
                 + '</div>'
                 + repliesHtml
                 + '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border-color);">'
                 + '<div style="display:flex;gap:10px;align-items:flex-start;">'
-                + '<textarea id="replyInput_' + msg.id + '" class="form-control" rows="2" placeholder="Kursiyere yanıtınızı buraya yazın..." style="font-size:13px;flex:1;"></textarea>'
+                + '<textarea id="replyInput_' + msg.id + '" class="form-control" rows="2" placeholder="Yanıtınızı buraya yazın..." style="font-size:13px;flex:1;"></textarea>'
                 + '<button class="btn btn-primary btn-sm" onclick="sendAdminReply(\'' + msg.id + '\')" style="white-space:nowrap;padding:10px 16px;">💬 Yanıtla &amp; Gönder</button>'
                 + '</div></div>';
 
@@ -1582,6 +1818,119 @@
         allMsgs.forEach(m => {
             if (m.unreadByAdmin) lmsStorage.markMessageAsReadByAdmin(m.id);
         });
+        updateAdminUnreadBadge();
+        updateSelectedMessagesCount();
+    }
+
+    // ==================== TOPLU SEÇİM & SİLME ====================
+    function toggleSingleMessageSelect(msgId, checked) {
+        if (checked) {
+            selectedMessageIds.add(msgId);
+        } else {
+            selectedMessageIds.delete(msgId);
+        }
+        updateSelectedMessagesCount();
+    }
+
+    function toggleSelectAllMessages(checked) {
+        const checkboxes = document.querySelectorAll('.msg-row-check');
+        checkboxes.forEach(cb => {
+            cb.checked = checked;
+            if (checked) {
+                selectedMessageIds.add(cb.value);
+            } else {
+                selectedMessageIds.delete(cb.value);
+            }
+        });
+        updateSelectedMessagesCount();
+    }
+
+    function updateSelectedMessagesCount() {
+        const count = selectedMessageIds.size;
+        const badge = document.getElementById('msgSelectedCountBadge');
+        const btnDelete = document.getElementById('btnDeleteSelectedMsgs');
+        const checkAll = document.getElementById('msgSelectAll');
+
+        if (badge) badge.textContent = count + ' seçildi';
+        if (btnDelete) {
+            btnDelete.disabled = count === 0;
+            btnDelete.style.opacity = count === 0 ? '0.5' : '1';
+            btnDelete.textContent = '🗑️ Seçilenleri Sil (' + count + ')';
+        }
+
+        const visibleChecks = document.querySelectorAll('.msg-row-check');
+        if (checkAll && visibleChecks.length > 0) {
+            const allChecked = Array.from(visibleChecks).every(cb => cb.checked);
+            checkAll.checked = allChecked;
+        } else if (checkAll) {
+            checkAll.checked = false;
+        }
+    }
+
+    function handleDeleteSelectedMessages() {
+        const count = selectedMessageIds.size;
+        if (count === 0) return;
+
+        if (!confirm('Seçilen ' + count + ' adet mesajı ve yanıtlarını kalıcı olarak silmek istediğinize emin misiniz?')) {
+            return;
+        }
+
+        const res = lmsStorage.deleteMessagesBulk(Array.from(selectedMessageIds));
+        selectedMessageIds.clear();
+        alert('✓ ' + res.count + ' adet mesaj başarıyla silindi.');
+        filterAndRenderMessages();
+        updateAdminUnreadBadge();
+    }
+
+    function openDeleteByClassModal() {
+        const classes = lmsStorage.getAllClasses();
+        const sel = document.getElementById('formDeleteMsgClassSelect');
+        sel.innerHTML = '<option value="">— Hedef Seçin —</option>'
+            + '<option value="all_general">📢 Yalnızca Genel Mesajlar (Tüm Kursiyerler)</option>'
+            + '<option value="none">Sınıfsız Kursiyer Mesajları</option>';
+        classes.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = '🏫 ' + c.name + ' Sınıfı Mesajları';
+            sel.appendChild(opt);
+        });
+        openModal('adminDeleteClassMessagesModal');
+    }
+
+    function executeDeleteMessagesByClass() {
+        const classId = document.getElementById('formDeleteMsgClassSelect').value;
+        if (!classId) {
+            alert('Lütfen silmek istediğiniz hedefi / sınıfı seçiniz.');
+            return;
+        }
+
+        if (!confirm('Seçilen grubun tüm mesajları kalıcı olarak silinecektir. Devam edilsin mi?')) {
+            return;
+        }
+
+        const res = lmsStorage.deleteMessagesByClass(classId);
+        closeModal('adminDeleteClassMessagesModal');
+        selectedMessageIds.clear();
+        alert('✓ ' + res.count + ' adet mesaj başarıyla silindi.');
+        filterAndRenderMessages();
+        updateAdminUnreadBadge();
+    }
+
+    function handleDeleteAllMessages() {
+        const all = lmsStorage.getAllMessages();
+        if (all.length === 0) {
+            alert('Silinecek mesaj bulunmuyor.');
+            return;
+        }
+
+        if (!confirm('DİKKAT: Sistemdeki TÜM mesajlar ve yazışma geçmişi kalıcı olarak silinecektir!\n\nBu işlemi onaylıyor musunuz?')) {
+            return;
+        }
+
+        const res = lmsStorage.deleteAllMessages();
+        selectedMessageIds.clear();
+        alert('✓ Toplam ' + res.count + ' adet mesaj temizlendi.');
+        filterAndRenderMessages();
         updateAdminUnreadBadge();
     }
 
@@ -1608,90 +1957,10 @@
 
     function deleteAdminMessage(msgId) {
         if (!confirm('Bu mesajı ve yazışma geçmişini silmek istediğinize emin misiniz?')) return;
+        selectedMessageIds.delete(msgId);
         lmsStorage.deleteMessage(msgId);
         filterAndRenderMessages();
         updateAdminUnreadBadge();
-    }
-
-    function openAdminDirectMessageModal(preselectedUserId = null) {
-        const users = lmsStorage.getAllUsers();
-        const sel = document.getElementById('formAdminMsgUser');
-        sel.innerHTML = '<option value="">— Kursiyer Seçin —</option>';
-        users.forEach(u => {
-            const opt = document.createElement('option');
-            opt.value = u.id;
-            opt.textContent = u.fullName + ' (@' + u.username + ')';
-            sel.appendChild(opt);
-        });
-
-        if (preselectedUserId) {
-            sel.value = preselectedUserId;
-        }
-
-        document.getElementById('formAdminMsgSubject').value = '';
-        document.getElementById('formAdminMsgBody').value = '';
-        document.getElementById('adminDirectMsgAlert').style.display = 'none';
-
-        openModal('adminDirectMessageModal');
-    }
-
-    function handleSendAdminDirectMessage(e) {
-        e.preventDefault();
-        const userId = document.getElementById('formAdminMsgUser').value;
-        const subject = document.getElementById('formAdminMsgSubject').value.trim();
-        const body = document.getElementById('formAdminMsgBody').value.trim();
-        const alertBox = document.getElementById('adminDirectMsgAlert');
-
-        if (!userId) {
-            alertBox.textContent = 'Lütfen bir kursiyer seçin.';
-            alertBox.style.display = 'block';
-            return;
-        }
-
-        const user = lmsStorage.getUserById(userId);
-        if (!user) {
-            alertBox.textContent = 'Kursiyer bulunamadı.';
-            alertBox.style.display = 'block';
-            return;
-        }
-
-        const classes = lmsStorage.getAllClasses();
-        const userClass = classes.find(c => c.id === user.classId);
-
-        const newMsg = {
-            id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-            userId: user.id,
-            userName: user.fullName || user.username,
-            userUsername: user.username,
-            classId: user.classId || null,
-            className: userClass ? userClass.name : '',
-            subject: subject,
-            message: body,
-            moduleRefId: null,
-            createdAt: new Date().toISOString(),
-            status: 'answered',
-            unreadByAdmin: false,
-            unreadByStudent: true,
-            replies: [
-                {
-                    id: 'rep_' + Date.now(),
-                    sender: 'admin',
-                    senderName: 'Kurs Öğretmeni',
-                    text: body,
-                    createdAt: new Date().toISOString()
-                }
-            ]
-        };
-
-        const all = lmsStorage.getAllMessages();
-        all.push(newMsg);
-        lmsStorage.saveAllMessages(all);
-
-        closeModal('adminDirectMessageModal');
-        alert('✓ Mesaj kursiyere başarıyla gönderildi!');
-        if (document.getElementById('tabMessages').style.display !== 'none') {
-            filterAndRenderMessages();
-        }
     }
 
     // ==================== AYARLAR ====================
