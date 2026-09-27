@@ -5,10 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yönetici Kontrol Merkezi - Edremit HEM LMS</title>
     <meta name="description" content="Edremit HEM Bilgisayar İşletmenliği Kursu Yönetici Paneli">
-    <link rel="stylesheet" href="css/lms-theme.css">
+    <link rel="stylesheet" href="css/lms-theme.css?v=20260927_1800">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
-    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('ehem_theme') || 'night-blue');</script>
+    <script>
+        (function() {
+            try {
+                const raw = localStorage.getItem('ehem_theme_settings');
+                const s = raw ? JSON.parse(raw) : null;
+                const th = (s && s.theme) || localStorage.getItem('ehem_theme') || 'forest-green';
+                document.documentElement.setAttribute('data-theme', th);
+            } catch(e) {}
+        })();
+    </script>
 </head>
 <body>
 
@@ -998,8 +1007,8 @@
 </div>
 
 <!-- ============================== JAVASCRIPT ============================== -->
-<script src="js/modules-data.js"></script>
-<script src="js/storage-service.js"></script>
+<script src="js/modules-data.js?v=20260927_1800"></script>
+<script src="js/storage-service.js?v=20260927_1800"></script>
 <script>
     let currentSelectedStudentId = null;
     let excelParsedRows = [];
@@ -1079,6 +1088,7 @@
 
         lmsStorage.pullFromFirebase().then(res => {
             if (res && res.success) {
+                lmsStorage.applyThemeSettings();
                 initInitialModuleOptions();
                 loadDashboardData();
                 rebuildClassDropdowns();
@@ -1285,7 +1295,8 @@
         tbody.innerHTML = '';
         const filtered = users.filter(u => {
             if (!((u.fullName||'').toLowerCase().includes(q) || (u.username||'').toLowerCase().includes(q))) return false;
-            if (cF === 'none' && u.classId) return false;
+            const classExists = classes.some(c => c.id === u.classId);
+            if (cF === 'none' && classExists) return false;
             if (cF !== 'all' && cF !== 'none' && u.classId !== cF) return false;
             const c = (u.completedModuleIds||[]).length, done = mods.length > 0 && c >= mods.length;
             if (sF === 'completed') return done;
@@ -1870,10 +1881,16 @@
     async function deleteAnnouncement(id) {
         if (!confirm('Bu duyuruyu silmek istediğinize emin misiniz?')) return;
         try {
-            await lmsStorage.deleteAnnouncement(id);
+            const res = await lmsStorage.deleteAnnouncement(id);
             loadAnnouncementsTab();
+            if (res && res.success) {
+                alert('✓ Duyuru başarıyla silindi.');
+            } else {
+                alert('Duyuru silinemedi: ' + ((res && res.message) || 'Bilinmeyen hata'));
+            }
         } catch (err) {
             console.error('Duyuru silme hatası:', err);
+            alert('Duyuru silinirken hata oluştu: ' + (err.message || err));
             loadAnnouncementsTab();
         }
     }
@@ -2033,8 +2050,15 @@
     }
 
     async function handleResendAnnouncement(annId) {
-        const ann = lmsStorage.getAllAnnouncements().find(a => a.id === annId);
-        if (!ann) return;
+        let ann = lmsStorage.getAllAnnouncements().find(a => a.id === annId);
+        if (!ann && lmsStorage.pullAnnouncementsFromFirebase) {
+            await lmsStorage.pullAnnouncementsFromFirebase();
+            ann = lmsStorage.getAllAnnouncements().find(a => a.id === annId);
+        }
+        if (!ann) {
+            alert('Duyuru bulunamadı.');
+            return;
+        }
 
         const stats = lmsStorage.getAnnouncementReadStats(annId);
         const confirmMsg = `"${ann.title}" başlıklı duyuruyu tüm hedef kursiyerlere tekrar göndermek istediğinize emin misiniz?\n\n`
@@ -2046,11 +2070,11 @@
 
         try {
             const res = await lmsStorage.resendAnnouncement(annId);
-            if (res.success) {
-                alert('✓ Duyuru başarıyla tekrar gönderildi!\n\nDuyuru güncellendi ve tüm hedef kursiyerlerin ekranına yeniden iletildi.');
+            if (res && res.success) {
                 loadAnnouncementsTab();
+                alert('✓ Duyuru başarıyla tekrar gönderildi!\n\nOkuma listesi sıfırlandı ve tüm hedef kursiyerlerin ekranına yeniden iletildi.');
             } else {
-                alert('Tekrar gönderme başarısız: ' + (res.message || 'Bilinmeyen hata'));
+                alert('Tekrar gönderme başarısız: ' + ((res && res.message) || 'Bilinmeyen hata'));
             }
         } catch (err) {
             console.error('Tekrar gönderme hatası:', err);

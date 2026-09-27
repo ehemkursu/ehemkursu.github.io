@@ -1810,10 +1810,16 @@ class StorageService {
             const usersRes = await fetch(`${baseUrl}/kursiyerler.json${authParam}`);
             if (usersRes.ok) {
                 const usersData = await usersRes.json();
-                if (usersData && Array.isArray(usersData) && usersData.length > 0) {
-                    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(usersData));
-                    count = usersData.length;
-                } else if (!usersData || (Array.isArray(usersData) && usersData.length === 0)) {
+                let userList = [];
+                if (Array.isArray(usersData)) {
+                    userList = usersData.filter(Boolean);
+                } else if (usersData && typeof usersData === 'object') {
+                    userList = Object.values(usersData).filter(Boolean);
+                }
+                if (userList.length > 0) {
+                    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(userList));
+                    count = userList.length;
+                } else if (!usersData || userList.length === 0) {
                     // Bulut henüz boş. Eğer bu cihazda 2'den fazla kullanıcı varsa (1. bilgisayarın 42 kullanıcısı) buluta aktar!
                     const localUsers = this.getAllUsers();
                     if (localUsers.length > 2) {
@@ -1837,6 +1843,21 @@ class StorageService {
                 if (clsList.length > 0) {
                     localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(clsList));
                 }
+            }
+
+            // Kursiyerlerin sınıf kimliklerini doğrula (silinmiş veya geçersiz sınıf ID'si kalmışsa otomatik temizle)
+            const currentClasses = this.getAllClasses();
+            const validClassIds = new Set(currentClasses.map(c => c.id));
+            const currentUsers = this.getAllUsers();
+            let orphanFound = false;
+            currentUsers.forEach(u => {
+                if (u && u.classId && !validClassIds.has(u.classId)) {
+                    u.classId = null;
+                    orphanFound = true;
+                }
+            });
+            if (orphanFound) {
+                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(currentUsers));
             }
 
             // 3. Duyurular
@@ -2198,15 +2219,40 @@ class StorageService {
     }
 
     async deleteAnnouncement(annId) {
+        if (!annId) return { success: false, message: 'Duyuru ID geçersiz.' };
         let anns = this.getAllAnnouncements();
         anns = anns.filter(a => a && a.id !== annId);
-        this.saveAllAnnouncements(anns);
-        await this.deleteAnnouncementFromFirebase(annId);
+        
+        // 1. Yerel hafızaya kaydet
+        localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(anns));
+
+        // 2. Firebase'den doğrudan ve temiz sil
+        const cfg = this.getFirebaseConfig();
+        if (cfg && cfg.enabled && cfg.databaseURL) {
+            try {
+                const baseUrl = cfg.databaseURL.replace(/\/$/, '');
+                const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
+
+                // Tekil duyuruyu sil
+                await fetch(`${baseUrl}/announcements/${annId}.json${authParam}`, {
+                    method: 'DELETE'
+                });
+
+                // Eğer hiç duyuru kalmadıysa buluttaki ana duyuru düğümünü temizle
+                if (anns.length === 0) {
+                    await fetch(`${baseUrl}/announcements.json${authParam}`, {
+                        method: 'DELETE'
+                    });
+                }
+            } catch (err) {
+                console.warn(`Firebase duyuru ${annId} silme hatası:`, err);
+            }
+        }
         return { success: true };
     }
 
     async deleteAllAnnouncements() {
-        this.saveAllAnnouncements([]);
+        localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify([]));
         const cfg = this.getFirebaseConfig();
         if (cfg && cfg.enabled && cfg.databaseURL) {
             try {
@@ -2256,7 +2302,7 @@ class StorageService {
                 ann.readBy = {};
             }
             ann.readBy[userId] = readRecord;
-            this.saveAllAnnouncements(anns);
+            localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(anns));
         }
 
         // 4. Firebase'e doğrudan tekil atomic yaz
@@ -2279,6 +2325,7 @@ class StorageService {
     }
 
     async resendAnnouncement(annId) {
+        if (!annId) return { success: false, message: 'Duyuru ID geçersiz.' };
         const anns = this.getAllAnnouncements();
         const ann = anns.find(a => a && a.id === annId);
         if (!ann) return { success: false, message: 'Duyuru bulunamadı.' };
@@ -2304,18 +2351,23 @@ class StorageService {
             }
         } catch (e) {}
 
-        this.saveAllAnnouncements(anns);
+        // Yerel listeyi güncelle
+        localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(anns));
 
-        // Firebase'e güncel duyuruyu kaydet ve readBy düğümünü sıfırla
+        // Firebase'e atomik yaz ve readBy düğümünü tamamen temizle
         const cfg = this.getFirebaseConfig();
         if (cfg && cfg.enabled && cfg.databaseURL) {
             try {
                 const baseUrl = cfg.databaseURL.replace(/\/$/, '');
                 const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
+                
+                const cleanAnn = { ...ann };
+                delete cleanAnn.readBy;
+
                 await fetch(`${baseUrl}/announcements/${annId}.json${authParam}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(ann)
+                    body: JSON.stringify(cleanAnn)
                 });
                 await fetch(`${baseUrl}/announcements/${annId}/readBy.json${authParam}`, {
                     method: 'DELETE'
@@ -2429,11 +2481,24 @@ class StorageService {
         return anns.filter(a => {
             if (!a || !a.id) return false;
             
-            // Bulutta bu öğrenci okudu olarak işaretlenmişse gösterme
-            const isReadInCloud = a.readBy && (
-                (typeof a.readBy === 'object' && !Array.isArray(a.readBy) && !!a.readBy[userId]) ||
-                (Array.isArray(a.readBy) && a.readBy.some(r => r && (r.userId === userId || r === userId)))
-            );
+            // Bulutta bu öğrenci okudu olarak işaretlenmiş mi?
+            let isReadInCloud = false;
+            if (a.readBy) {
+                if (typeof a.readBy === 'object' && !Array.isArray(a.readBy)) {
+                    const rec = a.readBy[userId];
+                    if (rec) {
+                        if (a.resentAt && rec.readAt) {
+                            isReadInCloud = new Date(rec.readAt) >= new Date(a.resentAt);
+                        } else if (a.resentAt && !rec.readAt) {
+                            isReadInCloud = false;
+                        } else {
+                            isReadInCloud = true;
+                        }
+                    }
+                } else if (Array.isArray(a.readBy)) {
+                    isReadInCloud = a.readBy.some(r => r && (r.userId === userId || r === userId));
+                }
+            }
             if (isReadInCloud) return false;
 
             // Yerel dismissed listesinde varsa: ancak resentAt yoksa gizle (resentAt varsa yeniden gösterilsin)

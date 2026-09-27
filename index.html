@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edremit HEM - Bilgisayar İşletmenliği Kursu</title>
-    <link rel="stylesheet" href="css/lms-theme.css">
+    <link rel="stylesheet" href="css/lms-theme.css?v=20260927_1800">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💻</text></svg>">
     <!-- Tema ve Menü Tasarımı flaşını önle -->
     <script>
@@ -12,7 +12,7 @@
             try {
                 const raw = localStorage.getItem('ehem_theme_settings');
                 const s = raw ? JSON.parse(raw) : null;
-                const th = (s && s.theme) || localStorage.getItem('ehem_theme') || 'night-blue';
+                const th = (s && s.theme) || localStorage.getItem('ehem_theme') || 'forest-green';
                 document.documentElement.setAttribute('data-theme', th);
                 if (s && s.menuLayout) document.documentElement.setAttribute('data-menu-layout', s.menuLayout);
                 if (s && s.menuStyle) document.documentElement.setAttribute('data-menu-style', s.menuStyle);
@@ -482,8 +482,8 @@
     </div>
 
     <!-- Scriptler -->
-    <script src="js/modules-data.js"></script>
-    <script src="js/storage-service.js"></script>
+    <script src="js/modules-data.js?v=20260927_1800"></script>
+    <script src="js/storage-service.js?v=20260927_1800"></script>
     <script>
         let currentViewingModuleId = null;
 
