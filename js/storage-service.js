@@ -35,6 +35,12 @@ const INITIAL_CLASSES = [
         "name": "büro2026",
         "description": "",
         "createdAt": "2026-09-26T07:35:15.196Z"
+    },
+    {
+        "id": "cls_1790672541394_294",
+        "name": "ehem",
+        "description": "",
+        "createdAt": "2026-09-29T09:02:21.394Z"
     }
 ];
 
@@ -670,591 +676,6 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_1790408498022_381",
-        "fullName": "SERHAT POLAT",
-        "username": "serh",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.022Z",
-        "lastActive": "2026-09-26T07:41:38.022Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498022_854",
-        "fullName": "ZEHRA KOÇLARDAN",
-        "username": "zehr",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.022Z",
-        "lastActive": "2026-09-26T07:41:38.022Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498023_956",
-        "fullName": "YAĞIZ ERDOĞAN",
-        "username": "yaği",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.023Z",
-        "lastActive": "2026-09-26T07:41:38.023Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498023_974",
-        "fullName": "ATİYE KÖKCÜ",
-        "username": "ati̇y",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.023Z",
-        "lastActive": "2026-09-26T07:41:38.023Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498023_172",
-        "fullName": "FATIMA CAN",
-        "username": "fati",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.023Z",
-        "lastActive": "2026-09-26T07:41:38.023Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498024_676",
-        "fullName": "SILA ÇEVİK",
-        "username": "sila",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.024Z",
-        "lastActive": "2026-09-26T07:41:38.024Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498024_558",
-        "fullName": "SUDENAZ AKTAŞ",
-        "username": "sude",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.024Z",
-        "lastActive": "2026-09-26T07:41:38.024Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498025_243",
-        "fullName": "AYNUR ÖZHİSAR",
-        "username": "aynu",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.025Z",
-        "lastActive": "2026-09-26T07:41:38.025Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498025_539",
-        "fullName": "TUANA YILMAZ",
-        "username": "tuan",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.025Z",
-        "lastActive": "2026-09-26T07:41:38.025Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498026_713",
-        "fullName": "FATMANUR SAYLIK",
-        "username": "fatm",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.026Z",
-        "lastActive": "2026-09-26T07:41:38.026Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498026_808",
-        "fullName": "GÜLEN GÜNDOĞDU",
-        "username": "güle",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.026Z",
-        "lastActive": "2026-09-26T07:41:38.026Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498027_497",
-        "fullName": "ELİF AYDIN",
-        "username": "eli̇f",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.027Z",
-        "lastActive": "2026-09-26T07:41:38.027Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498028_907",
-        "fullName": "GÜLSEN KAPLAN",
-        "username": "güls",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.028Z",
-        "lastActive": "2026-09-26T07:41:38.028Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498028_934",
-        "fullName": "BÜŞRA KURT",
-        "username": "büşr",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.028Z",
-        "lastActive": "2026-09-26T07:41:38.028Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498029_478",
-        "fullName": "EDANUR KIY",
-        "username": "edan",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.029Z",
-        "lastActive": "2026-09-26T07:41:38.029Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498029_0",
-        "fullName": "ŞEYMA KURT",
-        "username": "şeym",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.029Z",
-        "lastActive": "2026-09-26T07:41:38.029Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498030_157",
-        "fullName": "ELANUR AYDIN",
-        "username": "elan",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.030Z",
-        "lastActive": "2026-09-26T07:41:38.030Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498030_356",
-        "fullName": "İBRAHİM SEFA KESER",
-        "username": "i̇bra",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.030Z",
-        "lastActive": "2026-09-26T07:41:38.030Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498030_89",
-        "fullName": "HAVVA ÖZGE ÇAM",
-        "username": "havv",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.030Z",
-        "lastActive": "2026-09-26T07:41:38.030Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498031_508",
-        "fullName": "HİLAL ŞANLI",
-        "username": "hi̇la",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.031Z",
-        "lastActive": "2026-09-26T07:41:38.031Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498032_961",
-        "fullName": "İSA ÖZMEN",
-        "username": "i̇sa",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.032Z",
-        "lastActive": "2026-09-26T07:41:38.032Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498033_144",
-        "fullName": "HAZAL ERAT",
-        "username": "haza",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.033Z",
-        "lastActive": "2026-09-26T07:41:38.033Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498034_896",
-        "fullName": "FİRDEVS BAKIR",
-        "username": "fi̇rd",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.034Z",
-        "lastActive": "2026-09-26T07:41:38.034Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498034_304",
-        "fullName": "BEYZA BURAK",
-        "username": "beyz",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.034Z",
-        "lastActive": "2026-09-26T07:41:38.034Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498035_304",
-        "fullName": "MİRAÇ İHSAN ÇAKIR",
-        "username": "mi̇ra",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.035Z",
-        "lastActive": "2026-09-26T07:41:38.035Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498035_355",
-        "fullName": "ESMANUR COŞAR",
-        "username": "esma",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.035Z",
-        "lastActive": "2026-09-26T07:41:38.035Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498036_692",
-        "fullName": "EFE AKBULUT",
-        "username": "efe",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.036Z",
-        "lastActive": "2026-09-26T07:41:38.036Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498037_498",
-        "fullName": "MEDİNE AMAK",
-        "username": "medi̇",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.037Z",
-        "lastActive": "2026-09-26T07:41:38.037Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498037_529",
-        "fullName": "AMİNE SULTAN ASLAN",
-        "username": "ami̇n",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.037Z",
-        "lastActive": "2026-09-26T07:41:38.037Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498038_373",
-        "fullName": "RAVZA DAĞSOY",
-        "username": "ravz",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.038Z",
-        "lastActive": "2026-09-26T07:41:38.038Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498039_766",
-        "fullName": "EBRU TORU",
-        "username": "ebru",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.039Z",
-        "lastActive": "2026-09-26T07:41:38.039Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498039_974",
-        "fullName": "AYŞEGÜL BAYRAM",
-        "username": "ayşe",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.039Z",
-        "lastActive": "2026-09-26T07:41:38.039Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498039_886",
-        "fullName": "VEDA ŞİMŞEK",
-        "username": "veda",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.039Z",
-        "lastActive": "2026-09-26T07:41:38.039Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498040_682",
-        "fullName": "DAMLA BAYATLI",
-        "username": "daml",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.040Z",
-        "lastActive": "2026-09-26T07:41:38.040Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498041_431",
-        "fullName": "SONGÜL KILIÇÇEK",
-        "username": "song",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.041Z",
-        "lastActive": "2026-09-26T07:41:38.041Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498041_21",
-        "fullName": "BERKUN AVCI",
-        "username": "berk",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.041Z",
-        "lastActive": "2026-09-26T07:41:38.041Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498042_587",
-        "fullName": "CEYLİN AYDIN",
-        "username": "ceyl",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.042Z",
-        "lastActive": "2026-09-26T07:41:38.042Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498042_372",
-        "fullName": "ESRA KAYA",
-        "username": "esra",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.042Z",
-        "lastActive": "2026-09-26T07:41:38.042Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
-        "id": "usr_1790408498043_893",
-        "fullName": "İREM ÜSTÜN",
-        "username": "i̇rem",
-        "password": "123",
-        "createdAt": "2026-09-26T07:41:38.043Z",
-        "lastActive": "2026-09-26T07:41:38.043Z",
-        "currentModuleId": 1,
-        "completedModuleIds": [],
-        "unlockedModuleIds": [
-            1
-        ],
-        "classId": null,
-        "notes": ""
-    },
-    {
         "avatar": "",
         "classId": "cls_1790408115196_514",
         "createdAt": "2026-09-26T18:32:31.885Z",
@@ -1272,20 +693,346 @@ const INITIAL_USERS = [
         "username": "aliveli"
     },
     {
-        "avatar": "",
-        "createdAt": "2026-09-26T18:32:31.892Z",
-        "currentModuleId": 1,
-        "email": "",
-        "fullName": "Ayse Fatma",
-        "id": "usr_1790447551892_263",
-        "lastActive": "2026-09-26T18:32:31.892Z",
-        "notes": "",
+        "id": "usr_ehem_01_aleynaaslan",
+        "fullName": "Aleyna ASLAN",
+        "username": "aleynaaslan",
         "password": "123",
-        "phone": "",
+        "email": "",
+        "phone": "5516827182",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
         "unlockedModuleIds": [
             1
         ],
-        "username": "aysefatma"
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_02_aslihancakir",
+        "fullName": "Aslıhan ÇAKIR",
+        "username": "aslihancakir",
+        "password": "123",
+        "email": "",
+        "phone": "5356594148",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_03_aysegulcakmak",
+        "fullName": "Ayşegül ÇAKMAK",
+        "username": "aysegulcakmak",
+        "password": "123",
+        "email": "",
+        "phone": "5413771734",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_04_banualkan",
+        "fullName": "Banu ALKAN",
+        "username": "banualkan",
+        "password": "123",
+        "email": "",
+        "phone": "5537531501",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_05_damlatemel",
+        "fullName": "Damla TEMEL",
+        "username": "damlatemel",
+        "password": "123",
+        "email": "",
+        "phone": "5464616888",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_06_eceyarenbalaban",
+        "fullName": "Ece Yaren BALABAN",
+        "username": "eceyarenbalaban",
+        "password": "123",
+        "email": "",
+        "phone": "5058557915",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_07_feyzaduman",
+        "fullName": "Feyza DUMAN",
+        "username": "feyzaduman",
+        "password": "123",
+        "email": "",
+        "phone": "5465384374",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_08_gizemersoz",
+        "fullName": "Gizem ERSÖZ",
+        "username": "gizemersoz",
+        "password": "123",
+        "email": "",
+        "phone": "5457933426",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_09_isilengur",
+        "fullName": "Işıl ENGÜR",
+        "username": "isilengur",
+        "password": "123",
+        "email": "",
+        "phone": "5372606076",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_10_mehmetyavasca",
+        "fullName": "Mehmet YAVAŞÇA",
+        "username": "mehmetyavasca",
+        "password": "123",
+        "email": "",
+        "phone": "5519647017",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_11_nisadokmecioglu",
+        "fullName": "Nisa DÖKMECİOĞLU",
+        "username": "nisadokmecioglu",
+        "password": "123",
+        "email": "",
+        "phone": "5462909205",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_12_nursugunsan",
+        "fullName": "Nursu GÜNSAN",
+        "username": "nursugunsan",
+        "password": "123",
+        "email": "",
+        "phone": "",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_13_orhanbugraturcan",
+        "fullName": "Orhan Buğra TURCAN",
+        "username": "orhanbugraturcan",
+        "password": "123",
+        "email": "",
+        "phone": "5414273266",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_14_ozgekaraarslan",
+        "fullName": "Özge KARAARSLAN",
+        "username": "ozgekaraarslan",
+        "password": "123",
+        "email": "",
+        "phone": "5386471426",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_15_sabricanevyapan",
+        "fullName": "Sabri Can EVYAPAN",
+        "username": "sabricanevyapan",
+        "password": "123",
+        "email": "",
+        "phone": "5318801949",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_16_semaucar",
+        "fullName": "Sema UÇAR",
+        "username": "semaucar",
+        "password": "123",
+        "email": "",
+        "phone": "5011797737",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_17_senabuyukozer",
+        "fullName": "Sena BÜYÜKÖZER",
+        "username": "senabuyukozer",
+        "password": "123",
+        "email": "",
+        "phone": "5385150193",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_18_sinankosar",
+        "fullName": "Sinan KOŞAR",
+        "username": "sinankosar",
+        "password": "123",
+        "email": "",
+        "phone": "5511681890",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_19_sifanurafacan",
+        "fullName": "Şifanur AFACAN",
+        "username": "sifanurafacan",
+        "password": "123",
+        "email": "",
+        "phone": "5353271375",
+        "avatar": "",
+        "createdAt": "2026-09-29T09:05:00.000Z",
+        "lastActive": "2026-09-29T09:05:00.000Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
     }
 ];
 
@@ -1295,20 +1042,39 @@ class StorageService {
     }
 
     init() {
-        // Kullanıcı veritabanı yoksa başlat
+        // Sınıflar yoksa başlat, eksik olanları ekle
+        const existingClasses = this.getAllClasses();
+        if (!existingClasses.length) {
+            localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(INITIAL_CLASSES));
+        } else {
+            const classIds = new Set(existingClasses.map(c => c.id));
+            let classAdded = false;
+            INITIAL_CLASSES.forEach(ic => {
+                if (!classIds.has(ic.id)) {
+                    existingClasses.push(ic);
+                    classAdded = true;
+                }
+            });
+            if (classAdded) {
+                localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(existingClasses));
+            }
+        }
+
+        // Kullanıcı veritabanı yoksa veya boşsa başlat
         const curUsers = this.getAllUsers();
         if (!curUsers.length || curUsers.length <= 2) {
             localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(INITIAL_USERS));
+        } else {
+            // Mevcut kullanıcı listesini tekilleştir ve eski kopya/hayalet kayıtları temizle
+            const clean = this.deduplicateUserList(curUsers);
+            if (clean.length !== curUsers.length) {
+                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(clean));
+            }
         }
 
         // Admin kimlik bilgileri yoksa başlat
         if (!localStorage.getItem(STORAGE_KEYS.ADMIN_CREDS)) {
             localStorage.setItem(STORAGE_KEYS.ADMIN_CREDS, JSON.stringify(DEFAULT_ADMIN));
-        }
-
-        // Sınıflar yoksa başlat
-        if (!localStorage.getItem(STORAGE_KEYS.CLASSES) || this.getAllClasses().length === 0) {
-            localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(INITIAL_CLASSES));
         }
 
         // Bulut ayarları
@@ -1322,7 +1088,7 @@ class StorageService {
     }
 
     async tryPullFromLocalServer() {
-        if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
+        if (typeof window !== 'undefined' && window.location && window.location.protocol && window.location.protocol.startsWith('http')) {
             let loaded = false;
             try {
                 const res = await fetch('/api/sync');
@@ -1350,28 +1116,102 @@ class StorageService {
         }
     }
 
+    normalizeTurkish(str) {
+        if (!str) return '';
+        return str.toString().trim().toLowerCase()
+            .replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ş/g, 's')
+            .replace(/ı/g, 'i').replace(/i̇/g, 'i').replace(/ö/g, 'o').replace(/ç/g, 'c')
+            .replace(/\s+/g, ' ');
+    }
+
+    deduplicateUserList(userList) {
+        if (!Array.isArray(userList)) return [];
+        const idMap = new Map();
+        const usernameMap = new Map();
+        const nameClassMap = new Map();
+        const deletedIds = this.getDeletedUserIds();
+        const result = [];
+
+        userList.forEach(u => {
+            if (!u) return;
+            const uId = u.id ? String(u.id).trim() : null;
+            if (uId && deletedIds.has(uId)) return;
+
+            const cleanU = (u.username || '').trim().toLowerCase();
+            const normName = this.normalizeTurkish(u.fullName || '');
+            const normClass = u.classId || '';
+            const nameClassKey = normName ? (normName + '::' + normClass) : null;
+
+            // Önceden bu kullanıcı eklenmiş mi kontrol et
+            let existing = null;
+            if (uId && idMap.has(uId)) {
+                existing = idMap.get(uId);
+            } else if (cleanU && usernameMap.has(cleanU)) {
+                existing = usernameMap.get(cleanU);
+            } else if (nameClassKey && normClass && nameClassMap.has(nameClassKey)) {
+                existing = nameClassMap.get(nameClassKey);
+            }
+
+            if (existing) {
+                // Mevcut kaydı birleştir ve zenginleştir (asla 2. kayıt yapma!)
+                if (!existing.classId && u.classId) {
+                    existing.classId = u.classId;
+                }
+                const exDone = existing.completedModuleIds || [];
+                const uDone = u.completedModuleIds || [];
+                if (uDone.length > exDone.length) {
+                    existing.completedModuleIds = uDone;
+                    existing.currentModuleId = u.currentModuleId || existing.currentModuleId;
+                }
+                const exUnl = new Set(existing.unlockedModuleIds || [1]);
+                (u.unlockedModuleIds || []).forEach(m => exUnl.add(m));
+                existing.unlockedModuleIds = Array.from(exUnl).sort((a, b) => a - b);
+
+                const exTime = new Date(existing.lastActive || 0).getTime();
+                const uTime = new Date(u.lastActive || 0).getTime();
+                if (uTime > exTime) {
+                    existing.lastActive = u.lastActive;
+                }
+                if (!existing.phone && u.phone) existing.phone = u.phone;
+                if (!existing.email && u.email) existing.email = u.email;
+                if (!existing.notes && u.notes) existing.notes = u.notes;
+                if ((!existing.password || existing.password === '123') && u.password && u.password !== '123') {
+                    existing.password = u.password;
+                }
+            } else {
+                const cleanObj = {
+                    id: uId || ('usr_' + Date.now() + '_' + Math.floor(Math.random() * 10000)),
+                    fullName: (u.fullName || cleanU || 'Kursiyer').trim(),
+                    username: cleanU || this.normalizeTurkish(u.fullName || '').replace(/[^a-z0-9]/g, ''),
+                    password: (u.password || '123').trim(),
+                    email: (u.email || '').trim(),
+                    phone: (u.phone || '').trim(),
+                    avatar: u.avatar || '',
+                    createdAt: u.createdAt || new Date().toISOString(),
+                    lastActive: u.lastActive || new Date().toISOString(),
+                    currentModuleId: u.currentModuleId || 1,
+                    completedModuleIds: u.completedModuleIds || [],
+                    unlockedModuleIds: u.unlockedModuleIds || [1],
+                    classId: u.classId || null,
+                    notes: (u.notes || '').trim()
+                };
+                result.push(cleanObj);
+                if (cleanObj.id) idMap.set(cleanObj.id, cleanObj);
+                if (cleanObj.username) usernameMap.set(cleanObj.username.toLowerCase(), cleanObj);
+                if (normName && cleanObj.classId) nameClassMap.set(normName + '::' + cleanObj.classId, cleanObj);
+            }
+        });
+
+        return result;
+    }
+
     mergeUsersIntoStorage(incomingUsers) {
         if (!Array.isArray(incomingUsers) || incomingUsers.length === 0) return;
         const localUsers = this.getAllUsers();
         const deletedIds = this.getDeletedUserIds();
-        const map = new Map();
-        localUsers.forEach(u => {
-            if (u && u.id && !deletedIds.has(u.id)) map.set(u.id, u);
-        });
-
-        let added = false;
-        incomingUsers.forEach(iu => {
-            if (!iu || !iu.id || deletedIds.has(iu.id)) return;
-            if (!map.has(iu.id)) {
-                map.set(iu.id, iu);
-                added = true;
-            }
-        });
-
-        if (added || localUsers.length === 0) {
-            const merged = Array.from(map.values());
-            localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(merged));
-        }
+        const combined = [...localUsers, ...incomingUsers].filter(u => u && u.id && !deletedIds.has(u.id));
+        const merged = this.deduplicateUserList(combined);
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(merged));
     }
 
     async syncToLocalServer(users) {
@@ -1579,9 +1419,10 @@ class StorageService {
     }
 
     saveAllUsers(users) {
-        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
-        this.syncToFirebase(users);
-        this.syncToLocalServer(users);
+        const clean = this.deduplicateUserList(users);
+        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(clean));
+        this.syncToFirebase(clean);
+        this.syncToLocalServer(clean);
     }
 
     getUserById(id) {
@@ -1592,13 +1433,19 @@ class StorageService {
     addUser({ fullName, username, password, initialModuleId = 1, classId = null, notes = '', email = '', phone = '', avatar = '' }) {
         const users = this.getAllUsers();
         const cleanUsername = (username || '').trim().toLowerCase();
+        const normName = this.normalizeTurkish(fullName || '');
+        const targetClassId = classId || null;
 
         if (!cleanUsername) {
             return { success: false, message: "Kullanıcı adı zorunludur!" };
         }
 
-        if (users.some(u => u.username.toLowerCase() === cleanUsername)) {
+        if (users.some(u => (u.username || '').toLowerCase() === cleanUsername)) {
             return { success: false, message: `"${cleanUsername}" kullanıcı adı zaten kullanımda!` };
+        }
+
+        if (normName && users.some(u => this.normalizeTurkish(u.fullName || '') === normName && (u.classId || null) === targetClassId)) {
+            return { success: false, message: `"${(fullName || '').trim()}" isimli kursiyer bu sınıfta zaten kayıtlı!` };
         }
 
         const startMod = parseInt(initialModuleId) || 1;
@@ -1615,7 +1462,7 @@ class StorageService {
             id: 'usr_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
             fullName: (fullName || cleanUsername).trim(),
             username: cleanUsername,
-            password: (password || '1234').trim(),
+            password: (password || '123').trim(),
             email: (email || '').trim(),
             phone: (phone || '').trim(),
             avatar: avatar || '',
@@ -1624,7 +1471,7 @@ class StorageService {
             currentModuleId: startMod,
             completedModuleIds: completed,
             unlockedModuleIds: unlocked,
-            classId: classId || null,
+            classId: targetClassId,
             notes: notes.trim()
         };
 
@@ -1716,23 +1563,57 @@ class StorageService {
 
     bulkAddUsersList(usersToAdd) {
         if (!Array.isArray(usersToAdd) || usersToAdd.length === 0) {
-            return { success: false, message: 'Eklenecek kursiyer listesi boş.', added: 0, skipped: 0 };
+            return { success: false, message: 'Eklenecek kursiyer listesi boş.', added: 0, updated: 0, skipped: 0 };
         }
 
         const users = this.getAllUsers();
-        const existingUsernames = new Set(users.map(u => (u.username || '').toLowerCase()));
+        const usernameSet = new Set(users.map(u => (u.username || '').toLowerCase()));
         let added = 0;
+        let updated = 0;
         let skipped = 0;
-        const newUsers = [];
 
         usersToAdd.forEach(u => {
-            const cleanUsername = (u.username || '').trim().toLowerCase();
-            if (!cleanUsername || existingUsernames.has(cleanUsername)) {
+            const rawFullName = (u.fullName || '').trim();
+            const normName = this.normalizeTurkish(rawFullName);
+            let cleanU = (u.username || '').trim().toLowerCase();
+            if (!cleanU && normName) {
+                cleanU = normName.replace(/[^a-z0-9]/g, '');
+            }
+            if (!cleanU) {
                 skipped++;
                 return;
             }
 
-            existingUsernames.add(cleanUsername);
+            const targetClassId = u.classId || null;
+            // 1. Aynı kursiyer zaten kayıtlı mı? (Sadece ID veya aynı isim + aynı sınıf eşleşirse aynı kişidir)
+            const existingStudent = users.find(existing => {
+                if (u.id && existing.id === u.id) return true;
+                if (normName && this.normalizeTurkish(existing.fullName || '') === normName && (existing.classId || null) === targetClassId) return true;
+                return false;
+            });
+
+            if (existingStudent) {
+                // Bilgilerini güncelle (mükerrer kayıt oluşturma!)
+                if (targetClassId && !existingStudent.classId) existingStudent.classId = targetClassId;
+                if (u.phone && !existingStudent.phone) existingStudent.phone = u.phone;
+                if (u.email && !existingStudent.email) existingStudent.email = u.email;
+                if (u.notes) existingStudent.notes = u.notes;
+                if (u.password && u.password !== '123' && (!existingStudent.password || existingStudent.password === '123')) {
+                    existingStudent.password = u.password;
+                }
+                updated++;
+                return;
+            }
+
+            // 2. Kullanıcı adı başka biri tarafından kullanılıyorsa numara ekle (asla kursiyeri atlama!)
+            let finalUsername = cleanU;
+            let counter = 2;
+            while (usernameSet.has(finalUsername)) {
+                finalUsername = cleanU + counter;
+                counter++;
+            }
+            usernameSet.add(finalUsername);
+
             const startMod = parseInt(u.initialModuleId) || 1;
             const unlocked = [];
             const completed = [];
@@ -1743,9 +1624,9 @@ class StorageService {
 
             const newUser = {
                 id: 'usr_' + Date.now() + '_' + Math.floor(Math.random() * 10000) + '_' + added,
-                fullName: (u.fullName || cleanUsername).trim(),
-                username: cleanUsername,
-                password: (u.password || '1234').trim(),
+                fullName: rawFullName || finalUsername,
+                username: finalUsername,
+                password: (u.password || '123').trim(),
                 email: (u.email || '').trim(),
                 phone: (u.phone || '').trim(),
                 avatar: u.avatar || '',
@@ -1754,20 +1635,19 @@ class StorageService {
                 currentModuleId: startMod,
                 completedModuleIds: completed,
                 unlockedModuleIds: unlocked,
-                classId: u.classId || null,
+                classId: targetClassId,
                 notes: (u.notes || '').trim()
             };
 
             users.push(newUser);
-            newUsers.push(newUser);
             added++;
         });
 
-        if (added > 0) {
+        if (added > 0 || updated > 0) {
             this.saveAllUsers(users);
         }
 
-        return { success: true, added, skipped, count: users.length };
+        return { success: true, added, updated, skipped, count: users.length };
     }
 
     bulkAddUsers(textData, defaultPassword = '123') {
@@ -1943,7 +1823,7 @@ class StorageService {
             const baseUrl = cfg.databaseURL.replace(/\/$/, '');
             const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
 
-            // 1. Kursiyerler (Akıllı İki Yönlü Birleştirme)
+            // 1. Kursiyerler (Akıllı İki Yönlü Tekilleştirmeli Birleştirme)
             let count = 0;
             const usersRes = await fetch(`${baseUrl}/kursiyerler.json${authParam}`);
             if (usersRes.ok) {
@@ -1957,58 +1837,16 @@ class StorageService {
 
                 const localUsers = this.getAllUsers();
                 const deletedIds = this.getDeletedUserIds();
-                const userMap = new Map();
 
-                // Yerel kullanıcıları ekle (silinenler hariç)
-                localUsers.forEach(u => {
-                    if (u && u.id && !deletedIds.has(u.id)) {
-                        userMap.set(u.id, { ...u });
-                    }
-                });
+                // Bulut kullanıcıları ve yerel kullanıcıları silinenler hariç bir araya topla
+                const combined = [...localUsers, ...cloudUsers].filter(u => u && u.id && !deletedIds.has(u.id));
+                const mergedUsers = this.deduplicateUserList(combined);
 
-                let localHasChanges = false;
-                // Buluttan gelen kullanıcıları harmanla
-                cloudUsers.forEach(cu => {
-                    if (!cu || !cu.id) return;
-                    if (deletedIds.has(cu.id)) {
-                        // Kullanıcı yerelde silinmiş, bulutta kalmışsa buluttan da silinmesi için işaretle
-                        localHasChanges = true;
-                        return;
-                    }
+                count = mergedUsers.length;
+                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(mergedUsers));
 
-                    if (userMap.has(cu.id)) {
-                        const lu = userMap.get(cu.id);
-                        const cTime = new Date(cu.lastActive || 0).getTime();
-                        const lTime = new Date(lu.lastActive || 0).getTime();
-                        // Buluttaki aktivite veya ilerleme daha yeniyse güncelle
-                        if (cTime >= lTime) {
-                            userMap.set(cu.id, { ...lu, ...cu });
-                        }
-                    } else {
-                        // Bulutta var, yerelde yok -> yerel listeye ekle
-                        userMap.set(cu.id, { ...cu });
-                    }
-                });
-
-                // Yerelde olup bulutta olmayan kullanıcı var mı kontrol et
-                const cloudIds = new Set(cloudUsers.map(u => u && u.id));
-                for (const lu of localUsers) {
-                    if (lu && lu.id && !cloudIds.has(lu.id) && !deletedIds.has(lu.id)) {
-                        localHasChanges = true;
-                        break;
-                    }
-                }
-
-                const mergedUsers = Array.from(userMap.values());
-                if (mergedUsers.length > 0) {
-                    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(mergedUsers));
-                    count = mergedUsers.length;
-                } else if (localUsers.length > 0) {
-                    count = localUsers.length;
-                }
-
-                // Yerelde buluta henüz yüklenmemiş kursiyerler veya silinmeler varsa otomatik olarak buluta da yükle
-                if (localHasChanges && mergedUsers.length > 0) {
+                // Bulut ile yerel arasında sayı veya içerik farkı varsa bulutu da temizlenmiş güncel liste ile senkronize et
+                if (cloudUsers.length !== mergedUsers.length || localUsers.length !== mergedUsers.length) {
                     this.syncCollectionToFirebase('kursiyerler', mergedUsers);
                 }
             }
@@ -2107,7 +1945,10 @@ class StorageService {
         if (!cfg || !cfg.enabled || !cfg.databaseURL) return { success: false, message: 'Firebase aktif değil.' };
 
         try {
-            await this.syncCollectionToFirebase('kursiyerler', this.getAllUsers());
+            const cleanUsers = this.deduplicateUserList(this.getAllUsers());
+            localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(cleanUsers));
+
+            await this.syncCollectionToFirebase('kursiyerler', cleanUsers);
             await this.syncCollectionToFirebase('classes', this.getAllClasses());
             
             const annMap = {};

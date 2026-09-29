@@ -629,21 +629,21 @@
             <div class="form-group"><label class="form-label">Öğrenci Listesi</label><textarea id="bulkDataInput" class="form-control" rows="7" placeholder="Ali Can&#10;Zeynep Çelik&#10;Murat Yılmaz, muraty, ozel123"></textarea></div>
             <div class="form-group"><label class="form-label">Varsayılan Şifre</label><input type="text" id="bulkDefaultPass" class="form-control" value="123"></div>
         </div>
-        <div id="bulkExcelPane" style="display:none;">
             <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:#93c5fd;line-height:1.7;">
-                <strong>Sütun sırası:</strong> A: Ad Soyad | B: Kullanıcı Adı | C: Şifre | D: Sınıf Adı
+                <strong>Desteklenen Formatlar:</strong> MEB e-Yaygın Kursiyer Listeleri (.xls/.xlsx) ve Özel Excel Tabloları.<br>
+                <em>Sütunlar otomatik algılanır:</em> Ad Soyad, Telefon, T.C., Kullanıcı Adı, Şifre, Sınıf.
             </div>
             <div class="excel-drop-zone" onclick="document.getElementById('excelFileInput').click()">
                 <div style="font-size:40px;margin-bottom:10px;">📊</div>
                 <p style="color:var(--text-secondary);font-size:14px;margin-bottom:4px;">Excel dosyasını seçmek için tıklayın</p>
-                <p style="color:var(--text-muted);font-size:12px;">.xls ve .xlsx desteklenir</p>
+                <p style="color:var(--text-muted);font-size:12px;">MEB e-Yaygın .xls / .xlsx dosyaları otomatik tanınır</p>
                 <input type="file" id="excelFileInput" accept=".xls,.xlsx" style="display:none;" onchange="handleExcelPreview(event)">
             </div>
             <div id="excelPreviewArea" style="display:none;margin-top:14px;">
                 <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;" id="excelFileInfo"></div>
                 <div style="max-height:180px;overflow-y:auto;border:1px solid var(--border-color);border-radius:6px;">
                     <table class="data-table" style="font-size:12px;">
-                        <thead><tr><th>Ad Soyad</th><th>Kullanıcı Adı</th><th>Şifre</th><th>Sınıf</th></tr></thead>
+                        <thead><tr><th>Ad Soyad</th><th>Kullanıcı Adı</th><th>Şifre</th><th>Telefon</th><th>Sınıf</th></tr></thead>
                         <tbody id="excelPreviewBody"></tbody>
                     </table>
                 </div>
@@ -1497,17 +1497,108 @@
         const reader = new FileReader();
         reader.onload = e => {
             try {
-                const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-                const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
-                let start = 0;
-                if (rows.length > 0) { const f = String(rows[0][0]||'').toLowerCase(); if (f.includes('ad')||f.includes('isim')||f.includes('name')) start = 1; }
-                excelParsedRows = rows.slice(start).filter(r => String(r[0]||'').trim());
-                document.getElementById('excelFileInfo').textContent = '📄 ' + file.name + ' — ' + excelParsedRows.length + ' öğrenci bulundu';
-                const tbody = document.getElementById('excelPreviewBody'); tbody.innerHTML = '';
-                excelParsedRows.slice(0,10).forEach(r => { const tr = document.createElement('tr'); tr.innerHTML = '<td>'+(r[0]||'')+'</td><td>'+(r[1]||'(otomatik)')+'</td><td>'+(r[2]||'(varsayılan)')+'</td><td>'+(r[3]||'')+'</td>'; tbody.appendChild(tr); });
-                if (excelParsedRows.length > 10) { const tr = document.createElement('tr'); tr.innerHTML = '<td colspan="4" style="color:var(--text-muted);text-align:center;">... ve '+(excelParsedRows.length-10)+' kişi daha</td>'; tbody.appendChild(tr); }
+                const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+                const firstSheet = wb.Sheets[wb.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: '' });
+                if (!rows || rows.length === 0) {
+                    alert('Excel dosyası boş veya okunamadı.');
+                    return;
+                }
+
+                // 1. Akıllı Başlık Satırı ve Sütun Tespiti
+                let headerRowIdx = -1;
+                let colName = -1, colPhone = -1, colTc = -1, colUser = -1, colPass = -1, colClass = -1;
+
+                for (let r = 0; r < Math.min(rows.length, 12); r++) {
+                    const rowStr = rows[r].map(c => String(c || '').toLowerCase()).join(' ');
+                    if (rowStr.includes('ad') || rowStr.includes('soyad') || rowStr.includes('isim') || rowStr.includes('kursiyer') || rowStr.includes('öğrenci') || rowStr.includes('kimlik')) {
+                        headerRowIdx = r;
+                        rows[r].forEach((cell, cIdx) => {
+                            const c = String(cell || '').toLowerCase().trim();
+                            if ((c.includes('ad') && c.includes('soyad')) || c === 'ad soyad' || c === 'adı soyadı' || c === 'isim' || c === 'kursiyer' || c === 'öğrenci' || c === 'adı ve soyadı') {
+                                if (colName === -1) colName = cIdx;
+                            } else if (c.includes('tel') || c.includes('gsm') || c.includes('cep')) {
+                                if (colPhone === -1) colPhone = cIdx;
+                            } else if (c.includes('kimlik') || c.includes('tc') || c.includes('t.c')) {
+                                if (colTc === -1) colTc = cIdx;
+                            } else if (c.includes('kullanıcı') || c.includes('username') || c.includes('user')) {
+                                if (colUser === -1) colUser = cIdx;
+                            } else if (c.includes('şifre') || c.includes('parola') || c.includes('pass')) {
+                                if (colPass === -1) colPass = cIdx;
+                            } else if (c.includes('sınıf') || c.includes('class') || c.includes('grup') || c.includes('şube')) {
+                                if (colClass === -1) colClass = cIdx;
+                            }
+                        });
+                        break;
+                    }
+                }
+
+                // Başlık satırı bulunamadıysa varsayılan sütun sırası
+                if (colName === -1) {
+                    colName = 0;
+                    colUser = 1;
+                    colPass = 2;
+                    colClass = 3;
+                }
+
+                const dataRows = (headerRowIdx >= 0) ? rows.slice(headerRowIdx + 1) : rows;
+                const defPass = (document.getElementById('excelDefaultPass').value || '123').trim();
+                const trClean = s => s.toString().toLowerCase().replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i').replace(/i̇/g, 'i').replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u').replace(/[^a-z0-9]/g, '');
+
+                excelParsedRows = [];
+                dataRows.forEach(r => {
+                    let fullName = colName >= 0 && colName < r.length ? String(r[colName] || '').trim() : '';
+                    if (!fullName) return;
+
+                    const lowerName = fullName.toLowerCase();
+                    if (lowerName === 'ad soyad' || lowerName.includes('öğrenci') || lowerName.includes('kursiyer') || lowerName.includes('toplam') || lowerName.includes('sayfa') || lowerName.startsWith('kurs ') || lowerName.startsWith('e-yaygın')) {
+                        return;
+                    }
+
+                    let phone = colPhone >= 0 && colPhone < r.length ? String(r[colPhone] || '').trim() : '';
+                    if (phone.endsWith('.0')) phone = phone.slice(0, -2);
+                    phone = phone.replace(/[^0-9]/g, '');
+
+                    let username = colUser >= 0 && colUser < r.length ? String(r[colUser] || '').trim() : '';
+                    if (!username) {
+                        username = trClean(fullName);
+                    } else {
+                        username = trClean(username);
+                    }
+
+                    let password = colPass >= 0 && colPass < r.length ? String(r[colPass] || '').trim() : '';
+                    if (!password) password = defPass;
+
+                    let className = colClass >= 0 && colClass < r.length ? String(r[colClass] || '').trim() : '';
+
+                    excelParsedRows.push({
+                        fullName,
+                        username,
+                        password,
+                        phone,
+                        className
+                    });
+                });
+
+                const isMeb = headerRowIdx >= 0 && (colTc >= 0 || colPhone >= 0);
+                document.getElementById('excelFileInfo').innerHTML = '📄 <strong>' + file.name + '</strong> — <span style="color:#34d399;font-weight:700;">' + excelParsedRows.length + ' kursiyer tespit edildi</span>' + (isMeb ? ' <span style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);border-radius:12px;padding:2px 8px;font-size:11px;margin-left:6px;">MEB e-Yaygın Formatı</span>' : '');
+
+                const tbody = document.getElementById('excelPreviewBody');
+                tbody.innerHTML = '';
+                excelParsedRows.slice(0, 10).forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = '<td><strong>' + r.fullName + '</strong></td><td><code style="color:#93c5fd;">' + r.username + '</code></td><td>' + r.password + '</td><td>' + (r.phone || '—') + '</td><td>' + (r.className || '(Seçilen sınıf)') + '</td>';
+                    tbody.appendChild(tr);
+                });
+                if (excelParsedRows.length > 10) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = '<td colspan="5" style="color:var(--text-muted);text-align:center;padding:8px;">... ve ' + (excelParsedRows.length - 10) + ' kursiyer daha</td>';
+                    tbody.appendChild(tr);
+                }
                 document.getElementById('excelPreviewArea').style.display = 'block';
-            } catch(err) { alert('Excel dosyası okunamadı: ' + err.message); }
+            } catch (err) {
+                alert('Excel dosyası okunamadı: ' + err.message);
+            }
         };
         reader.readAsArrayBuffer(file);
     }
@@ -1517,36 +1608,56 @@
         const cls = lmsStorage.getAllClasses();
         const toAdd = [];
         const isExcel = document.getElementById('bulkExcelPane').style.display !== 'none';
-        const tr2 = s => s.toLowerCase().replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u').replace(/[^a-z0-9]/g,'');
+        const trClean = s => s.toString().toLowerCase().replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ı/g, 'i').replace(/i̇/g, 'i').replace(/ö/g, 'o').replace(/ş/g, 's').replace(/ü/g, 'u').replace(/[^a-z0-9]/g, '');
 
         if (isExcel) {
-            if (!excelParsedRows.length) { alert('Lütfen önce bir Excel dosyası seçin.'); return; }
+            if (!excelParsedRows || !excelParsedRows.length) {
+                alert('Lütfen önce bir Excel dosyası seçin.');
+                return;
+            }
             const dp = document.getElementById('excelDefaultPass').value.trim() || '123';
             excelParsedRows.forEach(r => {
-                const fullName = String(r[0]||'').trim(); if (!fullName) return;
-                const username = String(r[1]||'').trim() || tr2(fullName);
-                const password = String(r[2]||'').trim() || dp;
-                const clsName  = String(r[3]||'').trim();
                 let classId = defCls;
-                if (clsName) {
-                    let found = cls.find(c => c.name.toLowerCase() === clsName.toLowerCase());
+                if (r.className) {
+                    let found = cls.find(c => c.name.toLowerCase() === r.className.toLowerCase());
                     if (!found) {
-                        const nc = lmsStorage.addClass({name:clsName});
-                        if (nc.success) { cls.push(nc.cls); found = nc.cls; }
+                        const nc = lmsStorage.addClass({ name: r.className });
+                        if (nc.success) {
+                            cls.push(nc.cls);
+                            found = nc.cls;
+                        }
                     }
                     if (found) classId = found.id;
                 }
-                toAdd.push({ fullName, username, password, classId });
+                toAdd.push({
+                    fullName: r.fullName,
+                    username: r.username,
+                    password: r.password || dp,
+                    phone: r.phone || '',
+                    classId: classId
+                });
             });
         } else {
             const text = document.getElementById('bulkDataInput').value.trim();
             const dp = document.getElementById('bulkDefaultPass').value.trim() || '123';
-            if (!text) { alert('Lütfen en az bir öğrenci ismi giriniz.'); return; }
+            if (!text) {
+                alert('Lütfen en az bir öğrenci ismi giriniz.');
+                return;
+            }
             text.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {
                 const parts = line.split(',').map(p => p.trim());
-                const fullName = parts[0] || '', username = parts[1] || tr2(fullName), password = parts[2] || dp;
-                if (!username) return;
-                toAdd.push({ fullName, username, password, classId: defCls });
+                const fullName = parts[0] || '';
+                const username = parts[1] || trClean(fullName);
+                const password = parts[2] || dp;
+                const phone = parts[3] || '';
+                if (!fullName && !username) return;
+                toAdd.push({
+                    fullName: fullName || username,
+                    username: trClean(username || fullName),
+                    password: password || dp,
+                    phone: phone,
+                    classId: defCls
+                });
             });
         }
 
@@ -1565,7 +1676,10 @@
             await lmsStorage.pushAllToFirebase();
         }
 
-        alert('İşlem tamamlandı:\n✓ ' + res.added + ' Kursiyer başarıyla eklendi ve internete (buluta) yüklendi!' + (res.skipped > 0 ? '\n⚠️ ' + res.skipped + ' kayıt atlandı (mükerrer veya boş kullanıcı adı).' : ''));
+        alert('✓ İşlem tamamlandı:\n' +
+            '• ' + (res.added || 0) + ' Yeni Kursiyer eklendi\n' +
+            (res.updated ? '• ' + res.updated + ' Mevcut Kursiyer güncellendi\n' : '') +
+            '• Tüm veriler anında Firebase bulutuna aktarıldı ve senkronize edildi!');
         loadDashboardData();
     }
 
@@ -1635,8 +1749,39 @@
 
     function openAddClassModal()  { document.getElementById('classFormTitle').textContent='Yeni Sınıf Ekle'; document.getElementById('editClassId').value=''; document.getElementById('formClassName').value=''; document.getElementById('formClassDesc').value=''; document.getElementById('classFormAlert').style.display='none'; openModal('classFormModal'); }
     function openEditClassModal(classId) { const c=lmsStorage.getAllClasses().find(x=>x.id===classId); if(!c)return; document.getElementById('classFormTitle').textContent='Düzenle: '+c.name; document.getElementById('editClassId').value=c.id; document.getElementById('formClassName').value=c.name; document.getElementById('formClassDesc').value=c.description||''; document.getElementById('classFormAlert').style.display='none'; openModal('classFormModal'); }
-    function handleSaveClass(e)   { e.preventDefault(); const id=document.getElementById('editClassId').value,n=document.getElementById('formClassName').value.trim(),d=document.getElementById('formClassDesc').value.trim(),ab=document.getElementById('classFormAlert'); const res=id?lmsStorage.updateClass(id,{name:n,description:d}):lmsStorage.addClass({name:n,description:d}); if(!res.success){ab.textContent=res.message;ab.style.display='block';return;} closeModal('classFormModal'); rebuildClassDropdowns(); loadClassesTab(); }
-    function handleDeleteClass(classId,name) { const cnt=lmsStorage.getUsersByClass(classId).length,w=cnt>0?'\n\n⚠️ '+cnt+' kursiyer var. Sınıf atamaları kaldırılır, hesaplar korunur.':''; if(!confirm('"'+name+'" sınıfını silmek istediğinize emin misiniz?'+w))return; lmsStorage.deleteClass(classId); rebuildClassDropdowns(); loadClassesTab(); }
+    async function handleSaveClass(e) {
+        e.preventDefault();
+        const id = document.getElementById('editClassId').value,
+            n = document.getElementById('formClassName').value.trim(),
+            d = document.getElementById('formClassDesc').value.trim(),
+            ab = document.getElementById('classFormAlert');
+        const res = id ? lmsStorage.updateClass(id, { name: n, description: d }) : lmsStorage.addClass({ name: n, description: d });
+        if (!res.success) {
+            ab.textContent = res.message;
+            ab.style.display = 'block';
+            return;
+        }
+        closeModal('classFormModal');
+        rebuildClassDropdowns();
+        loadClassesTab();
+        loadDashboardData();
+        if (lmsStorage.pushAllToFirebase) {
+            await lmsStorage.pushAllToFirebase();
+        }
+    }
+
+    async function handleDeleteClass(classId, name) {
+        const cnt = lmsStorage.getUsersByClass(classId).length,
+            w = cnt > 0 ? '\n\n⚠️ ' + cnt + ' kursiyer var. Sınıf atamaları kaldırılır, hesaplar korunur.' : '';
+        if (!confirm('"' + name + '" sınıfını silmek istediğinize emin misiniz?' + w)) return;
+        lmsStorage.deleteClass(classId);
+        rebuildClassDropdowns();
+        loadClassesTab();
+        loadDashboardData();
+        if (lmsStorage.pushAllToFirebase) {
+            await lmsStorage.pushAllToFirebase();
+        }
+    }
 
     // ==================== SINIF TOPLU İŞLEM ====================
     function openClassBulkModal(classId, className) {
@@ -2759,10 +2904,15 @@
 
     async function handleForcePushToFirebase() {
         const users = lmsStorage.getAllUsers();
-        if (!confirm('Şu an bu bilgisayardaki ' + users.length + ' kursiyer ve sınıflar Firebase bulut veritabanına yüklenecek. Onaylıyor musunuz?')) return;
+        const cleanUsers = lmsStorage.deduplicateUserList ? lmsStorage.deduplicateUserList(users) : users;
+        if (cleanUsers.length !== users.length) {
+            lmsStorage.saveAllUsers(cleanUsers);
+        }
+
+        if (!confirm('Şu an bu bilgisayardaki ' + cleanUsers.length + ' kursiyer ve tüm sınıflar Firebase bulut veritabanına aktarılacak.\n\nOnaylıyor musunuz?')) return;
         const res = await lmsStorage.pushAllToFirebase();
         if (res.success) {
-            alert('✓ Harika! ' + users.length + ' kursiyer, sınıflar ve tüm ayarlarınız başarıyla Firebase bulutuna aktarıldı!\n\nArtık diğer tüm bilgisayarlar ve öğrenciler anında bu verileri görebilir.');
+            alert('✓ Harika! ' + cleanUsers.length + ' kursiyer, sınıflar ve tüm ayarlarınız başarıyla Firebase bulutuna aktarıldı!\n\nArtık diğer tüm bilgisayarlar ve öğrenciler anında bu verileri görebilir.');
             loadDashboardData();
         } else {
             alert('Buluta yükleme başarısız: ' + res.message);
