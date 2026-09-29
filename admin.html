@@ -30,6 +30,7 @@
         </div>
     </a>
     <div class="user-nav-actions" id="adminNavActions" style="display:none;">
+        <button class="btn btn-success btn-sm" onclick="handleForcePushToFirebase()" title="Bu bilgisayardaki tüm kursiyerleri internete (Firebase bulutuna) anında yükler">☁️ Buluta Aktar</button>
         <button class="btn btn-ghost btn-sm" onclick="openAdminPasswordModal()" title="Yönetici Şifresini Değiştir">🔑 Şifre Değiştir</button>
         <a href="index.html" class="btn btn-ghost btn-sm" target="_blank">👁️ Kursiyer Görünümü ↗</a>
         <button class="btn btn-ghost btn-sm" onclick="handleAdminLogout()">Güvenli Çıkış</button>
@@ -86,11 +87,16 @@
             <div class="kpi-card"><div class="kpi-title">Kursu Bitirenler</div><div class="kpi-value" id="kpiCompletedUsers" style="color:#fbbf24;">0</div><div class="kpi-sub">Tüm bölümler bitti</div></div>
         </div>
         <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
-            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
                 <button class="btn btn-primary" onclick="openAddUserModal()">➕ Yeni Kursiyer</button>
                 <button class="btn btn-ghost"   onclick="openBulkAddModal()">📊 Toplu / Excel Ekle</button>
+                <button class="btn btn-success" onclick="handleForcePushToFirebase()" title="Bu bilgisayardaki tüm kursiyerleri internete (Firebase bulut veritabanına) anında yükler">☁️ İnternete / Buluta Aktar</button>
+                <span id="cloudSyncStatusBadge" style="font-size:12px;padding:6px 12px;border-radius:20px;background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-weight:600;display:inline-flex;align-items:center;gap:6px;">☁️ İnternet: Eşitleniyor...</span>
             </div>
-            <button class="btn btn-ghost btn-sm" onclick="exportCsvList()">📥 CSV İndir</button>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-ghost btn-sm" onclick="testFirebaseSync()" title="İnternetteki/Buluttaki kursiyerleri çek ve güncelle">🔄 Buluttan Çek</button>
+                <button class="btn btn-ghost btn-sm" onclick="exportCsvList()">📥 CSV İndir</button>
+            </div>
         </div>
         <div class="table-card">
             <div class="table-toolbar">
@@ -1191,6 +1197,30 @@
         document.getElementById('kpiAvgProgress').textContent = '%' + avg;
         document.getElementById('kpiCompletedUsers').textContent = cT;
         filterAndRenderUsers();
+        updateCloudSyncBadge();
+    }
+
+    function updateCloudSyncBadge() {
+        const badge = document.getElementById('cloudSyncStatusBadge');
+        if (!badge) return;
+        const users = lmsStorage.getAllUsers();
+        const cfg = lmsStorage.getFirebaseConfig();
+        if (!cfg || !cfg.enabled || !cfg.databaseURL) {
+            badge.style.background = 'rgba(239,68,68,0.12)';
+            badge.style.color = '#ef4444';
+            badge.style.borderColor = 'rgba(239,68,68,0.3)';
+            badge.innerHTML = '⚠️ Bulut Senkronizasyonu Kapalı';
+            badge.onclick = () => switchAdminTab('settings');
+            badge.style.cursor = 'pointer';
+            return;
+        }
+
+        badge.style.background = 'rgba(16,185,129,0.12)';
+        badge.style.color = '#10b981';
+        badge.style.borderColor = 'rgba(16,185,129,0.3)';
+        badge.innerHTML = `☁️ İnternet: ${users.length} Kursiyer Yayında ✓`;
+        badge.onclick = null;
+        badge.style.cursor = 'default';
     }
 
     function getAvatarHtml(avatar, name, size = 32) {
@@ -1428,11 +1458,20 @@
         const res = uid ? lmsStorage.updateUser(uid, p) : lmsStorage.addUser({...p, initialModuleId: document.getElementById('formInitialModule').value});
         if (!res.success) { ab.textContent = res.message; ab.style.display = 'block'; return; }
         closeModal('userFormModal'); rebuildClassDropdowns(); loadDashboardData();
+
+        // Firebase bulutuna da anında senkronize et
+        if (lmsStorage.pushAllToFirebase) {
+            lmsStorage.pushAllToFirebase().then(() => updateCloudSyncBadge());
+        }
     }
 
     function handleDeleteUser(id, name) {
         if (confirm('"' + name + '" isimli kursiyeri silmek istediğinize emin misiniz?')) {
-            lmsStorage.deleteUser(id); loadDashboardData();
+            lmsStorage.deleteUser(id);
+            loadDashboardData();
+            if (lmsStorage.pushAllToFirebase) {
+                lmsStorage.pushAllToFirebase().then(() => updateCloudSyncBadge());
+            }
         }
     }
 
@@ -1473,12 +1512,13 @@
         reader.readAsArrayBuffer(file);
     }
 
-    function handleBulkAddSubmit() {
+    async function handleBulkAddSubmit() {
         const defCls = document.getElementById('bulkClassId').value || null;
         const cls = lmsStorage.getAllClasses();
-        let added = 0, skipped = 0;
+        const toAdd = [];
         const isExcel = document.getElementById('bulkExcelPane').style.display !== 'none';
         const tr2 = s => s.toLowerCase().replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u').replace(/[^a-z0-9]/g,'');
+
         if (isExcel) {
             if (!excelParsedRows.length) { alert('Lütfen önce bir Excel dosyası seçin.'); return; }
             const dp = document.getElementById('excelDefaultPass').value.trim() || '123';
@@ -1488,9 +1528,15 @@
                 const password = String(r[2]||'').trim() || dp;
                 const clsName  = String(r[3]||'').trim();
                 let classId = defCls;
-                if (clsName) { let found = cls.find(c => c.name.toLowerCase() === clsName.toLowerCase()); if (!found) { const nc = lmsStorage.addClass({name:clsName}); if (nc.success) { cls.push(nc.cls); found = nc.cls; } } if (found) classId = found.id; }
-                const res = lmsStorage.addUser({fullName, username, password, classId});
-                if (res.success) added++; else skipped++;
+                if (clsName) {
+                    let found = cls.find(c => c.name.toLowerCase() === clsName.toLowerCase());
+                    if (!found) {
+                        const nc = lmsStorage.addClass({name:clsName});
+                        if (nc.success) { cls.push(nc.cls); found = nc.cls; }
+                    }
+                    if (found) classId = found.id;
+                }
+                toAdd.push({ fullName, username, password, classId });
             });
         } else {
             const text = document.getElementById('bulkDataInput').value.trim();
@@ -1500,12 +1546,27 @@
                 const parts = line.split(',').map(p => p.trim());
                 const fullName = parts[0] || '', username = parts[1] || tr2(fullName), password = parts[2] || dp;
                 if (!username) return;
-                const res = lmsStorage.addUser({fullName, username, password, classId: defCls});
-                if (res.success) added++; else skipped++;
+                toAdd.push({ fullName, username, password, classId: defCls });
             });
         }
-        alert('İşlem tamamlandı:\n✓ '+added+' Kursiyer başarıyla eklendi.'+(skipped>0?'\n⚠️ '+skipped+' kayıt atlandı (mükerrer kullanıcı adı).':''));
-        closeModal('bulkAddModal'); rebuildClassDropdowns(); loadDashboardData();
+
+        if (toAdd.length === 0) {
+            alert('Eklenecek geçerli bir kursiyer kaydı bulunamadı.');
+            return;
+        }
+
+        const res = lmsStorage.bulkAddUsersList(toAdd);
+        closeModal('bulkAddModal');
+        rebuildClassDropdowns();
+        loadDashboardData();
+
+        // Anında Firebase bulutuna aktar
+        if (lmsStorage.pushAllToFirebase) {
+            await lmsStorage.pushAllToFirebase();
+        }
+
+        alert('İşlem tamamlandı:\n✓ ' + res.added + ' Kursiyer başarıyla eklendi ve internete (buluta) yüklendi!' + (res.skipped > 0 ? '\n⚠️ ' + res.skipped + ' kayıt atlandı (mükerrer veya boş kullanıcı adı).' : ''));
+        loadDashboardData();
     }
 
     // ==================== İLERLEME MATRİSİ ====================

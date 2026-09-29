@@ -13,7 +13,8 @@ const STORAGE_KEYS = {
     CLASSES: 'ehem_classes_db_v1',
     CUSTOM_MODULES: 'ehem_custom_modules_v1',
     ANNOUNCEMENTS: 'ehem_announcements_v1',
-    MESSAGES: 'ehem_messages_v1'
+    MESSAGES: 'ehem_messages_v1',
+    DELETED_USERS: 'ehem_deleted_users_v1'
 };
 
 const DEFAULT_ADMIN = {
@@ -44,8 +45,8 @@ const INITIAL_USERS = [
         "username": "polat",
         "password": "10",
         "createdAt": "2026-09-26T07:35:15.196Z",
-        "lastActive": "2026-09-26T13:00:32.832Z",
-        "currentModuleId": 16,
+        "lastActive": "2026-09-28T12:31:29.887Z",
+        "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
             1
@@ -279,7 +280,7 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_1790408115199_161",
+        "id": "usr_1790408115199_162",
         "fullName": "HAVVA ÖZGE ÇAM",
         "username": "çam",
         "password": "12",
@@ -1252,6 +1253,39 @@ const INITIAL_USERS = [
         ],
         "classId": null,
         "notes": ""
+    },
+    {
+        "avatar": "",
+        "classId": "cls_1790408115196_514",
+        "createdAt": "2026-09-26T18:32:31.885Z",
+        "currentModuleId": 1,
+        "email": "",
+        "fullName": "Ali Veli",
+        "id": "usr_1790447551885_723",
+        "lastActive": "2026-09-26T18:32:31.886Z",
+        "notes": "",
+        "password": "123",
+        "phone": "",
+        "unlockedModuleIds": [
+            1
+        ],
+        "username": "aliveli"
+    },
+    {
+        "avatar": "",
+        "createdAt": "2026-09-26T18:32:31.892Z",
+        "currentModuleId": 1,
+        "email": "",
+        "fullName": "Ayse Fatma",
+        "id": "usr_1790447551892_263",
+        "lastActive": "2026-09-26T18:32:31.892Z",
+        "notes": "",
+        "password": "123",
+        "phone": "",
+        "unlockedModuleIds": [
+            1
+        ],
+        "username": "aysefatma"
     }
 ];
 
@@ -1289,15 +1323,54 @@ class StorageService {
 
     async tryPullFromLocalServer() {
         if (typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http')) {
+            let loaded = false;
             try {
                 const res = await fetch('/api/sync');
                 if (res.ok) {
                     const data = await res.json();
                     if (Array.isArray(data) && data.length > 0) {
-                        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(data));
+                        this.mergeUsersIntoStorage(data);
+                        loaded = true;
                     }
                 }
             } catch (e) {}
+
+            // Statik barındırmada (GitHub Pages vb.) /api/sync yoksa kursiyerler_data.json dosyasını çekip birleştir
+            if (!loaded) {
+                try {
+                    const res = await fetch('./kursiyerler_data.json');
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (Array.isArray(data) && data.length > 0) {
+                            this.mergeUsersIntoStorage(data);
+                        }
+                    }
+                } catch (e) {}
+            }
+        }
+    }
+
+    mergeUsersIntoStorage(incomingUsers) {
+        if (!Array.isArray(incomingUsers) || incomingUsers.length === 0) return;
+        const localUsers = this.getAllUsers();
+        const deletedIds = this.getDeletedUserIds();
+        const map = new Map();
+        localUsers.forEach(u => {
+            if (u && u.id && !deletedIds.has(u.id)) map.set(u.id, u);
+        });
+
+        let added = false;
+        incomingUsers.forEach(iu => {
+            if (!iu || !iu.id || deletedIds.has(iu.id)) return;
+            if (!map.has(iu.id)) {
+                map.set(iu.id, iu);
+                added = true;
+            }
+        });
+
+        if (added || localUsers.length === 0) {
+            const merged = Array.from(map.values());
+            localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(merged));
         }
     }
 
@@ -1611,52 +1684,109 @@ class StorageService {
         return { success: true, user: res.user };
     }
 
+    getDeletedUserIds() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.DELETED_USERS);
+            return new Set(raw ? JSON.parse(raw) : []);
+        } catch (e) {
+            return new Set();
+        }
+    }
+
+    addDeletedUserId(userId) {
+        if (!userId) return;
+        const set = this.getDeletedUserIds();
+        set.add(userId);
+        localStorage.setItem(STORAGE_KEYS.DELETED_USERS, JSON.stringify(Array.from(set)));
+    }
+
     deleteUser(userId) {
         let users = this.getAllUsers();
         const beforeLen = users.length;
         users = users.filter(u => u.id !== userId);
 
         if (users.length === beforeLen) {
-            return { success: false, message: 'Kullanıcı bulunamadı.' };
+            return { success: false, message: 'Kullanıcı bulunamadı!' };
         }
 
+        this.addDeletedUserId(userId);
         this.saveAllUsers(users);
         return { success: true };
     }
 
-    bulkAddUsers(textData, defaultPassword = '123') {
-        const lines = textData.split('\n').map(l => l.trim()).filter(Boolean);
-        let addedCount = 0;
-        let skippedCount = 0;
+    bulkAddUsersList(usersToAdd) {
+        if (!Array.isArray(usersToAdd) || usersToAdd.length === 0) {
+            return { success: false, message: 'Eklenecek kursiyer listesi boş.', added: 0, skipped: 0 };
+        }
 
-        lines.forEach(line => {
-            // Biçimler: "Ad Soyad, kullanıcıadı, şifre" veya "Ad Soyad"
-            let parts = line.split(',').map(p => p.trim());
-            let fullName = parts[0] || '';
-            let username = parts[1] || '';
-            let password = parts[2] || defaultPassword;
+        const users = this.getAllUsers();
+        const existingUsernames = new Set(users.map(u => (u.username || '').toLowerCase()));
+        let added = 0;
+        let skipped = 0;
+        const newUsers = [];
 
-            if (!username) {
-                // İsimden otomatik kullanıcı adı üret (örn: Ali Veli -> aliveli)
-                username = fullName
-                    .toLowerCase()
-                    .replace(/ç/g, 'c')
-                    .replace(/ğ/g, 'g')
-                    .replace(/ı/g, 'i')
-                    .replace(/ö/g, 'o')
-                    .replace(/ş/g, 's')
-                    .replace(/ü/g, 'u')
-                    .replace(/[^a-z0-9]/g, '');
+        usersToAdd.forEach(u => {
+            const cleanUsername = (u.username || '').trim().toLowerCase();
+            if (!cleanUsername || existingUsernames.has(cleanUsername)) {
+                skipped++;
+                return;
             }
 
-            if (username) {
-                const res = this.addUser({ fullName, username, password });
-                if (res.success) addedCount++;
-                else skippedCount++;
+            existingUsernames.add(cleanUsername);
+            const startMod = parseInt(u.initialModuleId) || 1;
+            const unlocked = [];
+            const completed = [];
+            for (let i = 1; i <= startMod; i++) {
+                unlocked.push(i);
+                if (i < startMod) completed.push(i);
+            }
+
+            const newUser = {
+                id: 'usr_' + Date.now() + '_' + Math.floor(Math.random() * 10000) + '_' + added,
+                fullName: (u.fullName || cleanUsername).trim(),
+                username: cleanUsername,
+                password: (u.password || '1234').trim(),
+                email: (u.email || '').trim(),
+                phone: (u.phone || '').trim(),
+                avatar: u.avatar || '',
+                createdAt: new Date().toISOString(),
+                lastActive: new Date().toISOString(),
+                currentModuleId: startMod,
+                completedModuleIds: completed,
+                unlockedModuleIds: unlocked,
+                classId: u.classId || null,
+                notes: (u.notes || '').trim()
+            };
+
+            users.push(newUser);
+            newUsers.push(newUser);
+            added++;
+        });
+
+        if (added > 0) {
+            this.saveAllUsers(users);
+        }
+
+        return { success: true, added, skipped, count: users.length };
+    }
+
+    bulkAddUsers(textData, defaultPassword = '123') {
+        const lines = textData.split('\n').map(l => l.trim()).filter(Boolean);
+        const toAdd = [];
+        const tr2 = s => s.toLowerCase().replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ı/g,'i').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u').replace(/[^a-z0-9]/g,'');
+
+        lines.forEach(line => {
+            let parts = line.split(',').map(p => p.trim());
+            let fullName = parts[0] || '';
+            let username = parts[1] || tr2(fullName);
+            let password = parts[2] || defaultPassword;
+            if (fullName || username) {
+                toAdd.push({ fullName, username, password });
             }
         });
 
-        return { addedCount, skippedCount };
+        const res = this.bulkAddUsersList(toAdd);
+        return { addedCount: res.added, skippedCount: res.skipped };
     }
 
     // ==================== İLERLEME & BÖLÜM KİLİTLERİ ====================
@@ -1775,7 +1905,7 @@ class StorageService {
 
     async syncCollectionToFirebase(collectionKey, data) {
         const cfg = this.getFirebaseConfig();
-        if (!cfg || !cfg.enabled || !cfg.databaseURL) return;
+        if (!cfg || !cfg.enabled || !cfg.databaseURL) return { success: false, message: 'Firebase aktif değil.' };
 
         try {
             let url = cfg.databaseURL.replace(/\/$/, '') + `/${collectionKey}.json`;
@@ -1783,18 +1913,26 @@ class StorageService {
                 url += `?auth=${cfg.apiKey}`;
             }
 
-            await fetch(url, {
+            const res = await fetch(url, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
+            if (res.ok) {
+                return { success: true };
+            } else {
+                const text = await res.text();
+                console.warn(`Firebase ${collectionKey} sunucu hatası:`, text);
+                return { success: false, message: text };
+            }
         } catch (err) {
             console.warn(`Firebase ${collectionKey} senkronizasyon hatası:`, err);
+            return { success: false, message: err.message };
         }
     }
 
     async syncToFirebase(users) {
-        await this.syncCollectionToFirebase('kursiyerler', users);
+        return await this.syncCollectionToFirebase('kursiyerler', users);
     }
 
     async pullFromFirebase() {
@@ -1805,43 +1943,113 @@ class StorageService {
             const baseUrl = cfg.databaseURL.replace(/\/$/, '');
             const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
 
-            // 1. Kursiyerler
+            // 1. Kursiyerler (Akıllı İki Yönlü Birleştirme)
             let count = 0;
             const usersRes = await fetch(`${baseUrl}/kursiyerler.json${authParam}`);
             if (usersRes.ok) {
                 const usersData = await usersRes.json();
-                let userList = [];
+                let cloudUsers = [];
                 if (Array.isArray(usersData)) {
-                    userList = usersData.filter(Boolean);
+                    cloudUsers = usersData.filter(Boolean);
                 } else if (usersData && typeof usersData === 'object') {
-                    userList = Object.values(usersData).filter(Boolean);
+                    cloudUsers = Object.values(usersData).filter(Boolean);
                 }
-                if (userList.length > 0) {
-                    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(userList));
-                    count = userList.length;
-                } else if (!usersData || userList.length === 0) {
-                    // Bulut henüz boş. Eğer bu cihazda 2'den fazla kullanıcı varsa (1. bilgisayarın 42 kullanıcısı) buluta aktar!
-                    const localUsers = this.getAllUsers();
-                    if (localUsers.length > 2) {
-                        console.log('Firebase boş tespit edildi, yereldeki ' + localUsers.length + ' kursiyer Firebase buluta aktarılıyor...');
-                        await this.pushAllToFirebase();
-                        return { success: true, count: localUsers.length };
+
+                const localUsers = this.getAllUsers();
+                const deletedIds = this.getDeletedUserIds();
+                const userMap = new Map();
+
+                // Yerel kullanıcıları ekle (silinenler hariç)
+                localUsers.forEach(u => {
+                    if (u && u.id && !deletedIds.has(u.id)) {
+                        userMap.set(u.id, { ...u });
                     }
+                });
+
+                let localHasChanges = false;
+                // Buluttan gelen kullanıcıları harmanla
+                cloudUsers.forEach(cu => {
+                    if (!cu || !cu.id) return;
+                    if (deletedIds.has(cu.id)) {
+                        // Kullanıcı yerelde silinmiş, bulutta kalmışsa buluttan da silinmesi için işaretle
+                        localHasChanges = true;
+                        return;
+                    }
+
+                    if (userMap.has(cu.id)) {
+                        const lu = userMap.get(cu.id);
+                        const cTime = new Date(cu.lastActive || 0).getTime();
+                        const lTime = new Date(lu.lastActive || 0).getTime();
+                        // Buluttaki aktivite veya ilerleme daha yeniyse güncelle
+                        if (cTime >= lTime) {
+                            userMap.set(cu.id, { ...lu, ...cu });
+                        }
+                    } else {
+                        // Bulutta var, yerelde yok -> yerel listeye ekle
+                        userMap.set(cu.id, { ...cu });
+                    }
+                });
+
+                // Yerelde olup bulutta olmayan kullanıcı var mı kontrol et
+                const cloudIds = new Set(cloudUsers.map(u => u && u.id));
+                for (const lu of localUsers) {
+                    if (lu && lu.id && !cloudIds.has(lu.id) && !deletedIds.has(lu.id)) {
+                        localHasChanges = true;
+                        break;
+                    }
+                }
+
+                const mergedUsers = Array.from(userMap.values());
+                if (mergedUsers.length > 0) {
+                    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(mergedUsers));
+                    count = mergedUsers.length;
+                } else if (localUsers.length > 0) {
+                    count = localUsers.length;
+                }
+
+                // Yerelde buluta henüz yüklenmemiş kursiyerler veya silinmeler varsa otomatik olarak buluta da yükle
+                if (localHasChanges && mergedUsers.length > 0) {
+                    this.syncCollectionToFirebase('kursiyerler', mergedUsers);
                 }
             }
 
-            // 2. Sınıflar
+            // 2. Sınıflar (Akıllı Birleştirme)
             const classesRes = await fetch(`${baseUrl}/classes.json${authParam}`);
             if (classesRes.ok) {
                 const classesRaw = await classesRes.json();
-                let clsList = [];
+                let cloudClasses = [];
                 if (Array.isArray(classesRaw)) {
-                    clsList = classesRaw.filter(Boolean);
+                    cloudClasses = classesRaw.filter(Boolean);
                 } else if (classesRaw && typeof classesRaw === 'object') {
-                    clsList = Object.values(classesRaw).filter(Boolean);
+                    cloudClasses = Object.values(classesRaw).filter(Boolean);
                 }
-                if (clsList.length > 0) {
-                    localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(clsList));
+
+                const localClasses = this.getAllClasses();
+                const clsMap = new Map();
+                localClasses.forEach(c => { if (c && c.id) clsMap.set(c.id, c); });
+                let clsChanges = false;
+
+                cloudClasses.forEach(cc => {
+                    if (!cc || !cc.id) return;
+                    if (!clsMap.has(cc.id)) {
+                        clsMap.set(cc.id, cc);
+                    }
+                });
+
+                const cloudClassIds = new Set(cloudClasses.map(c => c && c.id));
+                for (const lc of localClasses) {
+                    if (lc && lc.id && !cloudClassIds.has(lc.id)) {
+                        clsChanges = true;
+                        break;
+                    }
+                }
+
+                const mergedClasses = Array.from(clsMap.values());
+                if (mergedClasses.length > 0) {
+                    localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(mergedClasses));
+                }
+                if (clsChanges && mergedClasses.length > 0) {
+                    this.syncCollectionToFirebase('classes', mergedClasses);
                 }
             }
 
