@@ -18,7 +18,7 @@
             try {
                 const raw = localStorage.getItem('ehem_theme_settings');
                 const s = raw ? JSON.parse(raw) : null;
-                const th = (s && s.theme) || localStorage.getItem('ehem_theme') || 'forest-green';
+                const th = (s && s.theme) || localStorage.getItem('ehem_theme') || 'amber-gold';
                 document.documentElement.setAttribute('data-theme', th);
             } catch(e) {}
         })();
@@ -35,6 +35,7 @@
         </div>
     </a>
     <div class="user-nav-actions" id="adminNavActions" style="display:none;">
+        <div id="adminNavSyncStatus" style="display:flex;align-items:center;gap:6px;font-size:12px;color:#10b981;font-weight:600;padding:5px 12px;background:rgba(16,185,129,0.12);border-radius:20px;border:1px solid rgba(16,185,129,0.25);cursor:pointer;" onclick="syncAdminDataFromCloud(true)" title="Bulut ile anında eşitlemek için tıklayın">☁️ Canlı Eşitleniyor</div>
         <button class="btn btn-success btn-sm" onclick="handleForcePushToFirebase()" title="Bu bilgisayardaki tüm kursiyerleri internete (Firebase bulutuna) anında yükler">☁️ Buluta Aktar</button>
         <button class="btn btn-ghost btn-sm" onclick="openAdminPasswordModal()" title="Yönetici Şifresini Değiştir">🔑 Şifre Değiştir</button>
         <a href="index.html" class="btn btn-ghost btn-sm" target="_blank">👁️ Kursiyer Görünümü ↗</a>
@@ -1039,7 +1040,7 @@
 
 <!-- ============================== JAVASCRIPT ============================== -->
 <script src="js/modules-data.js?v=20260929_1530"></script>
-<script src="js/storage-service.js?v=20260930_2115"></script>
+<script src="js/storage-service.js?v=20260930_2230"></script>
 <script>
     let currentSelectedStudentId = null;
     let excelParsedRows = [];
@@ -1056,7 +1057,13 @@
         checkAdminAuth();
         updateSortHeaderUI();
 
-        // Başka sekmede veri veya ayar güncellendiğinde anında güncelle
+        // 1. Firebase Canlı Bulut Olayları (SSE ve Gerçek Zamanlı Eşitleme)
+        window.addEventListener('ehem:data-synced', (e) => {
+            console.log('[Admin] Buluttan anlık veri güncellendi:', e.detail);
+            refreshAllAdminViews();
+        });
+
+        // 2. Başka sekmede veri veya ayar güncellendiğinde anında güncelle
         window.addEventListener('storage', (e) => {
             if (e.key === 'ehem_messages_v1') {
                 updateAdminUnreadBadge();
@@ -1064,6 +1071,9 @@
                 if (tabMsg && tabMsg.style.display !== 'none') {
                     filterAndRenderMessages(true);
                 }
+            }
+            if (e.key === 'ehem_users_db_v1' || e.key === 'ehem_classes_db_v1') {
+                refreshAllAdminViews();
             }
             if (e.key === 'ehem_custom_modules_v1') {
                 initInitialModuleOptions();
@@ -1073,6 +1083,7 @@
                 }
             }
             if (e.key === 'ehem_theme_settings' || e.key === 'ehem_theme') {
+                lmsStorage.applyThemeSettings();
                 const tabSettings = document.getElementById('tabSettings');
                 if (tabSettings && tabSettings.style.display !== 'none') {
                     loadSettingsTab();
@@ -1080,75 +1091,77 @@
             }
         });
 
-        // Pencereye dönüldüğünde buluttan en son verileri çek
+        // 3. Pencereye dönüldüğünde hemen buluttan en güncel veriyi çek
         window.addEventListener('focus', () => {
-            syncAdminDataFromCloud();
+            syncAdminDataFromCloud(false);
         });
 
-        // 4 saniyede bir buluttan yeni kursiyer mesajlarını çek ve güncelle
+        // 4. Her 5 saniyede bir bulut kontrolü (arka planda çalışır)
         setInterval(() => {
-            if (lmsStorage.pullMessagesFromFirebase) {
-                lmsStorage.pullMessagesFromFirebase().then(() => {
-                    updateAdminUnreadBadge();
-                    const tabMsg = document.getElementById('tabMessages');
-                    if (tabMsg && tabMsg.style.display !== 'none') {
-                        const active = document.activeElement;
-                        const isTyping = active && (active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && active.type === 'text'));
-                        if (!isTyping) {
-                            filterAndRenderMessages(true);
-                        }
-                    }
-                }).catch(() => {});
-            } else {
-                updateAdminUnreadBadge();
-            }
-        }, 4000);
-
-        // 10 saniyede bir Firebase buluttan diğer bilgisayarlarda yapılan değişiklikleri otomatik eşitle
-        setInterval(() => {
-            syncAdminDataFromCloud();
-        }, 10000);
+            syncAdminDataFromCloud(false);
+        }, 5000);
     });
 
-    function syncAdminDataFromCloud() {
+    function refreshAllAdminViews() {
+        const s = lmsStorage.getCurrentAdmin();
+        if (!s || (!s.type && !s.username)) return;
+
+        initInitialModuleOptions();
+        loadDashboardData();
+        rebuildClassDropdowns();
+
+        const tabClasses = document.getElementById('tabClasses');
+        if (tabClasses && tabClasses.style.display !== 'none') {
+            loadClassesTab();
+        }
+
+        const tabStudents = document.getElementById('tabStudents');
+        if (tabStudents && tabStudents.style.display !== 'none') {
+            renderStudentsTable();
+        }
+
+        const tabMenu = document.getElementById('tabMenu');
+        if (tabMenu && tabMenu.style.display !== 'none') {
+            loadMenuTab();
+        }
+
+        const tabSettings = document.getElementById('tabSettings');
+        if (tabSettings && tabSettings.style.display !== 'none') {
+            loadSettingsTab();
+        }
+
+        const tabAnns = document.getElementById('tabAnnouncements');
+        if (tabAnns && tabAnns.style.display !== 'none') {
+            loadAnnouncementsTab();
+        }
+    }
+
+    async function syncAdminDataFromCloud(isManual = false) {
         if (!lmsStorage.pullFromFirebase) return;
-        // Kullanıcı bir modalda veri giriyorsa bölmeyelim
-        if (document.querySelector('.modal.show')) return;
-        const active = document.activeElement;
-        const isTyping = active && (active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && active.type === 'text'));
-        if (isTyping) return;
+        if (!isManual) {
+            if (document.querySelector('.modal.show')) return;
+            const active = document.activeElement;
+            const isTyping = active && (active.tagName === 'TEXTAREA' || (active.tagName === 'INPUT' && active.type === 'text'));
+            if (isTyping) return;
+        }
 
         const s = lmsStorage.getCurrentAdmin();
         if (!s || (!s.type && !s.username)) return;
 
-        lmsStorage.pullFromFirebase().then(res => {
+        const navBadge = document.getElementById('adminNavSyncStatus');
+        if (navBadge && isManual) {
+            navBadge.innerHTML = '⏳ Eşitleniyor...';
+        }
+
+        try {
+            const res = await lmsStorage.pullFromFirebase();
             if (res && res.success) {
                 lmsStorage.applyThemeSettings();
-                initInitialModuleOptions();
-                loadDashboardData();
-                rebuildClassDropdowns();
-
-                const tabMenu = document.getElementById('tabMenu');
-                if (tabMenu && tabMenu.style.display !== 'none') {
-                    loadMenuTab();
-                }
-
-                const tabSettings = document.getElementById('tabSettings');
-                if (tabSettings && tabSettings.style.display !== 'none') {
-                    loadSettingsTab();
-                }
-
-                const tabClasses = document.getElementById('tabClasses');
-                if (tabClasses && tabClasses.style.display !== 'none') {
-                    loadClassesTab();
-                }
-
-                const tabAnns = document.getElementById('tabAnnouncements');
-                if (tabAnns && tabAnns.style.display !== 'none') {
-                    loadAnnouncementsTab();
-                }
+                refreshAllAdminViews();
             }
-        }).catch(() => {});
+        } catch (err) {
+            console.warn('[Admin] Bulut eşitleme hatası:', err);
+        }
     }
 
     function checkAdminAuth() {
@@ -1160,7 +1173,7 @@
         if (ok) {
             loadDashboardData();
             rebuildClassDropdowns();
-            syncAdminDataFromCloud();
+            syncAdminDataFromCloud(true);
         }
     }
 
@@ -1220,7 +1233,7 @@
             if (c >= mods.length) cT++;
             if (u.lastActive && new Date(u.lastActive).getTime() > ago) aC++;
         });
-        const avg = users.length > 0 ? Math.round(pS / users.length) : 0;
+        const avg = users.length > 0 ? (pS > 0 ? Math.max(1, Math.round(pS / users.length)) : 0) : 0;
         document.getElementById('kpiTotalUsers').textContent = users.length;
         document.getElementById('kpiActiveUsers').textContent = aC;
         document.getElementById('kpiAvgProgress').textContent = '%' + avg;
@@ -1231,28 +1244,46 @@
 
     function updateCloudSyncBadge() {
         const badge = document.getElementById('cloudSyncStatusBadge');
-        if (!badge) return;
+        const navBadge = document.getElementById('adminNavSyncStatus');
         const users = lmsStorage.getAllUsers();
         const cfg = lmsStorage.getFirebaseConfig();
+        
         if (!cfg || !cfg.enabled || !cfg.databaseURL) {
-            badge.style.background = 'rgba(239,68,68,0.12)';
-            badge.style.color = '#ef4444';
-            badge.style.borderColor = 'rgba(239,68,68,0.3)';
-            badge.innerHTML = '⚠️ Bulut Senkronizasyonu Kapalı';
-            badge.onclick = () => switchAdminTab('settings');
-            badge.style.cursor = 'pointer';
+            if (badge) {
+                badge.style.background = 'rgba(239,68,68,0.12)';
+                badge.style.color = '#ef4444';
+                badge.style.borderColor = 'rgba(239,68,68,0.3)';
+                badge.innerHTML = '⚠️ Bulut Kapalı';
+                badge.onclick = () => switchAdminTab('settings');
+                badge.style.cursor = 'pointer';
+            }
+            if (navBadge) {
+                navBadge.style.color = '#ef4444';
+                navBadge.style.background = 'rgba(239,68,68,0.12)';
+                navBadge.style.borderColor = 'rgba(239,68,68,0.3)';
+                navBadge.innerHTML = '⚠️ Bulut Kapalı';
+            }
             return;
         }
 
         const now = new Date();
         const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
-        badge.style.background = 'rgba(16,185,129,0.12)';
-        badge.style.color = '#10b981';
-        badge.style.borderColor = 'rgba(16,185,129,0.3)';
-        badge.innerHTML = `☁️ İnternet: ${users.length} Kursiyer Yayında ✓ <span style="font-size:10px;opacity:0.85;">(${timeStr})</span>`;
-        badge.onclick = () => testFirebaseSync();
-        badge.title = 'Buluttan hemen veri çekmek ve eşitlemek için tıklayın';
-        badge.style.cursor = 'pointer';
+        
+        if (badge) {
+            badge.style.background = 'rgba(16,185,129,0.12)';
+            badge.style.color = '#10b981';
+            badge.style.borderColor = 'rgba(16,185,129,0.3)';
+            badge.innerHTML = `☁️ İnternet: ${users.length} Kursiyer Yayında ✓ <span style="font-size:10px;opacity:0.85;">(${timeStr})</span>`;
+            badge.onclick = () => testFirebaseSync();
+            badge.title = 'Buluttan hemen veri çekmek ve eşitlemek için tıklayın';
+            badge.style.cursor = 'pointer';
+        }
+        if (navBadge) {
+            navBadge.style.color = '#10b981';
+            navBadge.style.background = 'rgba(16,185,129,0.12)';
+            navBadge.style.borderColor = 'rgba(16,185,129,0.3)';
+            navBadge.innerHTML = `☁️ ${users.length} Kursiyer Yayında (${timeStr})`;
+        }
     }
 
     function getAvatarHtml(avatar, name, size = 32) {
@@ -1987,7 +2018,8 @@
         cls.forEach(c => {
             const clsUsers      = users.filter(u => u.classId === c.id);
             const cnt           = clsUsers.length;
-            const avgPct        = cnt > 0 ? Math.round(clsUsers.reduce((s,u) => s + Math.round((u.completedModuleIds||[]).length / Math.max(mods.length,1) * 100), 0) / cnt) : 0;
+            const sumPct        = clsUsers.reduce((s,u) => s + ((u.completedModuleIds||[]).length / Math.max(mods.length,1) * 100), 0);
+            const avgPct        = cnt > 0 ? (sumPct > 0 ? Math.max(1, Math.round(sumPct / cnt)) : 0) : 0;
             const completedAll  = clsUsers.filter(u => (u.completedModuleIds||[]).length >= mods.length).length;
             const sid = (c.id+'').replace(/'/g,"\\'"), sn = (c.name+'').replace(/'/g,"\\'");
             const card = document.createElement('div'); card.className = 'class-card';

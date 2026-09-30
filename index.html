@@ -12,7 +12,7 @@
             try {
                 const raw = localStorage.getItem('ehem_theme_settings');
                 const s = raw ? JSON.parse(raw) : null;
-                const th = (s && s.theme) || localStorage.getItem('ehem_theme') || 'forest-green';
+                const th = (s && s.theme) || localStorage.getItem('ehem_theme') || 'amber-gold';
                 document.documentElement.setAttribute('data-theme', th);
                 if (s && s.menuLayout) document.documentElement.setAttribute('data-menu-layout', s.menuLayout);
                 if (s && s.menuStyle) document.documentElement.setAttribute('data-menu-style', s.menuStyle);
@@ -483,7 +483,7 @@
 
     <!-- Scriptler -->
     <script src="js/modules-data.js?v=20260929_1530"></script>
-    <script src="js/storage-service.js?v=20260930_2115"></script>
+    <script src="js/storage-service.js?v=20260930_2230"></script>
     <script>
         let currentViewingModuleId = null;
 
@@ -617,6 +617,18 @@
         document.addEventListener('DOMContentLoaded', () => {
             refreshCustomModules();
             checkAuthAndRender();
+
+            // Firebase Canlı Bulut Olayları (SSE & Anlık Senkronizasyon)
+            window.addEventListener('ehem:data-synced', () => {
+                refreshCustomModules();
+                checkAuthAndRender();
+                syncPortalThemeUI();
+                const student = lmsStorage.getCurrentStudent();
+                if (student) {
+                    renderAnnouncementsBanner(student.id);
+                    updateStudentUnreadBadge(student.id);
+                }
+            });
 
             // Duyuruları hemen buluttan çek ve güncelle
             if (lmsStorage.pullAnnouncementsFromFirebase) {
