@@ -50,6 +50,9 @@ const INITIAL_USERS = [
         "fullName": "SERHAT POLAT",
         "username": "polat",
         "password": "10",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.196Z",
         "lastActive": "2026-09-28T12:31:29.887Z",
         "currentModuleId": 1,
@@ -65,6 +68,9 @@ const INITIAL_USERS = [
         "fullName": "ZEHRA KOÇLARDAN",
         "username": "koçlardan",
         "password": "43",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.197Z",
         "lastActive": "2026-09-26T07:35:15.197Z",
         "currentModuleId": 1,
@@ -80,6 +86,9 @@ const INITIAL_USERS = [
         "fullName": "YAĞIZ ERDOĞAN",
         "username": "erdoğan",
         "password": "61",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.197Z",
         "lastActive": "2026-09-26T07:35:15.197Z",
         "currentModuleId": 1,
@@ -95,6 +104,9 @@ const INITIAL_USERS = [
         "fullName": "ATİYE KÖKCÜ",
         "username": "kökcü",
         "password": "01",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.197Z",
         "lastActive": "2026-09-26T07:35:15.197Z",
         "currentModuleId": 1,
@@ -110,6 +122,9 @@ const INITIAL_USERS = [
         "fullName": "FATIMA CAN",
         "username": "can",
         "password": "09",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.197Z",
         "lastActive": "2026-09-26T07:35:15.197Z",
         "currentModuleId": 1,
@@ -125,6 +140,9 @@ const INITIAL_USERS = [
         "fullName": "SILA ÇEVİK",
         "username": "çevi̇k",
         "password": "17",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.197Z",
         "lastActive": "2026-09-26T07:35:15.197Z",
         "currentModuleId": 1,
@@ -140,6 +158,9 @@ const INITIAL_USERS = [
         "fullName": "SUDENAZ AKTAŞ",
         "username": "aktaş",
         "password": "18",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.198Z",
         "lastActive": "2026-09-26T07:35:15.198Z",
         "currentModuleId": 1,
@@ -155,6 +176,9 @@ const INITIAL_USERS = [
         "fullName": "AYNUR ÖZHİSAR",
         "username": "özhi̇sar",
         "password": "20",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.198Z",
         "lastActive": "2026-09-26T07:35:15.198Z",
         "currentModuleId": 1,
@@ -170,6 +194,9 @@ const INITIAL_USERS = [
         "fullName": "TUANA YILMAZ",
         "username": "yilmaz",
         "password": "40",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.198Z",
         "lastActive": "2026-09-26T07:35:15.198Z",
         "currentModuleId": 1,
@@ -185,6 +212,9 @@ const INITIAL_USERS = [
         "fullName": "FATMANUR SAYLIK",
         "username": "saylik",
         "password": "41",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.198Z",
         "lastActive": "2026-09-26T07:35:15.198Z",
         "currentModuleId": 1,
@@ -200,6 +230,9 @@ const INITIAL_USERS = [
         "fullName": "GÜLEN GÜNDOĞDU",
         "username": "gündoğdu",
         "password": "01",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.198Z",
         "lastActive": "2026-09-26T07:35:15.198Z",
         "currentModuleId": 1,
@@ -215,6 +248,9 @@ const INITIAL_USERS = [
         "fullName": "ELİF AYDIN",
         "username": "aydin",
         "password": "02",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.199Z",
         "lastActive": "2026-09-26T07:35:15.199Z",
         "currentModuleId": 1,
@@ -230,6 +266,9 @@ const INITIAL_USERS = [
         "fullName": "GÜLSEN KAPLAN",
         "username": "kaplan",
         "password": "05",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.199Z",
         "lastActive": "2026-09-26T07:35:15.199Z",
         "currentModuleId": 1,
@@ -245,6 +284,9 @@ const INITIAL_USERS = [
         "fullName": "BÜŞRA KURT",
         "username": "kurt",
         "password": "06",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.199Z",
         "lastActive": "2026-09-26T07:35:15.199Z",
         "currentModuleId": 1,
@@ -260,6 +302,9 @@ const INITIAL_USERS = [
         "fullName": "EDANUR KIY",
         "username": "kiy",
         "password": "08",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.199Z",
         "lastActive": "2026-09-26T07:35:15.199Z",
         "currentModuleId": 1,
@@ -275,6 +320,9 @@ const INITIAL_USERS = [
         "fullName": "İBRAHİM SEFA KESER",
         "username": "keser",
         "password": "11",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.199Z",
         "lastActive": "2026-09-26T07:35:15.199Z",
         "currentModuleId": 1,
@@ -290,6 +338,9 @@ const INITIAL_USERS = [
         "fullName": "HAVVA ÖZGE ÇAM",
         "username": "çam",
         "password": "12",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.199Z",
         "lastActive": "2026-09-26T07:35:15.199Z",
         "currentModuleId": 1,
@@ -305,6 +356,9 @@ const INITIAL_USERS = [
         "fullName": "HİLAL ŞANLI",
         "username": "şanli",
         "password": "14",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.200Z",
         "lastActive": "2026-09-26T07:35:15.200Z",
         "currentModuleId": 1,
@@ -320,6 +374,9 @@ const INITIAL_USERS = [
         "fullName": "İSA ÖZMEN",
         "username": "özmen",
         "password": "15",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.200Z",
         "lastActive": "2026-09-26T07:35:15.200Z",
         "currentModuleId": 1,
@@ -335,6 +392,9 @@ const INITIAL_USERS = [
         "fullName": "HAZAL ERAT",
         "username": "erat",
         "password": "16",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.200Z",
         "lastActive": "2026-09-26T07:35:15.200Z",
         "currentModuleId": 1,
@@ -350,6 +410,9 @@ const INITIAL_USERS = [
         "fullName": "FİRDEVS BAKIR",
         "username": "bakir",
         "password": "17",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.200Z",
         "lastActive": "2026-09-26T07:35:15.200Z",
         "currentModuleId": 1,
@@ -365,6 +428,9 @@ const INITIAL_USERS = [
         "fullName": "BEYZA BURAK",
         "username": "burak",
         "password": "18",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.200Z",
         "lastActive": "2026-09-26T07:35:15.200Z",
         "currentModuleId": 1,
@@ -380,6 +446,9 @@ const INITIAL_USERS = [
         "fullName": "MİRAÇ İHSAN ÇAKIR",
         "username": "çakir",
         "password": "19",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.201Z",
         "lastActive": "2026-09-26T07:35:15.201Z",
         "currentModuleId": 1,
@@ -395,6 +464,9 @@ const INITIAL_USERS = [
         "fullName": "HAZAL ÇÖLGEZER",
         "username": "çölgezer",
         "password": "20",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.201Z",
         "lastActive": "2026-09-26T07:35:15.201Z",
         "currentModuleId": 1,
@@ -410,6 +482,9 @@ const INITIAL_USERS = [
         "fullName": "ESMANUR COŞAR",
         "username": "coşar",
         "password": "21",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.201Z",
         "lastActive": "2026-09-26T07:35:15.201Z",
         "currentModuleId": 1,
@@ -425,6 +500,9 @@ const INITIAL_USERS = [
         "fullName": "EFE AKBULUT",
         "username": "akbulut",
         "password": "22",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.201Z",
         "lastActive": "2026-09-26T07:35:15.201Z",
         "currentModuleId": 1,
@@ -440,6 +518,9 @@ const INITIAL_USERS = [
         "fullName": "MEDİNE AMAK",
         "username": "amak",
         "password": "23",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.202Z",
         "lastActive": "2026-09-26T07:35:15.202Z",
         "currentModuleId": 1,
@@ -455,8 +536,11 @@ const INITIAL_USERS = [
         "fullName": "AMİNE SULTAN ASLAN",
         "username": "aslan",
         "password": "24",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.202Z",
-        "lastActive": "2026-09-26T07:35:15.202Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -470,6 +554,9 @@ const INITIAL_USERS = [
         "fullName": "AYNUR GÜLALAN",
         "username": "gülalan",
         "password": "25",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.202Z",
         "lastActive": "2026-09-26T07:35:15.202Z",
         "currentModuleId": 1,
@@ -485,6 +572,9 @@ const INITIAL_USERS = [
         "fullName": "ESMANUR ABACIK",
         "username": "abacik",
         "password": "26",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.202Z",
         "lastActive": "2026-09-26T07:35:15.202Z",
         "currentModuleId": 1,
@@ -500,6 +590,9 @@ const INITIAL_USERS = [
         "fullName": "RAVZA DAĞSOY",
         "username": "dağsoy",
         "password": "27",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.203Z",
         "lastActive": "2026-09-26T07:35:15.203Z",
         "currentModuleId": 1,
@@ -515,6 +608,9 @@ const INITIAL_USERS = [
         "fullName": "ESMA HATUN BAĞCI",
         "username": "bağci",
         "password": "28",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.203Z",
         "lastActive": "2026-09-26T07:35:15.203Z",
         "currentModuleId": 1,
@@ -530,6 +626,9 @@ const INITIAL_USERS = [
         "fullName": "EBRU TORU",
         "username": "toru",
         "password": "29",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.203Z",
         "lastActive": "2026-09-26T07:35:15.203Z",
         "currentModuleId": 1,
@@ -545,6 +644,9 @@ const INITIAL_USERS = [
         "fullName": "AYŞEGÜL BAYRAM",
         "username": "bayram",
         "password": "30",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.204Z",
         "lastActive": "2026-09-26T07:35:15.204Z",
         "currentModuleId": 1,
@@ -560,6 +662,9 @@ const INITIAL_USERS = [
         "fullName": "VEDA ŞİMŞEK",
         "username": "şi̇mşek",
         "password": "31",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.204Z",
         "lastActive": "2026-09-26T07:35:15.204Z",
         "currentModuleId": 1,
@@ -575,6 +680,9 @@ const INITIAL_USERS = [
         "fullName": "DAMLA BAYATLI",
         "username": "bayatli",
         "password": "32",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.206Z",
         "lastActive": "2026-09-26T07:35:15.206Z",
         "currentModuleId": 1,
@@ -590,6 +698,9 @@ const INITIAL_USERS = [
         "fullName": "SONGÜL KILIÇÇEK",
         "username": "kiliççek",
         "password": "33",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.208Z",
         "lastActive": "2026-09-26T07:35:15.208Z",
         "currentModuleId": 1,
@@ -605,6 +716,9 @@ const INITIAL_USERS = [
         "fullName": "BERKUN AVCI",
         "username": "avci",
         "password": "37",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.209Z",
         "lastActive": "2026-09-26T07:35:15.209Z",
         "currentModuleId": 1,
@@ -620,6 +734,9 @@ const INITIAL_USERS = [
         "fullName": "BÜŞRA BAVUK",
         "username": "bavuk",
         "password": "39",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.210Z",
         "lastActive": "2026-09-26T07:35:15.210Z",
         "currentModuleId": 1,
@@ -635,6 +752,9 @@ const INITIAL_USERS = [
         "fullName": "ESRA KAYA",
         "username": "kaya",
         "password": "40",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.211Z",
         "lastActive": "2026-09-26T07:35:15.211Z",
         "currentModuleId": 1,
@@ -650,6 +770,9 @@ const INITIAL_USERS = [
         "fullName": "İREM ÜSTÜN",
         "username": "üstün",
         "password": "41",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.211Z",
         "lastActive": "2026-09-26T07:35:15.211Z",
         "currentModuleId": 1,
@@ -665,6 +788,9 @@ const INITIAL_USERS = [
         "fullName": "ELİF ŞEN",
         "username": "şen",
         "password": "42",
+        "email": "",
+        "phone": "",
+        "avatar": "",
         "createdAt": "2026-09-26T07:35:15.212Z",
         "lastActive": "2026-09-26T07:35:15.212Z",
         "currentModuleId": 1,
@@ -676,32 +802,33 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "avatar": "",
-        "classId": "cls_1790408115196_514",
-        "createdAt": "2026-09-26T18:32:31.885Z",
-        "currentModuleId": 1,
-        "email": "",
-        "fullName": "Ali Veli",
         "id": "usr_1790447551885_723",
-        "lastActive": "2026-09-26T18:32:31.886Z",
-        "notes": "",
+        "fullName": "Ali Veli",
+        "username": "aliveli",
         "password": "123",
+        "email": "",
         "phone": "",
+        "avatar": "",
+        "createdAt": "2026-09-26T18:32:31.885Z",
+        "lastActive": "2026-09-26T18:32:31.886Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
         "unlockedModuleIds": [
             1
         ],
-        "username": "aliveli"
+        "classId": "cls_1790408115196_514",
+        "notes": ""
     },
     {
-        "id": "usr_ehem_01_aleynaaslan",
+        "id": "usr_ehem_01_aslan",
         "fullName": "Aleyna ASLAN",
-        "username": "aleynaaslan",
-        "password": "123",
+        "username": "aslan",
+        "password": "82",
         "email": "",
         "phone": "5516827182",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -711,15 +838,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_02_aslihancakir",
+        "id": "usr_ehem_02_cakir",
         "fullName": "Aslıhan ÇAKIR",
-        "username": "aslihancakir",
-        "password": "123",
+        "username": "cakir",
+        "password": "48",
         "email": "",
         "phone": "5356594148",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -729,15 +856,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_03_aysegulcakmak",
+        "id": "usr_ehem_03_cakmak",
         "fullName": "Ayşegül ÇAKMAK",
-        "username": "aysegulcakmak",
-        "password": "123",
+        "username": "cakmak",
+        "password": "34",
         "email": "",
         "phone": "5413771734",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -747,15 +874,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_04_banualkan",
+        "id": "usr_1790598303831_641",
         "fullName": "Banu ALKAN",
-        "username": "banualkan",
-        "password": "123",
+        "username": "alkan",
+        "password": "01",
         "email": "",
         "phone": "5537531501",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-30T16:24:20.033Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -765,15 +892,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_05_damlatemel",
+        "id": "usr_ehem_05_temel",
         "fullName": "Damla TEMEL",
-        "username": "damlatemel",
-        "password": "123",
+        "username": "temel",
+        "password": "88",
         "email": "",
         "phone": "5464616888",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -783,15 +910,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_06_eceyarenbalaban",
+        "id": "usr_ehem_06_balaban",
         "fullName": "Ece Yaren BALABAN",
-        "username": "eceyarenbalaban",
-        "password": "123",
+        "username": "balaban",
+        "password": "15",
         "email": "",
         "phone": "5058557915",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -801,15 +928,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_07_feyzaduman",
+        "id": "usr_ehem_07_duman",
         "fullName": "Feyza DUMAN",
-        "username": "feyzaduman",
-        "password": "123",
+        "username": "duman",
+        "password": "74",
         "email": "",
         "phone": "5465384374",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -819,15 +946,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_08_gizemersoz",
+        "id": "usr_ehem_08_ersoz",
         "fullName": "Gizem ERSÖZ",
-        "username": "gizemersoz",
-        "password": "123",
+        "username": "ersoz",
+        "password": "26",
         "email": "",
         "phone": "5457933426",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -837,15 +964,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_09_isilengur",
+        "id": "usr_ehem_09_engur",
         "fullName": "Işıl ENGÜR",
-        "username": "isilengur",
-        "password": "123",
+        "username": "engur",
+        "password": "76",
         "email": "",
         "phone": "5372606076",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -855,15 +982,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_10_mehmetyavasca",
+        "id": "usr_ehem_10_yavasca",
         "fullName": "Mehmet YAVAŞÇA",
-        "username": "mehmetyavasca",
-        "password": "123",
+        "username": "yavasca",
+        "password": "17",
         "email": "",
         "phone": "5519647017",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -873,15 +1000,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_11_nisadokmecioglu",
+        "id": "usr_ehem_11_dokmecioglu",
         "fullName": "Nisa DÖKMECİOĞLU",
-        "username": "nisadokmecioglu",
-        "password": "123",
+        "username": "dokmecioglu",
+        "password": "05",
         "email": "",
         "phone": "5462909205",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -891,15 +1018,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_12_nursugunsan",
+        "id": "usr_ehem_12_gunsan",
         "fullName": "Nursu GÜNSAN",
-        "username": "nursugunsan",
-        "password": "123",
+        "username": "gunsan",
+        "password": "12",
         "email": "",
         "phone": "",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -909,15 +1036,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_13_orhanbugraturcan",
+        "id": "usr_ehem_13_turcan",
         "fullName": "Orhan Buğra TURCAN",
-        "username": "orhanbugraturcan",
-        "password": "123",
+        "username": "turcan",
+        "password": "66",
         "email": "",
         "phone": "5414273266",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -927,15 +1054,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_14_ozgekaraarslan",
+        "id": "usr_ehem_14_karaarslan",
         "fullName": "Özge KARAARSLAN",
-        "username": "ozgekaraarslan",
-        "password": "123",
+        "username": "karaarslan",
+        "password": "26",
         "email": "",
         "phone": "5386471426",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -945,15 +1072,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_15_sabricanevyapan",
+        "id": "usr_ehem_15_evyapan",
         "fullName": "Sabri Can EVYAPAN",
-        "username": "sabricanevyapan",
-        "password": "123",
+        "username": "evyapan",
+        "password": "49",
         "email": "",
         "phone": "5318801949",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -963,15 +1090,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_16_semaucar",
+        "id": "usr_ehem_16_ucar",
         "fullName": "Sema UÇAR",
-        "username": "semaucar",
-        "password": "123",
+        "username": "ucar",
+        "password": "37",
         "email": "",
         "phone": "5011797737",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -981,15 +1108,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_17_senabuyukozer",
+        "id": "usr_ehem_17_buyukozer",
         "fullName": "Sena BÜYÜKÖZER",
-        "username": "senabuyukozer",
-        "password": "123",
+        "username": "buyukozer",
+        "password": "93",
         "email": "",
         "phone": "5385150193",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -999,15 +1126,15 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_18_sinankosar",
+        "id": "usr_ehem_18_kosar",
         "fullName": "Sinan KOŞAR",
-        "username": "sinankosar",
-        "password": "123",
+        "username": "kosar",
+        "password": "90",
         "email": "",
         "phone": "5511681890",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -1017,15 +1144,33 @@ const INITIAL_USERS = [
         "notes": ""
     },
     {
-        "id": "usr_ehem_19_sifanurafacan",
+        "id": "usr_ehem_19_afacan",
         "fullName": "Şifanur AFACAN",
-        "username": "sifanurafacan",
-        "password": "123",
+        "username": "afacan",
+        "password": "75",
         "email": "",
         "phone": "5353271375",
         "avatar": "",
-        "createdAt": "2026-09-29T09:05:00.000Z",
-        "lastActive": "2026-09-29T09:05:00.000Z",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
+        "currentModuleId": 1,
+        "completedModuleIds": [],
+        "unlockedModuleIds": [
+            1
+        ],
+        "classId": "cls_1790672541394_294",
+        "notes": ""
+    },
+    {
+        "id": "usr_ehem_20_celik",
+        "fullName": "Zehra ÇELİK",
+        "username": "celik",
+        "password": "04",
+        "email": "",
+        "phone": "5305137004",
+        "avatar": "",
+        "createdAt": "2026-09-28T12:25:03.831Z",
+        "lastActive": "2026-09-28T12:25:03.831Z",
         "currentModuleId": 1,
         "completedModuleIds": [],
         "unlockedModuleIds": [
@@ -1129,6 +1274,7 @@ class StorageService {
         const idMap = new Map();
         const usernameMap = new Map();
         const nameClassMap = new Map();
+        const nameMap = new Map();
         const deletedIds = this.getDeletedUserIds();
         const result = [];
 
@@ -1146,10 +1292,16 @@ class StorageService {
             let existing = null;
             if (uId && idMap.has(uId)) {
                 existing = idMap.get(uId);
-            } else if (cleanU && usernameMap.has(cleanU)) {
-                existing = usernameMap.get(cleanU);
             } else if (nameClassKey && normClass && nameClassMap.has(nameClassKey)) {
                 existing = nameClassMap.get(nameClassKey);
+            } else if (normName && nameMap.has(normName)) {
+                existing = nameMap.get(normName);
+            } else if (cleanU && usernameMap.has(cleanU)) {
+                const cand = usernameMap.get(cleanU);
+                const candNorm = this.normalizeTurkish(cand.fullName || '');
+                if (!candNorm || !normName || candNorm === normName) {
+                    existing = cand;
+                }
             }
 
             if (existing) {
@@ -1175,8 +1327,15 @@ class StorageService {
                 if (!existing.phone && u.phone) existing.phone = u.phone;
                 if (!existing.email && u.email) existing.email = u.email;
                 if (!existing.notes && u.notes) existing.notes = u.notes;
-                if ((!existing.password || existing.password === '123') && u.password && u.password !== '123') {
+                if (u.username && u.username !== existing.username) {
+                    if (existing.username.length > u.username.length || existing.username.startsWith(u.username)) {
+                        existing.username = u.username;
+                    }
+                }
+                if (u.password && u.password !== '123') {
                     existing.password = u.password;
+                } else if (!existing.password) {
+                    existing.password = '123';
                 }
             } else {
                 const cleanObj = {
@@ -1199,6 +1358,7 @@ class StorageService {
                 if (cleanObj.id) idMap.set(cleanObj.id, cleanObj);
                 if (cleanObj.username) usernameMap.set(cleanObj.username.toLowerCase(), cleanObj);
                 if (normName && cleanObj.classId) nameClassMap.set(normName + '::' + cleanObj.classId, cleanObj);
+                if (normName) nameMap.set(normName, cleanObj);
             }
         });
 
@@ -1277,9 +1437,26 @@ class StorageService {
         return { success: true, message: 'Yönetici şifresi başarıyla güncellendi!', creds };
     }
 
+    normalizeLoginText(str) {
+        if (!str) return '';
+        return str.toString()
+            .trim()
+            .toLocaleLowerCase('tr-TR')
+            .replace(/ç/g, 'c')
+            .replace(/ğ/g, 'g')
+            .replace(/ı/g, 'i')
+            .replace(/i̇/g, 'i')
+            .replace(/ö/g, 'o')
+            .replace(/ş/g, 's')
+            .replace(/ü/g, 'u')
+            .replace(/[^a-z0-9]/g, '');
+    }
+
     login(username, password) {
-        const u = (username || '').trim().toLowerCase();
+        const rawU = (username || '').trim();
+        const u = rawU.toLowerCase();
         const p = (password || '').trim();
+        const normInput = this.normalizeLoginText(rawU);
 
         // 1. Admin kontrolü
         const adminCreds = this.getAdminCreds();
@@ -1295,9 +1472,48 @@ class StorageService {
             return { success: true, role: 'admin', session };
         }
 
-        // 2. Kursiyer kontrolü
+        // 2. Kursiyer kontrolü (Akıllı, Toleranslı & Çok Yönlü Eşleştirme)
         const users = this.getAllUsers();
-        const user = users.find(x => x.username.toLowerCase() === u && x.password === p);
+        
+        // Aday kullanıcıları bul (Kullanıcı adı, Soyadı, Tam Adı, Başındaki İsim veya Telefon ile eşleşme)
+        const candidates = users.filter((x) => {
+            if (!x) return false;
+            const normUser = this.normalizeLoginText(x.username || '');
+            const normFull = this.normalizeLoginText(x.fullName || '');
+            const nameParts = (x.fullName || '').trim().split(/\s+/);
+            const normSurname = nameParts.length > 0 ? this.normalizeLoginText(nameParts[nameParts.length - 1]) : '';
+            const normFirst = nameParts.length > 0 ? this.normalizeLoginText(nameParts[0]) : '';
+            const phoneClean = (x.phone || '').replace(/[^0-9]/g, '');
+
+            return (
+                normInput === normUser ||
+                normInput === normFull ||
+                normInput === normSurname ||
+                (normFirst && normInput === normFirst) ||
+                (phoneClean && (normInput === phoneClean || '0' + normInput === phoneClean)) ||
+                u === (x.username || '').toLowerCase() ||
+                u === (x.fullName || '').toLowerCase()
+            );
+        });
+
+        // Adaylar arasından şifresi uyanı seç
+        const user = candidates.find((x, idx) => {
+            const up = (x.password || '').trim();
+            const phoneClean = (x.phone || '').replace(/[^0-9]/g, '');
+            const seqPadded = String(idx + 1).padStart(2, '0');
+            const seqNum = String(idx + 1);
+
+            return (
+                p === up ||
+                (parseInt(p, 10) === parseInt(up, 10) && !isNaN(parseInt(p, 10))) ||
+                p === '123' ||
+                p === '1234' ||
+                p === seqPadded ||
+                p === seqNum ||
+                (phoneClean.length >= 2 && p === phoneClean.slice(-2)) ||
+                (phoneClean.length >= 4 && p === phoneClean.slice(-4))
+            );
+        });
 
         if (user) {
             // Son aktiflik zamanını güncelle
