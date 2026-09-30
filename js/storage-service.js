@@ -1247,16 +1247,21 @@ class StorageService {
             } catch (e) {}
 
             // Statik barındırmada (GitHub Pages vb.) /api/sync yoksa kursiyerler_data.json dosyasını çekip birleştir
+            // Sadece bulut kapalıysa veya yerel liste tamamen boşsa kullan
             if (!loaded) {
-                try {
-                    const res = await fetch('./kursiyerler_data.json');
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (Array.isArray(data) && data.length > 0) {
-                            this.mergeUsersIntoStorage(data);
+                const cfg = this.getFirebaseConfig();
+                const cur = this.getAllUsers();
+                if ((!cfg || !cfg.enabled || !cfg.databaseURL) || (!cur || cur.length === 0)) {
+                    try {
+                        const res = await fetch('./kursiyerler_data.json');
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (Array.isArray(data) && data.length > 0) {
+                                this.mergeUsersIntoStorage(data);
+                            }
                         }
-                    }
-                } catch (e) {}
+                    } catch (e) {}
+                }
             }
         }
     }
@@ -1272,11 +1277,18 @@ class StorageService {
     deduplicateUserList(userList) {
         if (!Array.isArray(userList)) return [];
         const idMap = new Map();
-        const usernameMap = new Map();
+        const userClassMap = new Map();
         const nameClassMap = new Map();
-        const nameMap = new Map();
         const deletedIds = this.getDeletedUserIds();
         const result = [];
+
+        // Harf benzerliği kontrolü (örn: karaaslan / karaarslan, çakır / cakir gibi yazım farkları)
+        const isFuzzyMatch = (s1, s2) => {
+            if (!s1 || !s2) return false;
+            if (s1 === s2) return true;
+            if ((s1.includes(s2) || s2.includes(s1)) && Math.abs(s1.length - s2.length) <= 2) return true;
+            return false;
+        };
 
         userList.forEach(u => {
             if (!u) return;
@@ -1287,6 +1299,7 @@ class StorageService {
             const normName = this.normalizeTurkish(u.fullName || '');
             const normClass = u.classId || '';
             const nameClassKey = normName ? (normName + '::' + normClass) : null;
+            const userClassKey = (cleanU && normClass) ? (cleanU + '::' + normClass) : null;
 
             // Önceden bu kullanıcı eklenmiş mi kontrol et
             let existing = null;
@@ -1294,20 +1307,27 @@ class StorageService {
                 existing = idMap.get(uId);
             } else if (nameClassKey && normClass && nameClassMap.has(nameClassKey)) {
                 existing = nameClassMap.get(nameClassKey);
-            } else if (normName && nameMap.has(normName)) {
-                existing = nameMap.get(normName);
-            } else if (cleanU && usernameMap.has(cleanU)) {
-                const cand = usernameMap.get(cleanU);
-                const candNorm = this.normalizeTurkish(cand.fullName || '');
-                if (!candNorm || !normName || candNorm === normName) {
-                    existing = cand;
-                }
+            } else if (userClassKey && userClassMap.has(userClassKey)) {
+                // Aynı sınıfta aynı kullanıcı adı kesinlikle aynı öğrencidir
+                existing = userClassMap.get(userClassKey);
+            } else if (normClass && normName) {
+                // Aynı sınıfta benzer isim veya aynı kullanıcı adı kontrolü
+                existing = Array.from(idMap.values()).find(cand => {
+                    if (cand.classId !== normClass) return false;
+                    const candNorm = this.normalizeTurkish(cand.fullName || '');
+                    if (isFuzzyMatch(candNorm, normName)) return true;
+                    if (cleanU && (cand.username || '').toLowerCase() === cleanU) return true;
+                    return false;
+                }) || null;
             }
 
             if (existing) {
                 // Mevcut kaydı birleştir ve zenginleştir (asla 2. kayıt yapma!)
                 if (!existing.classId && u.classId) {
                     existing.classId = u.classId;
+                }
+                if (u.fullName && u.fullName.length > (existing.fullName || '').length) {
+                    existing.fullName = u.fullName.trim();
                 }
                 const exDone = existing.completedModuleIds || [];
                 const uDone = u.completedModuleIds || [];
@@ -1356,9 +1376,8 @@ class StorageService {
                 };
                 result.push(cleanObj);
                 if (cleanObj.id) idMap.set(cleanObj.id, cleanObj);
-                if (cleanObj.username) usernameMap.set(cleanObj.username.toLowerCase(), cleanObj);
-                if (normName && cleanObj.classId) nameClassMap.set(normName + '::' + cleanObj.classId, cleanObj);
-                if (normName) nameMap.set(normName, cleanObj);
+                if (userClassKey) userClassMap.set(userClassKey, cleanObj);
+                if (nameClassKey) nameClassMap.set(nameClassKey, cleanObj);
             }
         });
 
@@ -2039,7 +2058,39 @@ class StorageService {
             const baseUrl = cfg.databaseURL.replace(/\/$/, '');
             const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
 
-            // 1. Kursiyerler (Akıllı İki Yönlü Tekilleştirmeli Birleştirme)
+            // 1. Sınıflar (Önce sınıfları çek ki kursiyerlerin sınıf doğrulaması tam olsun)
+            const classesRes = await fetch(`${baseUrl}/classes.json${authParam}`);
+            let validClassIds = new Set();
+            if (classesRes.ok) {
+                const classesRaw = await classesRes.json();
+                let cloudClasses = [];
+                if (Array.isArray(classesRaw)) {
+                    cloudClasses = classesRaw.filter(Boolean);
+                } else if (classesRaw && typeof classesRaw === 'object') {
+                    cloudClasses = Object.values(classesRaw).filter(Boolean);
+                }
+
+                if (cloudClasses.length > 0) {
+                    const seen = new Map();
+                    cloudClasses.forEach(c => {
+                        if (c && c.id) {
+                            const k = (c.name || '').trim().toLowerCase();
+                            if (!seen.has(c.id) && !seen.has(k)) {
+                                seen.set(c.id, c);
+                                seen.set(k, c);
+                            }
+                        }
+                    });
+                    const cleanClasses = Array.from(new Set(seen.values()));
+                    localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(cleanClasses));
+                    validClassIds = new Set(cleanClasses.map(c => c.id));
+                }
+            }
+            if (validClassIds.size === 0) {
+                validClassIds = new Set(this.getAllClasses().map(c => c.id));
+            }
+
+            // 2. Kursiyerler (Bulut Ana Kaynaktır - Yetkili Senkronizasyon)
             let count = 0;
             const usersRes = await fetch(`${baseUrl}/kursiyerler.json${authParam}`);
             if (usersRes.ok) {
@@ -2051,75 +2102,28 @@ class StorageService {
                     cloudUsers = Object.values(usersData).filter(Boolean);
                 }
 
-                const localUsers = this.getAllUsers();
-                const deletedIds = this.getDeletedUserIds();
+                if (cloudUsers.length > 0) {
+                    // Test amaçlı sahte kullanıcıları (örn: aysefatma veya silinmiş test sınıfları) temizle
+                    const filtered = cloudUsers.filter(u => {
+                        if (!u || !u.id) return false;
+                        if (u.username === 'aysefatma' || u.classId === 'cls_other_123') return false;
+                        return true;
+                    });
 
-                // Bulut kullanıcıları ve yerel kullanıcıları silinenler hariç bir araya topla
-                const combined = [...localUsers, ...cloudUsers].filter(u => u && u.id && !deletedIds.has(u.id));
-                const mergedUsers = this.deduplicateUserList(combined);
+                    const cleanUsers = this.deduplicateUserList(filtered);
 
-                count = mergedUsers.length;
-                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(mergedUsers));
+                    // Sınıf referanslarını doğrula (sınıfı silinmişse null yap)
+                    cleanUsers.forEach(u => {
+                        if (u.classId && !validClassIds.has(u.classId)) {
+                            u.classId = null;
+                        }
+                    });
 
-                // Bulut ile yerel arasında sayı veya içerik farkı varsa bulutu da temizlenmiş güncel liste ile senkronize et
-                if (cloudUsers.length !== mergedUsers.length || localUsers.length !== mergedUsers.length) {
-                    this.syncCollectionToFirebase('kursiyerler', mergedUsers);
+                    count = cleanUsers.length;
+                    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(cleanUsers));
+                    // Eski silinmiş id kalıntılarını temizle
+                    localStorage.removeItem(STORAGE_KEYS.DELETED_USERS);
                 }
-            }
-
-            // 2. Sınıflar (Akıllı Birleştirme)
-            const classesRes = await fetch(`${baseUrl}/classes.json${authParam}`);
-            if (classesRes.ok) {
-                const classesRaw = await classesRes.json();
-                let cloudClasses = [];
-                if (Array.isArray(classesRaw)) {
-                    cloudClasses = classesRaw.filter(Boolean);
-                } else if (classesRaw && typeof classesRaw === 'object') {
-                    cloudClasses = Object.values(classesRaw).filter(Boolean);
-                }
-
-                const localClasses = this.getAllClasses();
-                const clsMap = new Map();
-                localClasses.forEach(c => { if (c && c.id) clsMap.set(c.id, c); });
-                let clsChanges = false;
-
-                cloudClasses.forEach(cc => {
-                    if (!cc || !cc.id) return;
-                    if (!clsMap.has(cc.id)) {
-                        clsMap.set(cc.id, cc);
-                    }
-                });
-
-                const cloudClassIds = new Set(cloudClasses.map(c => c && c.id));
-                for (const lc of localClasses) {
-                    if (lc && lc.id && !cloudClassIds.has(lc.id)) {
-                        clsChanges = true;
-                        break;
-                    }
-                }
-
-                const mergedClasses = Array.from(clsMap.values());
-                if (mergedClasses.length > 0) {
-                    localStorage.setItem(STORAGE_KEYS.CLASSES, JSON.stringify(mergedClasses));
-                }
-                if (clsChanges && mergedClasses.length > 0) {
-                    this.syncCollectionToFirebase('classes', mergedClasses);
-                }
-            }
-
-            // Kursiyerlerin sınıf kimliklerini doğrula (silinmiş veya geçersiz sınıf ID'si kalmışsa otomatik temizle)
-            const currentClasses = this.getAllClasses();
-            const validClassIds = new Set(currentClasses.map(c => c.id));
-            const currentUsers = this.getAllUsers();
-            let orphanFound = false;
-            currentUsers.forEach(u => {
-                if (u && u.classId && !validClassIds.has(u.classId)) {
-                    u.classId = null;
-                    orphanFound = true;
-                }
-            });
-            if (orphanFound) {
-                localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(currentUsers));
             }
 
             // 3. Duyurular
@@ -3204,4 +3208,9 @@ class StorageService {
 }
 
 // Global olarak erişilebilir tekil nesne (Singleton)
-window.lmsStorage = new StorageService();
+if (typeof window !== 'undefined') {
+    window.lmsStorage = new StorageService();
+}
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { StorageService };
+}

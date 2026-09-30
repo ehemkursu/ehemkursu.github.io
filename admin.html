@@ -1039,7 +1039,7 @@
 
 <!-- ============================== JAVASCRIPT ============================== -->
 <script src="js/modules-data.js?v=20260929_1530"></script>
-<script src="js/storage-service.js?v=20260930_2005"></script>
+<script src="js/storage-service.js?v=20260930_2055"></script>
 <script>
     let currentSelectedStudentId = null;
     let excelParsedRows = [];
@@ -1244,12 +1244,15 @@
             return;
         }
 
+        const now = new Date();
+        const timeStr = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') + ':' + String(now.getSeconds()).padStart(2, '0');
         badge.style.background = 'rgba(16,185,129,0.12)';
         badge.style.color = '#10b981';
         badge.style.borderColor = 'rgba(16,185,129,0.3)';
-        badge.innerHTML = `☁️ İnternet: ${users.length} Kursiyer Yayında ✓`;
-        badge.onclick = null;
-        badge.style.cursor = 'default';
+        badge.innerHTML = `☁️ İnternet: ${users.length} Kursiyer Yayında ✓ <span style="font-size:10px;opacity:0.85;">(${timeStr})</span>`;
+        badge.onclick = () => testFirebaseSync();
+        badge.title = 'Buluttan hemen veri çekmek ve eşitlemek için tıklayın';
+        badge.style.cursor = 'pointer';
     }
 
     function getAvatarHtml(avatar, name, size = 32) {
@@ -3162,12 +3165,32 @@
     }
 
     async function testFirebaseSync() {
-        const res = await lmsStorage.pullFromFirebase();
-        if (res.success) {
-            alert('✓ Senkronizasyon başarılı! ' + res.count + ' kursiyer eşitlendi.');
-            loadDashboardData();
-        } else {
-            alert('Senkronizasyon hatası: ' + res.message);
+        const btn = document.querySelector('button[onclick="testFirebaseSync()"]');
+        let origHtml = '';
+        if (btn) {
+            origHtml = btn.innerHTML;
+            btn.innerHTML = '⏳ Çekiliyor...';
+            btn.disabled = true;
+        }
+        try {
+            const res = await lmsStorage.pullFromFirebase();
+            if (res && res.success) {
+                lmsStorage.applyThemeSettings();
+                initInitialModuleOptions();
+                loadDashboardData();
+                rebuildClassDropdowns();
+                loadClassesTab();
+                alert('✓ Senkronizasyon başarılı!\n\nBuluttan ' + res.count + ' kursiyer ve tüm sınıflar güncellendi.');
+            } else {
+                alert('Senkronizasyon hatası: ' + (res ? res.message : 'Bilinmeyen hata'));
+            }
+        } catch (e) {
+            alert('Hata oluştu: ' + e.message);
+        } finally {
+            if (btn) {
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+            }
         }
     }
     function handleImportBackup(e)    { const file=e.target.files[0]; if(!file)return; const r=new FileReader(); r.onload=ev=>{const res=lmsStorage.importBackupJSON(ev.target.result); alert(res.success?'✓ Yedek geri yüklendi! ('+res.count+' Kursiyer)':'Hata: '+res.message); if(res.success)loadDashboardData();}; r.readAsText(file); }
