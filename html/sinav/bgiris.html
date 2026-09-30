@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bilgisayara Giriş Modül Sınavı</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f4f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .quiz-container { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); width: 100%; max-width: 700px; position: relative; }
+        h2 { color: #2c3e50; text-align: center; margin-top: 0; border-bottom: 3px solid #3498db; padding-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        .stats-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .stats { background: #fff5f5; color: #e74c3c; padding: 10px 20px; border-radius: 25px; font-weight: bold; border: 1px solid #ffcccc; font-size: 0.95em; }
+        .progress { font-size: 1em; color: #34495e; font-weight: bold; background: #ebf5fb; padding: 10px 20px; border-radius: 25px; border: 1px solid #d6eaf8; }
+        .question { font-size: 1.25em; margin-bottom: 25px; color: #2c3e50; line-height: 1.5; font-weight: 600; min-height: 70px; }
+        .options { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        button.opt-btn { padding: 16px; font-size: 1.05em; cursor: pointer; border: 2px solid #edeff0; border-radius: 10px; transition: all 0.25s ease; background: #fff; text-align: left; color: #2d3436; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        button.opt-btn:hover { background-color: #3498db; color: white; border-color: #3498db; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3); }
+        .hint-container { margin-top: 25px; border-top: 2px dashed #eee; padding-top: 20px; text-align: center; }
+        #hint-text { display: none; background: #fff9db; color: #856404; padding: 15px; border-radius: 8px; margin-top: 15px; font-style: italic; font-size: 0.95em; border-left: 5px solid #f1c40f; line-height: 1.4; }
+        .hint-btn { background: #95a5a6; color: white; border: none; padding: 10px 20px; border-radius: 30px; cursor: pointer; font-size: 0.9em; transition: 0.3s; font-weight: bold; }
+        .hint-btn:hover { background: #7f8c8d; }
+        .result { text-align: center; display: none; padding: 20px; }
+        .restart-btn { background: #27ae60; color: white; border: none; padding: 18px 50px; font-size: 1.2em; border-radius: 35px; cursor: pointer; margin-top: 30px; transition: 0.3s; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3); }
+        .restart-btn:hover { background: #219150; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div id="quiz-area">
+        <h2>BİLGİSAYARA GİRİŞ SINAVI</h2>
+        <div class="stats-bar">
+            <div class="progress">Soru: <span id="current-number">1</span> / 25</div>
+            <div class="stats">Hata (Başa Dönme): <span id="fail-count">0</span></div>
+        </div>
+        <div id="question-text" class="question"></div>
+        <div id="options-area" class="options"></div>
+        
+        <div class="hint-container">
+            <button class="hint-btn" onclick="toggleHint()">💡 İpucu Göster</button>
+            <div id="hint-text"></div>
+        </div>
+    </div>
+
+    <div id="result-area" class="result">
+        <h2 style="border-bottom: none; color: #27ae60;">TEBRİKLER!</h2>
+        <p style="font-size: 1.3em; color: #34495e;">Bilgisayara Giriş modül sınavını başarıyla tamamladınız.</p>
+        <div style="background: #f8f9fa; padding: 25px; border-radius: 15px; margin: 25px 0; border: 1px solid #dee2e6;">
+            <p id="final-stats" style="font-size: 1.2em; font-weight: bold; color: #2c3e50; margin: 0;"></p>
+        </div>
+        <button class="restart-btn" onclick="resetGame()">Sınavı Yeniden Başlat</button>
+    </div>
+</div>
+
+<script>
+    // Doğru seçenekler Base64 ile şifrelenmiştir (A=MA==, B=MQ==, C=Mg==, D=Mw==)
+    const questions = [
+        { q: "1. Bilgisayarın fiziksel yapısına ne isim verilir?", a: ["A) Donanım", "B) Yazılım", "C) Program", "D) Uygulama"], c: "MA==", h: "Elle tutulup gözle görülebilen tüm mekanik ve elektronik parçalardır." },
+        { q: "2. Her bilgisayarda mutlaka bulunması gereken yazılıma ne isim verilir?", a: ["A) İşletim sistemi", "B) Donanım", "C) Uygulama yazılımı", "D) İşlemci"], c: "MA==", h: "Donanım parçalarının birbiriyle ve kullanıcıyla haberleşmesini sağlayan ana yazılımdır." },
+        { q: "3. Bilgisayarda açık olan bir pencereyi kapatmak için hangi kısayol tuşu kullanılabilir?", a: ["A) ALT+F1", "B) ALT+F2", "C) ALT+F3", "D) ALT+F4"], c: "Mw==", h: "Pencereyi sonlandıran veya açık programı kapatan klasik Windows kısayoludur." },
+        { q: "4. Aşağıdakilerden hangisinde bellek birimleri küçükten büyüğe doğru sıralanmıştır?", a: ["A) Byte-Kilobyte-Megabyte-Gigabyte-Terabyte", "B) Byte-Kilobyte-Gigabyte-Megabyte-Terabyte", "C) Gigabyte-Kilobyte-Byte-Megabyte-Terabyte", "D) Megabyte-Kilobyte-Byte-Gigabyte-Terabyte"], c: "MA==", h: "B, KB, MB, GB ve TB sıralamasına dikkat edin." },
+        { q: "5. Ekrandaki en küçük noktaya ne isim verilir?", a: ["A) Grafik", "B) Piksel", "C) Byte", "D) Ghz"], c: "MQ==", h: "Görüntüyü oluşturan, yan yana gelerek resmi meydana getiren renk noktacıklarıdır." },
+        { q: "6. Hangisi mail adresi olamaz?", a: ["A) cemilsakin@bbb.com", "B) şükrücan@gmail.com", "C) metin_alan@hotmail.com", "D) yesim.celik@yahoo.com"], c: "MQ==", h: "E-posta adreslerinde Türkçe karakterler (ş, ü, ç vb.) kullanılmaz." },
+        { q: "7. Hangisi işletim sistemi değildir?", a: ["A) Linux", "B) Pardus", "C) Windows 7", "D) Word"], c: "Mw==", h: "Bir kelime işlemci olan ofis uygulama yazılımını bulunuz." },
+        { q: "8. Bilgisayarın geçici hafızası nedir?", a: ["A) ROM", "B) HARDDISK", "C) SABİT DİSK", "D) RAM"], c: "Mw==", h: "Bilgisayar kapatıldığında içerisindeki bilgilerin silindiği bellektir." },
+        { q: "9. Ekran büyüklüğü hangi birim ile ölçülür?", a: ["A) Gigabyte", "B) İnç", "C) Piksel", "D) Ghz"], c: "MQ==", h: "Ekranın bir köşesinden diğer köşesine köşegen uzunluğunu ifade eden ölçü birimidir." },
+        { q: "10. 1 GB'lık boş alanı olan bir flash belleğe 5 MB'lık kaç MP3 parçası kopyalanabilir?", a: ["A) 2", "B) 20", "C) 200", "D) 2000"], c: "Mg==", h: "1 GB yaklaşık 1000-1024 MB kabul edilir; 1000 / 5 işlemini düşünün." },
+        { q: "11. Bir dosyayı geri dönüşüm kutusuna göndermeden silmek için kullanılan kısayol tuşu hangisidir?", a: ["A) Shift+Delete", "B) Ctrl+Delete", "C) Alt+Delete", "D) AltGr+Delete"], c: "MA==", h: "Kalıcı silme işlemi için Delete tuşu ile beraber kullanılan tuştur." },
+        { q: "12. Hangisi geri al işleminin kısayol tuşudur?", a: ["A) CTRL+Z", "B) ALT+Z", "C) ALTGR+Z", "D) SHIFT+Z"], c: "MA==", h: "Son yapılan adımı geri almak için kullanılan standart kısayoldur." },
+        { q: "13. Hangisi bir bilgisayar çeşidi değildir?", a: ["A) All in one", "B) Terminal", "C) Server", "D) Network"], c: "Mw==", h: "Bilgisayarların birbirine bağlanarak kurduğu ağ yapısını belirten terimdir." },
+        { q: "14. Eşleştirmelerden hangisi yanlıştır?", a: ["A) .jpg = resim", "B) .rar = sıkıştırılmış dosya", "C) .avi = yazı", "D) .mp4 = video"], c: "Mg==", h: "AVI uzantısı bir metin değil, video formatıdır." },
+        { q: "15. Windows 10 sistemi olan bilgisayarın gizli paylaşımlarını kapatmak için hangi seçenek kullanılır?", a: ["A) Özellikler", "B) Yönet", "C) Kişiselleştir", "D) Paylaşım"], c: "MQ==", h: "Bilgisayar Yönetimi altından paylaşılan klasörlere erişilir." },
+        { q: "16. Aşağıdakilerden hangisi bilgisayarın hızını etkilemez?", a: ["A) İşlemci", "B) Ram", "C) Yüklü programlar", "D) Klavye"], c: "Mw==", h: "Sadece bir veri giriş birimi olan donanım parçası sistem hızını belirlemez." },
+        { q: "17. İmlecin solunu silmek için hangi tuş kullanılır?", a: ["A) Backspace", "B) Delete", "C) Insert", "D) Numlock"], c: "MA==", h: "Enter tuşunun üzerinde bulunan sola dönük ok simgeli tuştur." },
+        { q: "18. Windows 10'da aynı konumda ARD ARDA OLMAYAN birden çok dosyayı seçmek için hangi yardımcı tuş kullanılır?", a: ["A) SHIFT", "B) CTRL", "C) ALT", "D) ALTGR"], c: "MQ==", h: "Farklı noktalardaki bağımsız dosyaları tıklayarak seçmeye yarayan kontrol tuşudur." },
+        { q: "19. Windows'ta ekran görüntüsü almak için kullanılan program hangisidir?", a: ["A) Paint", "B) Ekran okuyucu", "C) Ekran alıntısı aracı", "D) Ekran klavyesi"], c: "Mg==", h: "Belirli bir bölgeyi seçip kırparak görsel yakalamanızı sağlayan Windows aracıdır." },
+        { q: "20. Eşleştirmelerden hangisi yanlıştır?", a: ["A) KOPYALA = CTRL+C", "B) TAŞIMA = CTRL+X", "C) YAPIŞTIR = CTRL+N", "D) GERİ AL = CTRL+Z"], c: "Mg==", h: "Yapıştırma kısayolu CTRL+V kombinasyonudur." },
+        { q: "21. Windows'ta gereksiz bilgilerin toplandığı klasör hangisidir?", a: ["A) Program files", "B) Program data", "C) Temp", "D) Template"], c: "Mg==", h: "'Temporary' (Geçici) kelimesinin kısaltılmış halidir." },
+        { q: "22. Kaydetme işleminin kısayol tuşu hangisidir?", a: ["A) CTRL+S", "B) CTRL+P", "C) CTRL+C", "D) CTRL+K"], c: "MA==", h: "İngilizce 'Save' kelimesinin baş harfinden gelmektedir." },
+        { q: "23. Windows'ta klavyeler arası geçiş yapmak için hangi yöntem doğrudur?", a: ["A) Ctrl+Alt", "B) Ctrl+AltGr", "C) Ctrl+Space", "D) Ctrl+Shift"], c: "Mw==", h: "Farklı dil klavye dizilimleri arasında hızlı geçişi sağlar." },
+        { q: "24. Windows ile birlikte yüklenen programlardan değildir?", a: ["A) Not defteri", "B) Denetim masası", "C) Microsoft Office", "D) Windows Media Player"], c: "Mg==", h: "Ayrıca satın alınması veya sonradan kurulması gereken ofis paketidir." },
+        { q: "25. Windows'ta sistem yedeği almak için hangi seçenek kullanılır?", a: ["A) Bildirim alanı", "B) Menü çubuğu", "C) Denetim masası", "D) Sistem koruması"], c: "Mw==", h: "Geri yükleme noktası oluşturma ve sistem yedekleme ayarlarına bu sekmeden ulaşılır." }
+    ];
+
+    let currentIdx = 0;
+    let fails = 0;
+
+    function loadQuestion() {
+        const qData = questions[currentIdx];
+        document.getElementById('current-number').innerText = currentIdx + 1;
+        document.getElementById('question-text').innerText = qData.q;
+        
+        document.getElementById('hint-text').style.display = 'none';
+        document.getElementById('hint-text').innerText = qData.h;
+        
+        const optionsArea = document.getElementById('options-area');
+        optionsArea.innerHTML = "";
+        
+        qData.a.forEach((opt, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn';
+            btn.innerText = opt;
+            btn.onclick = () => checkAnswer(index);
+            optionsArea.appendChild(btn);
+        });
+        document.getElementById('fail-count').innerText = fails;
+    }
+
+    function toggleHint() {
+        const hint = document.getElementById('hint-text');
+        hint.style.display = (hint.style.display === 'none' || hint.style.display === '') ? 'block' : 'none';
+    }
+
+    function checkAnswer(idx) {
+        if (idx.toString() === atob(questions[currentIdx].c)) {
+            currentIdx++;
+            if (currentIdx < questions.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        } else {
+            alert("Yanlış cevap! Sınav en başa dönüyor.");
+            fails++;
+            currentIdx = 0;
+            loadQuestion();
+        }
+    }
+
+    function showResult() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('result-area').style.display = 'block';
+        document.getElementById('final-stats').innerText = `Sınav bitti. Toplam ${fails} kez başa dönerek sınavı tamamladınız.`;
+    }
+
+    function resetGame() {
+        currentIdx = 0;
+        fails = 0;
+        document.getElementById('quiz-area').style.display = 'block';
+        document.getElementById('result-area').style.display = 'none';
+        loadQuestion();
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
