@@ -1646,7 +1646,8 @@ class StorageService {
     getAllUsers() {
         try {
             const raw = localStorage.getItem(STORAGE_KEYS.USERS);
-            return raw ? JSON.parse(raw) : [];
+            const list = raw ? JSON.parse(raw) : [];
+            return list.map(u => this.normalizeUserProgress(u));
         } catch (e) {
             console.error("Kullanıcılar okunamadı:", e);
             return [];
@@ -1654,7 +1655,8 @@ class StorageService {
     }
 
     saveAllUsers(users) {
-        const clean = this.deduplicateUserList(users);
+        const normalized = (users || []).map(u => this.normalizeUserProgress(u));
+        const clean = this.deduplicateUserList(normalized);
         localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(clean));
         this.syncToFirebase(clean);
         this.syncToLocalServer(clean);
@@ -1946,23 +1948,95 @@ class StorageService {
         };
     }
 
+    normalizeUserProgress(user) {
+        if (!user) return user;
+        const customMods = this.getCustomModules();
+        const allModuleIds = customMods
+            ? customMods.map(m => m.id)
+            : Array.from({ length: 26 }, (_, i) => i + 1);
+
+        const unlocked = new Set(user.unlockedModuleIds || [allModuleIds[0] || 1]);
+        const completed = new Set(user.completedModuleIds || []);
+
+        const maxUnlocked = Math.max(...unlocked, 1);
+        const targetIdx = allModuleIds.indexOf(maxUnlocked);
+
+        // En yüksek açık bölüme kadar olan tüm önceki bölümleri tamamlanmış say
+        if (targetIdx > 0) {
+            for (let i = 0; i < targetIdx; i++) {
+                completed.add(allModuleIds[i]);
+                unlocked.add(allModuleIds[i]);
+            }
+        }
+
+        user.completedModuleIds = Array.from(completed).sort((a, b) => a - b);
+        user.unlockedModuleIds = Array.from(unlocked).sort((a, b) => a - b);
+
+        // Sıradaki tamamlanmamış açık bölüm, yoksa en yüksek açık bölüm
+        const nextIncomplete = allModuleIds.find(id => unlocked.has(id) && !completed.has(id));
+        user.currentModuleId = nextIncomplete || maxUnlocked || 1;
+
+        return user;
+    }
+
     toggleModuleLock(userId, moduleId) {
         const user = this.getUserById(userId);
         if (!user) return { success: false };
+
+        const customMods = this.getCustomModules();
+        const allModuleIds = customMods
+            ? customMods.map(m => m.id)
+            : Array.from({ length: 26 }, (_, i) => i + 1);
 
         moduleId = parseInt(moduleId);
         const unlocked = new Set(user.unlockedModuleIds || [1]);
         const completed = new Set(user.completedModuleIds || []);
 
-        if (unlocked.has(moduleId)) {
-            unlocked.delete(moduleId);
-            completed.delete(moduleId);
-        } else {
+        const isCompleted = completed.has(moduleId);
+        const isUnlocked = unlocked.has(moduleId);
+
+        if (!isUnlocked && !isCompleted) {
+            // 1. Durum: Kilitliydi -> Bu bölüme kadar olanları tamamla, bu bölümü açık (aktif) yap
+            const targetIdx = allModuleIds.indexOf(moduleId);
+            if (targetIdx !== -1) {
+                for (let i = 0; i < targetIdx; i++) {
+                    completed.add(allModuleIds[i]);
+                    unlocked.add(allModuleIds[i]);
+                }
+            }
             unlocked.add(moduleId);
+            user.currentModuleId = moduleId;
+        } else if (isUnlocked && !isCompleted) {
+            // 2. Durum: Açıktı -> Bu bölümü tamamla ve bir sonraki bölümü aç
+            completed.add(moduleId);
+            unlocked.add(moduleId);
+            const currentIdx = allModuleIds.indexOf(moduleId);
+            const nextModuleId = (currentIdx >= 0 && currentIdx < allModuleIds.length - 1)
+                ? allModuleIds[currentIdx + 1]
+                : null;
+            if (nextModuleId) {
+                unlocked.add(nextModuleId);
+                user.currentModuleId = nextModuleId;
+            } else {
+                user.currentModuleId = moduleId;
+            }
+        } else if (isCompleted) {
+            // 3. Durum: Tamamlanmıştı -> Tamamlamayı kaldır, açık (aktif) yap ve sonrakileri kilitle
+            completed.delete(moduleId);
+            unlocked.add(moduleId);
+            user.currentModuleId = moduleId;
+            const currentIdx = allModuleIds.indexOf(moduleId);
+            if (currentIdx !== -1) {
+                for (let i = currentIdx + 1; i < allModuleIds.length; i++) {
+                    completed.delete(allModuleIds[i]);
+                    unlocked.delete(allModuleIds[i]);
+                }
+            }
         }
 
         user.unlockedModuleIds = Array.from(unlocked).sort((a, b) => a - b);
         user.completedModuleIds = Array.from(completed).sort((a, b) => a - b);
+        user.lastActive = new Date().toISOString();
         this.updateUser(userId, user);
         return { success: true, user };
     }
@@ -1976,6 +2050,9 @@ class StorageService {
             ? customMods.map(m => m.id)
             : Array.from({ length: 26 }, (_, i) => i + 1);
         user.unlockedModuleIds = allIds;
+        user.completedModuleIds = allIds;
+        user.currentModuleId = allIds[allIds.length - 1];
+        user.lastActive = new Date().toISOString();
         this.updateUser(userId, user);
         return { success: true, user };
     }

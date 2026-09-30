@@ -1039,7 +1039,7 @@
 
 <!-- ============================== JAVASCRIPT ============================== -->
 <script src="js/modules-data.js?v=20260929_1530"></script>
-<script src="js/storage-service.js?v=20260930_2055"></script>
+<script src="js/storage-service.js?v=20260930_2115"></script>
 <script>
     let currentSelectedStudentId = null;
     let excelParsedRows = [];
@@ -1454,9 +1454,11 @@
             return;
         }
         filtered.forEach(u => {
-            const c = (u.completedModuleIds||[]).length;
+            const normUser = lmsStorage.normalizeUserProgress ? lmsStorage.normalizeUserProgress(u) : u;
+            const c = (normUser.completedModuleIds||[]).length;
             const pct = mods.length > 0 ? Math.round(c / mods.length * 100) : 0;
-            const curMod = mods.find(m => m.id === (u.currentModuleId || (mods[0] && mods[0].id))) || mods[0];
+            const curModId = normUser.currentModuleId || (normUser.unlockedModuleIds && normUser.unlockedModuleIds.length ? Math.max(...normUser.unlockedModuleIds) : (mods[0] && mods[0].id));
+            const curMod = mods.find(m => m.id === curModId) || mods[0];
             const cls = classes.find(cl => cl.id === u.classId);
             const sid = (u.id+'').replace(/'/g,"\\'");
             const sn  = (u.fullName+'').replace(/'/g,"\\'");
@@ -1932,28 +1934,47 @@
     function openProgressMatrix(userId) {
         const user = lmsStorage.getUserById(userId); if (!user) return;
         currentSelectedStudentId = userId;
+        const normUser = lmsStorage.normalizeUserProgress ? lmsStorage.normalizeUserProgress(user) : user;
         const mods = getModules();
-        document.getElementById('matrixStudentName').textContent = user.fullName + ' — İlerleme Haritası';
-        document.getElementById('matrixStudentSub').textContent = 'Kullanıcı: ' + user.username + ' | Tamamlanan: ' + (user.completedModuleIds||[]).length + ' / ' + mods.length;
-        renderMatrixItems(user);
+        document.getElementById('matrixStudentName').textContent = normUser.fullName + ' — İlerleme Haritası';
+        document.getElementById('matrixStudentSub').textContent = 'Kullanıcı: ' + normUser.username + ' | Tamamlanan: ' + (normUser.completedModuleIds||[]).length + ' / ' + mods.length;
+        renderMatrixItems(normUser);
         openModal('progressDetailModal');
     }
 
     function renderMatrixItems(user) {
         const cont = document.getElementById('matrixGrid'); cont.innerHTML = '';
-        const done = new Set(user.completedModuleIds||[]), open = new Set(user.unlockedModuleIds||[]);
-        getModules().forEach(mod => {
-            const d = done.has(mod.id), o = open.has(mod.id);
+        const normUser = lmsStorage.normalizeUserProgress ? lmsStorage.normalizeUserProgress(user) : user;
+        const done = new Set(normUser.completedModuleIds||[]);
+        const open = new Set(normUser.unlockedModuleIds||[]);
+        const mods = getModules();
+        document.getElementById('matrixStudentSub').textContent = 'Kullanıcı: ' + normUser.username + ' | Tamamlanan: ' + done.size + ' / ' + mods.length;
+
+        mods.forEach(mod => {
+            const d = done.has(mod.id);
+            const o = open.has(mod.id);
+            const isCurrent = (mod.id === normUser.currentModuleId) || (o && !d);
             const item = document.createElement('div');
-            item.className = 'matrix-item' + (d?' completed':(o?' unlocked':''));
-            item.title = mod.title;
-            item.innerHTML = '<div style="font-size:16px;">'+(mod.icon||'📄')+'</div><div style="font-weight:700;font-size:12px;margin:4px 0;">B. '+mod.id+'</div><div style="font-size:10px;color:'+(d?'#34d399':(o?'#60a5fa':'#94a3b8'))+'">'+(d?'🟢 Tamam':(o?'🔵 Açık':'🔒 Kilitli'))+'</div>';
-            item.onclick = () => { lmsStorage.toggleModuleLock(user.id, mod.id); renderMatrixItems(lmsStorage.getUserById(user.id)); loadDashboardData(); };
+            item.className = 'matrix-item' + (d ? ' completed' : (o ? ' unlocked' : ''));
+            item.title = mod.title + (d ? ' (Tamamlandı)' : (isCurrent ? ' (Şu Anki Açık Bölüm)' : ' (Kilitli)'));
+            item.innerHTML = '<div style="font-size:16px;">'+(mod.icon||'📄')+'</div><div style="font-weight:700;font-size:12px;margin:4px 0;">B. '+mod.id+'</div><div style="font-size:10px;color:'+(d?'#34d399':(isCurrent?'#60a5fa':'#94a3b8'))+'">'+(d?'🟢 Tamam':(isCurrent?'🔵 Açık (Aktif)':'🔒 Kilitli'))+'</div>';
+            item.onclick = () => {
+                lmsStorage.toggleModuleLock(normUser.id, mod.id);
+                const updated = lmsStorage.getUserById(normUser.id);
+                renderMatrixItems(updated);
+                loadDashboardData();
+            };
             cont.appendChild(item);
         });
     }
 
-    function handleMatrixUnlockAll() { if (!currentSelectedStudentId||!confirm('Tüm bölümlerin kilidini açmak istiyor musunuz?')) return; lmsStorage.updateUser(currentSelectedStudentId,{unlockedModuleIds:getModules().map(m=>m.id)}); renderMatrixItems(lmsStorage.getUserById(currentSelectedStudentId)); loadDashboardData(); }
+    function handleMatrixUnlockAll() {
+        if (!currentSelectedStudentId||!confirm('Tüm bölümleri tamamlanmış ve açık olarak işaretlemek istiyor musunuz?')) return;
+        lmsStorage.unlockAllModules(currentSelectedStudentId);
+        const updated = lmsStorage.getUserById(currentSelectedStudentId);
+        renderMatrixItems(updated);
+        loadDashboardData();
+    }
     function handleMatrixReset()     { if (!currentSelectedStudentId||!confirm('Tüm ilerlemesini sıfırlamak istediğinize emin misiniz?')) return; lmsStorage.resetUserProgress(currentSelectedStudentId); renderMatrixItems(lmsStorage.getUserById(currentSelectedStudentId)); loadDashboardData(); }
 
     // ==================== SINIF YÖNETİMİ ====================
