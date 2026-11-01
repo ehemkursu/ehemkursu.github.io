@@ -4019,13 +4019,25 @@ class StorageService {
         const student = this.getUserById(userId) || this.getCurrentStudent();
         const exams = this.getAllExams();
         const studentClassId = student ? student.classId : null;
+        const classes = this.getAllClasses();
+        const studentClass = classes.find(c => c && (c.id === studentClassId || c.name === studentClassId));
 
         return exams.filter(ex => {
             if (!ex) return false;
             if (ex.isActive === false) return false;
-            if (!ex.targetClassId || ex.targetClassId === 'all' || ex.targetClassId === '') return true;
-            if (!studentClassId) return false;
-            return String(ex.targetClassId).trim() === String(studentClassId).trim();
+
+            const target = String(ex.targetClassId || 'all').trim();
+            if (target === 'all' || target === '' || target === 'all_classes' || target.toLowerCase() === 'tüm sınıflar' || target.toLowerCase() === 'tum siniflar') {
+                return true;
+            }
+
+            if (!studentClassId) return true;
+
+            if (target === String(studentClassId).trim()) return true;
+
+            if (studentClass && (target === studentClass.id || target.toLowerCase() === (studentClass.name || '').toLowerCase())) return true;
+
+            return false;
         });
     }
 
