@@ -20,15 +20,6 @@
     "custom_modules": {
       ".indexOn": ["id"]
     },
-    "exams": {
-      ".indexOn": ["createdAt", "targetClassId"]
-    },
-    "exam_submissions": {
-      ".indexOn": ["examId", "userId", "submittedAt"]
-    },
-    "exam_settings": {
-      ".indexOn": ["updatedAt"]
-    },
     "_system_ping": {
       ".indexOn": ["ts"]
     }
