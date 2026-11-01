@@ -173,8 +173,12 @@
                 <img id="coverPreview" class="preview-img" style="display:none">
                 
                 
+        
         <div class="lms-publish-bar">
-            <div class="lms-publish-title">⚙️ Kurs Portalı & Sınav Ayarları</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+                <div class="lms-publish-title" style="margin-bottom:0;">⚙️ Kurs Portalı & Sınav Ayarları</div>
+                <button type="button" class="publish-btn" onclick="publishExamToLMS()">🚀 SINAVI HAZIRLA VE SİSTEME YAYINLA</button>
+            </div>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;">
                 <div>
                     <label>Sınava Giriş Şifresi (3 Karakter):</label>
@@ -192,8 +196,8 @@
                 </div>
             </div>
         </div>
-    
-                <label>Kaç Soruluk Sınav? (Başlangıç)</label>
+
+        <label>Kaç Soruluk Sınav? (Başlangıç)</label>
                 <input type="number" id="initialQCount" min="1" value="5" style="width:100px;">
                 
                 <div style="display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;">
@@ -614,6 +618,158 @@ gosterSoru();
             refreshLibraryDisplay();
             refreshLibrarySavedList();
         };
+    
+
+
+
+
+    
+/* LMS_SCRIPTS_START */
+
+        function publishExamToLMS() {
+            try {
+                const title = (document.getElementById('examTitle')?.value || '').trim();
+                if (!title) {
+                    alert('Lütfen sınav başlığı giriniz!');
+                    const tabSinavBtn = document.querySelectorAll('.tab-btn')[1];
+                    if (tabSinavBtn) showTab('sinav', tabSinavBtn);
+                    const tEl = document.getElementById('examTitle');
+                    if (tEl) { tEl.focus(); tEl.scrollIntoView({ behavior: 'smooth' }); }
+                    return;
+                }
+
+                if (!library || library.length === 0) {
+                    alert('Lütfen önce Soru Kütüphanesine en az bir soru ekleyin veya Excel/JSON ile yükleyin!');
+                    const tabLibBtn = document.querySelectorAll('.tab-btn')[0];
+                    if (tabLibBtn) showTab('kutuphane', tabLibBtn);
+                    return;
+                }
+
+                const initialCount = parseInt(document.getElementById('initialQCount')?.value) || library.length;
+                const qSubset = library.slice(0, Math.min(initialCount, library.length));
+                const questions = qSubset.map((q, idx) => ({
+                    id: idx + 1,
+                    text: q.text,
+                    imgData: q.imgData || '',
+                    vidData: q.vidData || '',
+                    answer: q.answer === 'Y' ? 'Y' : 'D'
+                }));
+
+                const coverEl = document.getElementById('coverPreview');
+                const coverData = (coverEl && coverEl.style.display !== 'none') ? coverEl.src : '';
+                const pin = (document.getElementById('examPin')?.value || '123').trim().substring(0, 3).toUpperCase() || '123';
+                const targetClassId = document.getElementById('examTargetClass')?.value || 'all';
+                const duration = parseInt(document.getElementById('examDuration')?.value) || 40;
+
+                const examPayload = {
+                    title: title,
+                    type: 'dogruyanlis',
+                    typeName: 'Doğru-Yanlış Testi',
+                    coverData: coverData,
+                    questions: questions,
+                    pin: pin,
+                    targetClassId: targetClassId,
+                    durationMinutes: duration,
+                    headerInfo: '',
+                    instructions: '',
+                    isActive: true
+                };
+
+                if (typeof lmsStorage === 'undefined') {
+                    alert('Depolama servisi yüklenemedi. Lütfen sayfayı yenileyiniz.');
+                    return;
+                }
+
+                const saveRes = lmsStorage.saveExam(examPayload);
+                if (saveRes && saveRes.success) {
+                    lastPublishedExamId = saveRes.exam.id;
+                    const modalTitle = document.getElementById('pubModalTitle');
+                    const modalPin = document.getElementById('pubModalPin');
+                    if (modalTitle) modalTitle.innerText = saveRes.exam.title;
+                    if (modalPin) modalPin.innerText = saveRes.exam.pin;
+                    
+                    const modal = document.getElementById('publishSuccessModal');
+                    if (modal) modal.style.display = 'flex';
+
+                    try {
+                        if (window.parent && window.parent !== window) {
+                            window.parent.postMessage({ type: 'EXAM_PUBLISHED', examId: lastPublishedExamId }, '*');
+                        }
+                    } catch(e) {}
+                } else {
+                    alert('Sınav sisteme kaydedilirken bir hata oluştu: ' + (saveRes ? saveRes.message : 'Bilinmeyen hata'));
+                }
+            } catch(err) {
+                console.error('publishExamToLMS hatasi:', err);
+                alert('Sınav yayınlama hatası: ' + err.message);
+            }
+        }
+
+
+        let lastPublishedExamId = null;
+
+        function initLmsControls() {
+            try {
+                if (typeof lmsStorage !== 'undefined') {
+                    const settings = lmsStorage.getExamSettings();
+                    const pinInput = document.getElementById('examPin');
+                    if (pinInput && !pinInput.value) {
+                        pinInput.value = (settings.examPin || '123').substring(0, 3).toUpperCase();
+                    }
+
+                    const classSelect = document.getElementById('examTargetClass');
+                    if (classSelect) {
+                        classSelect.innerHTML = '<option value="all">Tüm Sınıflar (Herkes)</option>';
+                        const classes = lmsStorage.getAllClasses();
+                        classes.forEach(c => {
+                            const opt = document.createElement('option');
+                            opt.value = c.id;
+                            opt.innerText = c.name + ' Sınıfı';
+                            classSelect.appendChild(opt);
+                        });
+                    }
+                }
+            } catch(e) {
+                console.warn('initLmsControls hatasi:', e);
+            }
+            
+        }
+
+        function testPublishedExam() {
+            if (lastPublishedExamId) {
+                window.open('runner.html?id=' + lastPublishedExamId, '_blank');
+            } else {
+                window.open('runner.html', '_blank');
+            }
+        }
+
+        function closePublishModal() {
+            const m = document.getElementById('publishSuccessModal');
+            if (m) m.style.display = 'none';
+        }
+
+        function returnToAdmin() {
+            try {
+                if (window.parent && window.parent !== window) {
+                    if (typeof window.parent.closeExamBuilderModal === 'function') {
+                        window.parent.closeExamBuilderModal();
+                        if (typeof window.parent.switchTab === 'function') {
+                            window.parent.switchTab('exams');
+                        }
+                        return;
+                    }
+                }
+            } catch(e) {}
+            window.location.href = '../admin.html#exams';
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initLmsControls);
+        } else {
+            initLmsControls();
+        }
+/* LMS_SCRIPTS_END */
+
     </script>
 
 <div id="publishSuccessModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;justify-content:center;align-items:center;">
@@ -629,13 +785,13 @@ gosterSoru();
             <div><strong>Giriş Şifresi:</strong> <span id="pubModalPin" style="color:#2563eb;font-weight:bold;">123</span></div>
         </div>
         <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-            <button onclick="testPublishedExam()" style="background:#10b981;color:white;padding:12px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
+            <button type="button" onclick="testPublishedExam()" style="background:#10b981;color:white;padding:12px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
                 ▶ Sınavı Test Et / Aç
             </button>
-            <button onclick="window.location.href='../admin.html#exams'" style="background:#3b82f6;color:white;padding:12px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
+            <button type="button" onclick="returnToAdmin()" style="background:#3b82f6;color:white;padding:12px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
                 🛡️ Yönetici Paneline Dön
             </button>
-            <button onclick="closePublishModal()" style="background:#e2e8f0;color:#334155;padding:12px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
+            <button type="button" onclick="closePublishModal()" style="background:#e2e8f0;color:#334155;padding:12px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
                 Düzenlemeye Devam Et
             </button>
         </div>
