@@ -7,1145 +7,7 @@
     <meta name="description" content="Edremit HEM Bilgisayar İşletmenliği Kursu Yönetici Paneli">
     <link rel="stylesheet" href="css/lms-theme.css?v=20260927_1800">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
-    <script src="js/xlsx.full.min.js">
-    // =========================================================================
-    // ==================== YENİ SINAV VE DEĞERLENDİRME SİSTEMİ (V2) ============
-    // =========================================================================
-
-    let currentEditorQuestions = [];
-    let currentGradingSubmission = null;
-
-    function loadExamsTab() {
-        updateExamKPIs();
-        populateExamClassDropdowns();
-        populateBonusModuleDropdown();
-        filterAndRenderExamsList();
-        filterAndRenderSubmissionsTable();
-
-        // Arka planda buluttan en güncel sınav ve evrakları çek
-        if (typeof lmsStorage !== 'undefined') {
-            if (lmsStorage.pullExamsFromFirebase) {
-                lmsStorage.pullExamsFromFirebase().then(() => {
-                    updateExamKPIs();
-                    filterAndRenderExamsList();
-                }).catch(() => {});
-            }
-            if (lmsStorage.pullSubmissionsFromFirebase) {
-                lmsStorage.pullSubmissionsFromFirebase().then(() => {
-                    updateExamKPIs();
-                    filterAndRenderSubmissionsTable();
-                }).catch(() => {});
-            }
-        }
-    }
-
-    function updateExamKPIs() {
-        if (typeof lmsStorage === 'undefined') return;
-        const exams = lmsStorage.getAllExams();
-        const subs = lmsStorage.getAllExamSubmissions();
-
-        const activeCount = exams.filter(e => e && e.status === 'active').length;
-        const pendingCount = subs.filter(s => s && s.status === 'pending_review').length;
-
-        const elTotal = document.getElementById('kpiTotalExams');
-        const elActive = document.getElementById('kpiActiveExams');
-        const elSubs = document.getElementById('kpiTotalSubmissions');
-        const elPending = document.getElementById('kpiPendingGrading');
-        const badgeList = document.getElementById('examCountBadge');
-        const badgeSubs = document.getElementById('subCountBadge');
-        const navBadge = document.getElementById('adminExamBadge');
-
-        if (elTotal) elTotal.textContent = exams.length;
-        if (elActive) elActive.textContent = activeCount;
-        if (elSubs) elSubs.textContent = subs.length;
-        if (elPending) elPending.textContent = pendingCount;
-        if (badgeList) badgeList.textContent = exams.length;
-        if (badgeSubs) badgeSubs.textContent = subs.length;
-
-        if (navBadge) {
-            navBadge.textContent = pendingCount > 0 ? pendingCount : exams.length;
-            navBadge.style.display = exams.length > 0 ? 'inline-block' : 'none';
-            navBadge.style.background = pendingCount > 0 ? '#ef4444' : '#3b82f6';
-            navBadge.title = pendingCount > 0 ? (pendingCount + ' evrak inceleme bekliyor') : (exams.length + ' sınav');
-        }
-    }
-
-    function switchExamSubTab(tab) {
-        const secList = document.getElementById('examSubSectionList');
-        const secResults = document.getElementById('examSubSectionResults');
-        const btnList = document.getElementById('btnExamSubTabList');
-        const btnResults = document.getElementById('btnExamSubTabResults');
-
-        if (tab === 'list') {
-            if (secList) secList.style.display = 'block';
-            if (secResults) secResults.style.display = 'none';
-            if (btnList) { btnList.className = 'btn btn-primary btn-sm'; }
-            if (btnResults) { btnResults.className = 'btn btn-ghost btn-sm'; }
-            filterAndRenderExamsList();
-        } else {
-            if (secList) secList.style.display = 'none';
-            if (secResults) secResults.style.display = 'block';
-            if (btnList) { btnList.className = 'btn btn-ghost btn-sm'; }
-            if (btnResults) { btnResults.className = 'btn btn-primary btn-sm'; }
-            filterAndRenderSubmissionsTable();
-        }
-    }
-
-    function populateExamClassDropdowns() {
-        if (typeof lmsStorage === 'undefined') return;
-        const classes = lmsStorage.getAllClasses();
-        const drop1 = document.getElementById('examClassFilter');
-        const drop2 = document.getElementById('editorExamTargetClass');
-        const drop3 = document.getElementById('subClassFilterSelect');
-
-        let opts = '<option value="all">Tüm Sınıflar (Herkes)</option>';
-        classes.forEach(c => {
-            opts += `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`;
-        });
-
-        if (drop1) {
-            const cur = drop1.value;
-            drop1.innerHTML = opts;
-            drop1.value = cur || 'all';
-        }
-        if (drop2) {
-            const cur = drop2.value;
-            drop2.innerHTML = opts;
-            drop2.value = cur || 'all';
-        }
-        if (drop3) {
-            const cur = drop3.value;
-            drop3.innerHTML = opts;
-            drop3.value = cur || 'all';
-        }
-    }
-
-    function populateBonusModuleDropdown() {
-        const drop = document.getElementById('editorExamBonusModule');
-        if (!drop) return;
-        let opts = '<option value="">Bonus Yok</option>';
-        if (typeof COURSE_MODULES !== 'undefined') {
-            COURSE_MODULES.forEach(m => {
-                opts += `<option value="${m.id}">Bölüm ${m.id}: ${escapeHtml(m.title)}</option>`;
-            });
-        }
-        drop.innerHTML = opts;
-    }
-
-    // ==================== SINAVLAR LİSTESİ RENDER ====================
-
-    function filterAndRenderExamsList() {
-        if (typeof lmsStorage === 'undefined') return;
-        const exams = lmsStorage.getAllExams();
-        const subs = lmsStorage.getAllExamSubmissions();
-
-        const search = (document.getElementById('examSearchInput')?.value || '').toLowerCase().trim();
-        const classFilter = document.getElementById('examClassFilter')?.value || 'all';
-        const statusFilter = document.getElementById('examStatusFilter')?.value || 'all';
-
-        const filtered = exams.filter(ex => {
-            if (!ex) return false;
-            if (search && !(ex.title || '').toLowerCase().includes(search)) return false;
-            if (classFilter !== 'all' && ex.targetClassId !== classFilter && ex.targetClassId !== 'all') return false;
-            if (statusFilter !== 'all' && ex.status !== statusFilter) return false;
-            return true;
-        });
-
-        const tbody = document.getElementById('examsTableBody');
-        if (!tbody) return;
-
-        if (filtered.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="11" style="text-align:center;padding:36px;color:var(--text-muted);">
-                        Tanımlanmış sınav bulunamadı. "➕ Yeni Sınav Hazırla" butonuna basarak ilk sınavınızı oluşturabilirsiniz.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        tbody.innerHTML = filtered.map((ex, idx) => {
-            const examSubs = subs.filter(s => s && s.examId === ex.id);
-            const qCount = Array.isArray(ex.questions) ? ex.questions.length : 0;
-            const isAct = ex.status === 'active';
-
-            return `
-                <tr>
-                    <td style="color:var(--text-muted);font-weight:700;">${idx + 1}</td>
-                    <td>
-                        <strong style="color:white;font-size:14px;">${escapeHtml(ex.title)}</strong>
-                        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
-                            Oluşturulma: ${new Date(ex.createdAt || Date.now()).toLocaleDateString('tr-TR')}
-                            ${ex.bonusPoints > 0 ? `<span style="color:#fbbf24;margin-left:6px;">🎁 +${ex.bonusPoints}P Bonus</span>` : ''}
-                        </div>
-                    </td>
-                    <td>
-                        <span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;">
-                            ${escapeHtml(ex.targetClassName || ex.targetClassId || 'Tüm Sınıflar')}
-                        </span>
-                    </td>
-                    <td>${ex.durationMinutes || 40} Dk</td>
-                    <td><strong>${qCount} Soru</strong> <span style="font-size:11px;color:var(--text-muted);">(${ex.totalPoints || 100}P)</span></td>
-                    <td>
-                        <code style="background:rgba(255,255,255,0.08);padding:3px 8px;border-radius:4px;color:#fbbf24;font-weight:bold;">
-                            ${escapeHtml(ex.pin || '123')}
-                        </code>
-                    </td>
-                    <td>
-                        <span style="font-size:12px;color:${ex.allowNavigation !== false ? '#34d399' : '#94a3b8'};">
-                            ${ex.allowNavigation !== false ? '✓ Serbest' : '🔒 Yalnız İleri'}
-                        </span>
-                    </td>
-                    <td>
-                        <span style="font-size:12px;color:${ex.showResultsImmediately ? '#34d399' : '#fbbf24'};">
-                            ${ex.showResultsImmediately ? '✓ Anında' : '🔒 Onaylı'}
-                        </span>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm" onclick="toggleExamStatus('${ex.id}')" style="padding:2px 8px;font-size:11px;background:${isAct ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};color:${isAct ? '#34d399' : '#f87171'};border:1px solid ${isAct ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'};">
-                            ${isAct ? '✓ Yayında' : '⏸️ Taslak'}
-                        </button>
-                    </td>
-                    <td>
-                        <button class="btn btn-ghost btn-sm" onclick="filterSubmissionsByExam('${ex.id}')" title="Bu sınavın evraklarını gör">
-                            <strong>${examSubs.length}</strong> Evrak ➔
-                        </button>
-                    </td>
-                    <td style="text-align:right;">
-                        <div style="display:inline-flex;gap:4px;">
-                            <button class="btn btn-primary btn-sm" onclick="previewExamModal('${ex.id}')" title="Öğretmen Test Modu (Önizle)">
-                                👁️ Test Et
-                            </button>
-                            <button class="btn btn-ghost btn-sm" onclick="openExamEditorModal('${ex.id}')" title="Sınavı ve soruları düzenle">
-                                ✏️ Düzenle
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteExamConfirm('${ex.id}')" title="Sınavı kalıcı olarak sil">
-                                🗑️
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    function toggleExamStatus(examId) {
-        const ex = lmsStorage.getExamById(examId);
-        if (!ex) return;
-        ex.status = ex.status === 'active' ? 'draft' : 'active';
-        lmsStorage.saveExam(ex);
-        updateExamKPIs();
-        filterAndRenderExamsList();
-    }
-
-    function filterSubmissionsByExam(examId) {
-        switchExamSubTab('results');
-        const sel = document.getElementById('subExamFilterSelect');
-        if (sel) {
-            sel.value = examId;
-            filterAndRenderSubmissionsTable();
-        }
-    }
-
-    // ==================== SINAV DÜZENLEME & OLUŞTURMA SİHİRBAZI ====================
-
-    function openExamEditorModal(examId) {
-        populateExamClassDropdowns();
-        populateBonusModuleDropdown();
-
-        const titleEl = document.getElementById('examEditorModalTitle');
-        const idInput = document.getElementById('editorExamId');
-        const titleInput = document.getElementById('editorExamTitle');
-        const classSelect = document.getElementById('editorExamTargetClass');
-        const durInput = document.getElementById('editorExamDuration');
-        const pinInput = document.getElementById('editorExamPin');
-        const instInput = document.getElementById('editorExamInstructions');
-        const navSelect = document.getElementById('editorExamAllowNav');
-        const showResSelect = document.getElementById('editorExamShowResults');
-        const randSelect = document.getElementById('editorExamRandomize');
-        const bonusModSelect = document.getElementById('editorExamBonusModule');
-        const bonusPtsInput = document.getElementById('editorExamBonusPoints');
-
-        if (examId) {
-            const ex = lmsStorage.getExamById(examId);
-            if (!ex) return;
-            titleEl.textContent = '✏️ Sınavı Düzenle: ' + ex.title;
-            idInput.value = ex.id;
-            titleInput.value = ex.title || '';
-            classSelect.value = ex.targetClassId || 'all';
-            durInput.value = ex.durationMinutes || 40;
-            pinInput.value = ex.pin || '123';
-            instInput.value = ex.instructions || '';
-            navSelect.value = ex.allowNavigation !== false ? 'true' : 'false';
-            showResSelect.value = ex.showResultsImmediately ? 'true' : 'false';
-            randSelect.value = ex.randomizeQuestions ? 'true' : 'false';
-            bonusModSelect.value = ex.bonusModuleId || '';
-            bonusPtsInput.value = ex.bonusPoints || 0;
-
-            currentEditorQuestions = Array.isArray(ex.questions) ? JSON.parse(JSON.stringify(ex.questions)) : [];
-        } else {
-            titleEl.textContent = '📝 Yeni Sınav Hazırla';
-            idInput.value = '';
-            titleInput.value = '';
-            classSelect.value = 'all';
-            durInput.value = 40;
-            pinInput.value = '123';
-            instInput.value = '1. Sınav süresi 40 dakikadır.\n2. Yanlış cevaplar doğru cevapları etkilemez.';
-            navSelect.value = 'true';
-            showResSelect.value = 'false';
-            randSelect.value = 'false';
-            bonusModSelect.value = '';
-            bonusPtsInput.value = 0;
-
-            currentEditorQuestions = [];
-        }
-
-        renderEditorQuestions();
-        openModal('examEditorModal');
-    }
-
-    function addQuestionToEditor(type) {
-        const qId = 'q_' + Date.now() + '_' + Math.floor(Math.random() * 100);
-        let newQ = {
-            id: qId,
-            type: type || 'multiple_choice',
-            text: '',
-            image: '',
-            hint: '',
-            points: 10
-        };
-
-        if (type === 'multiple_choice') {
-            newQ.options = [
-                { id: 'A', text: '' },
-                { id: 'B', text: '' },
-                { id: 'C', text: '' },
-                { id: 'D', text: '' }
-            ];
-            newQ.correctAnswer = 'A';
-        } else if (type === 'true_false') {
-            newQ.correctAnswer = 'D';
-        } else if (type === 'open_ended') {
-            newQ.sampleAnswer = '';
-            newQ.points = 20;
-        }
-
-        currentEditorQuestions.push(newQ);
-        renderEditorQuestions();
-
-        setTimeout(() => {
-            const el = document.getElementById('qCard_' + qId);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
-    }
-
-    function removeQuestionFromEditor(qId) {
-        currentEditorQuestions = currentEditorQuestions.filter(q => q.id !== qId);
-        renderEditorQuestions();
-    }
-
-    function renderEditorQuestions() {
-        const container = document.getElementById('editorQuestionsContainer');
-        const emptyNotice = document.getElementById('editorEmptyQuestionsNotice');
-        const countText = document.getElementById('editorQuestionCountText');
-        const pointsText = document.getElementById('editorTotalPointsText');
-
-        if (!container) return;
-
-        let totalPoints = 0;
-        currentEditorQuestions.forEach(q => { totalPoints += (parseInt(q.points) || 0); });
-
-        if (countText) countText.textContent = currentEditorQuestions.length + ' Soru';
-        if (pointsText) pointsText.textContent = totalPoints + ' Puan';
-
-        if (currentEditorQuestions.length === 0) {
-            container.innerHTML = '';
-            if (emptyNotice) emptyNotice.style.display = 'block';
-            return;
-        }
-
-        if (emptyNotice) emptyNotice.style.display = 'none';
-
-        container.innerHTML = currentEditorQuestions.map((q, idx) => {
-            const typeLabel = q.type === 'multiple_choice' ? '🔘 Çoktan Seçmeli Test' :
-                             (q.type === 'true_false' ? '⚖️ Doğru / Yanlış Sorusu' : '✍️ Açık Uçlu (Klasik) Soru');
-            const typeColor = q.type === 'multiple_choice' ? '#3b82f6' :
-                             (q.type === 'true_false' ? '#10b981' : '#f59e0b');
-
-            return `
-                <div class="question-editor-card" id="qCard_${q.id}" style="background:var(--bg-card);border:1px solid var(--border-color);border-left:5px solid ${typeColor};border-radius:8px;padding:16px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <span style="font-weight:800;color:white;font-size:14px;">SORU ${idx + 1}</span>
-                            <span class="badge" style="background:rgba(255,255,255,0.06);color:${typeColor};font-size:11.5px;padding:2px 8px;border-radius:4px;">
-                                ${typeLabel}
-                            </span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
-                                Puan:
-                                <input type="number" class="form-control" value="${q.points || 10}" min="1" max="100" style="width:65px;padding:2px 6px;text-align:center;font-weight:bold;" onchange="updateQPoints('${q.id}', this.value)">
-                            </label>
-                            <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestionFromEditor('${q.id}')" title="Bu soruyu sil" style="padding:2px 8px;">
-                                🗑️ Sil
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- SORU METNİ -->
-                    <div class="form-group" style="margin-bottom:10px;">
-                        <textarea class="form-control" rows="2" placeholder="Soru metnini buraya yazınız..." oninput="updateQText('${q.id}', this.value)" style="font-size:13.5px;">${escapeHtml(q.text || '')}</textarea>
-                    </div>
-
-                    <!-- GÖRSEL VE İPUCU ALANI -->
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:12px;">
-                        <div style="background:rgba(0,0,0,0.15);padding:10px;border-radius:6px;border:1px dashed var(--border-color);">
-                            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">
-                                🖼️ Soru Görseli (Opsiyonel):
-                            </label>
-                            <input type="file" accept="image/*" onchange="handleQuestionImageUpload('${q.id}', this)" style="font-size:11px;color:var(--text-muted);">
-                            ${q.image ? `
-                                <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
-                                    <img src="${q.image}" style="height:48px;border-radius:4px;border:1px solid #3b82f6;">
-                                    <button type="button" class="btn btn-ghost btn-sm" onclick="removeQuestionImage('${q.id}')" style="font-size:11px;padding:2px 6px;color:#ef4444;">Görseli Kaldır</button>
-                                </div>
-                            ` : ''}
-                        </div>
-
-                        <div style="background:rgba(0,0,0,0.15);padding:10px;border-radius:6px;border:1px dashed var(--border-color);">
-                            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">
-                                💡 İpucu Metni (Opsiyonel):
-                            </label>
-                            <input type="text" class="form-control" placeholder="Öğrenci takıldığında gösterilecek ipucu..." value="${escapeHtml(q.hint || '')}" oninput="updateQHint('${q.id}', this.value)" style="font-size:12px;">
-                        </div>
-                    </div>
-
-                    <!-- SORU TİPİNE ÖZEL ALANLAR -->
-                    ${renderQuestionTypeControls(q)}
-                </div>
-            `;
-        }).join('');
-    }
-
-    function renderQuestionTypeControls(q) {
-        if (q.type === 'multiple_choice') {
-            const opts = q.options || [];
-            return `
-                <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:6px;border:1px solid var(--border-color);">
-                    <div style="font-size:12px;font-weight:700;color:white;margin-bottom:8px;">Şıklar ve Doğru Cevap (Doğru olan şıkkı işaretleyiniz):</div>
-                    <div style="display:flex;flex-direction:column;gap:8px;">
-                        ${opts.map((opt, oIdx) => `
-                            <div style="display:flex;align-items:center;gap:8px;">
-                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
-                                    <input type="radio" name="cor_${q.id}" value="${opt.id}" ${q.correctAnswer === opt.id ? 'checked' : ''} onchange="updateQCorrectAnswer('${q.id}', '${opt.id}')">
-                                    <strong style="color:${q.correctAnswer === opt.id ? '#34d399' : '#94a3b8'};width:24px;">${opt.id})</strong>
-                                </label>
-                                <input type="text" class="form-control" style="font-size:13px;" placeholder="${opt.id} şıkkı metni..." value="${escapeHtml(opt.text || '')}" oninput="updateQOptionText('${q.id}', ${oIdx}, this.value)">
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        } else if (q.type === 'true_false') {
-            return `
-                <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:6px;border:1px solid var(--border-color);">
-                    <div style="font-size:12px;font-weight:700;color:white;margin-bottom:8px;">Doğru Cevabı Seçiniz:</div>
-                    <div style="display:flex;gap:20px;">
-                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);padding:8px 16px;border-radius:6px;">
-                            <input type="radio" name="tf_${q.id}" value="D" ${q.correctAnswer === 'D' ? 'checked' : ''} onchange="updateQCorrectAnswer('${q.id}', 'D')">
-                            <span style="font-weight:bold;color:#34d399;">✓ DOĞRU</span>
-                        </label>
-                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);padding:8px 16px;border-radius:6px;">
-                            <input type="radio" name="tf_${q.id}" value="Y" ${q.correctAnswer === 'Y' ? 'checked' : ''} onchange="updateQCorrectAnswer('${q.id}', 'Y')">
-                            <span style="font-weight:bold;color:#f87171;">✕ YANLIŞ</span>
-                        </label>
-                    </div>
-                </div>
-            `;
-        } else if (q.type === 'open_ended') {
-            return `
-                <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:6px;border:1px solid var(--border-color);">
-                    <div style="font-size:12px;font-weight:700;color:#fbbf24;margin-bottom:4px;">✍️ Öğretmenin Referans / Örnek Cevabı (İnceleme Sırasında Size Yardımcı Olur):</div>
-                    <textarea class="form-control" rows="2" placeholder="Öğrenciden beklenen cevap anahtarı veya anahtar kelimeler..." oninput="updateQSampleAnswer('${q.id}', this.value)" style="font-size:13px;">${escapeHtml(q.sampleAnswer || '')}</textarea>
-                    <small style="color:var(--text-muted);font-size:11px;">Açık uçlu sorular sınav teslim edildiğinde admin panelinde sizin değerlendirmenize düşer.</small>
-                </div>
-            `;
-        }
-        return '';
-    }
-
-    function updateQText(qId, val) {
-        const q = currentEditorQuestions.find(x => x.id === qId);
-        if (q) q.text = val;
-    }
-    function updateQHint(qId, val) {
-        const q = currentEditorQuestions.find(x => x.id === qId);
-        if (q) q.hint = val;
-    }
-    function updateQPoints(qId, val) {
-        const q = currentEditorQuestions.find(x => x.id === qId);
-        if (q) {
-            q.points = parseInt(val) || 10;
-            let totalPoints = 0;
-            currentEditorQuestions.forEach(item => { totalPoints += (parseInt(item.points) || 0); });
-            const ptsText = document.getElementById('editorTotalPointsText');
-            if (ptsText) ptsText.textContent = totalPoints + ' Puan';
-        }
-    }
-    function updateQOptionText(qId, optIdx, val) {
-        const q = currentEditorQuestions.find(x => x.id === qId);
-        if (q && q.options && q.options[optIdx]) {
-            q.options[optIdx].text = val;
-        }
-    }
-    function updateQCorrectAnswer(qId, val) {
-        const q = currentEditorQuestions.find(x => x.id === qId);
-        if (q) q.correctAnswer = val;
-    }
-    function updateQSampleAnswer(qId, val) {
-        const q = currentEditorQuestions.find(x => x.id === qId);
-        if (q) q.sampleAnswer = val;
-    }
-
-    function handleQuestionImageUpload(qId, input) {
-        if (!input.files || !input.files[0]) return;
-        const file = input.files[0];
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const rawData = e.target.result;
-            const img = new Image();
-            img.onload = function() {
-                let w = img.width, h = img.height;
-                const maxDim = 800;
-                if (w > maxDim || h > maxDim) {
-                    if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
-                    else { w = Math.round((w * maxDim) / h); h = maxDim; }
-                }
-                const canvas = document.createElement('canvas');
-                canvas.width = w; canvas.height = h;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, w, h);
-                const compressed = canvas.toDataURL('image/jpeg', 0.75);
-
-                const q = currentEditorQuestions.find(x => x.id === qId);
-                if (q) {
-                    q.image = compressed;
-                    renderEditorQuestions();
-                }
-            };
-            img.src = rawData;
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function removeQuestionImage(qId) {
-        const q = currentEditorQuestions.find(x => x.id === qId);
-        if (q) {
-            q.image = '';
-            renderEditorQuestions();
-        }
-    }
-
-    function saveExamAsDraft() {
-        saveExamPayloadWithStatus('draft');
-    }
-
-    function handleSaveExamForm(e) {
-        e.preventDefault();
-        saveExamPayloadWithStatus('active');
-    }
-
-    function saveExamPayloadWithStatus(status) {
-        const title = (document.getElementById('editorExamTitle')?.value || '').trim();
-        if (!title) {
-            alert('Lütfen sınav başlığı giriniz!');
-            return;
-        }
-
-        if (currentEditorQuestions.length === 0) {
-            alert('Lütfen sınava en az 1 soru ekleyiniz!');
-            return;
-        }
-
-        const id = document.getElementById('editorExamId')?.value || '';
-        const targetClassId = document.getElementById('editorExamTargetClass')?.value || 'all';
-        const classes = lmsStorage.getAllClasses();
-        const targetClassObj = classes.find(c => c && c.id === targetClassId);
-        const targetClassName = targetClassObj ? targetClassObj.name : 'Tüm Sınıflar';
-
-        const duration = parseInt(document.getElementById('editorExamDuration')?.value) || 40;
-        const pin = (document.getElementById('editorExamPin')?.value || '123').trim().toUpperCase() || '123';
-        const instructions = (document.getElementById('editorExamInstructions')?.value || '').trim();
-        const allowNav = document.getElementById('editorExamAllowNav')?.value === 'true';
-        const showRes = document.getElementById('editorExamShowResults')?.value === 'true';
-        const randQ = document.getElementById('editorExamRandomize')?.value === 'true';
-        const bonusMod = document.getElementById('editorExamBonusModule')?.value || '';
-        const bonusPts = parseInt(document.getElementById('editorExamBonusPoints')?.value) || 0;
-
-        const payload = {
-            id: id || undefined,
-            title: title,
-            instructions: instructions,
-            targetClassId: targetClassId,
-            targetClassName: targetClassName,
-            durationMinutes: duration,
-            pin: pin,
-            allowNavigation: allowNav,
-            showResultsImmediately: showRes,
-            randomizeQuestions: randQ,
-            bonusModuleId: bonusMod,
-            bonusPoints: bonusPts,
-            questions: currentEditorQuestions,
-            status: status
-        };
-
-        const res = lmsStorage.saveExam(payload);
-        if (res && res.success) {
-            closeModal('examEditorModal');
-            updateExamKPIs();
-            filterAndRenderExamsList();
-            populateExamFilterDropdowns();
-            alert('✓ Sınav başarıyla ' + (status === 'active' ? 'kaydedildi ve yayına alındı!' : 'taslak olarak saklandı.'));
-        } else {
-            alert('Sınav kaydedilirken hata oluştu: ' + (res ? res.message : 'Bilinmeyen hata'));
-        }
-    }
-
-    function populateExamFilterDropdowns() {
-        const sel = document.getElementById('subExamFilterSelect');
-        if (!sel || typeof lmsStorage === 'undefined') return;
-        const exams = lmsStorage.getAllExams();
-        const cur = sel.value;
-        let h = '<option value="all">Tüm Sınavlar</option>';
-        exams.forEach(e => {
-            h += `<option value="${e.id}">${escapeHtml(e.title)}</option>`;
-        });
-        sel.innerHTML = h;
-        sel.value = cur || 'all';
-    }
-
-    function deleteExamConfirm(examId) {
-        const ex = lmsStorage.getExamById(examId);
-        if (!ex) return;
-        if (!confirm(`"${ex.title}" başlıklı sınavı ve bu sınava ait tüm kursiyer evraklarını silmek istediğinizden emin misiniz?`)) return;
-        lmsStorage.deleteExam(examId);
-        updateExamKPIs();
-        filterAndRenderExamsList();
-        filterAndRenderSubmissionsTable();
-        populateExamFilterDropdowns();
-    }
-
-    // ==================== KURSİYER SINAV EVRAKLARI & NOT TABLOSU ====================
-
-    function filterAndRenderSubmissionsTable() {
-        if (typeof lmsStorage === 'undefined') return;
-        const subs = lmsStorage.getAllExamSubmissions();
-        const examFilter = document.getElementById('subExamFilterSelect')?.value || 'all';
-        const classFilter = document.getElementById('subClassFilterSelect')?.value || 'all';
-        const search = (document.getElementById('subSearchInput')?.value || '').toLowerCase().trim();
-
-        const filtered = subs.filter(s => {
-            if (!s) return false;
-            if (examFilter !== 'all' && s.examId !== examFilter) return false;
-            if (classFilter !== 'all' && s.classId !== classFilter) return false;
-            if (search) {
-                const name = (s.studentName || '').toLowerCase();
-                const uname = (s.studentUsername || '').toLowerCase();
-                if (!name.includes(search) && !uname.includes(search)) return false;
-            }
-            return true;
-        });
-
-        const tbody = document.getElementById('submissionsTableBody');
-        if (!tbody) return;
-
-        if (filtered.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="12" style="text-align:center;padding:36px;color:var(--text-muted);">
-                        Henüz sınav evrakı veya sonuç bulunmamaktadır. Kursiyerler sınavı tamamladığında burada listelenecektir.
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        tbody.innerHTML = filtered.map((s, idx) => {
-            const isGraded = s.status === 'graded';
-            const scoreColor = s.finalScore >= 50 ? '#34d399' : '#f87171';
-            const mins = Math.floor((s.timeSpentSeconds || 0) / 60);
-
-            return `
-                <tr>
-                    <td style="color:var(--text-muted);font-weight:700;">${idx + 1}</td>
-                    <td>
-                        <strong style="color:white;font-size:13.5px;">${escapeHtml(s.studentName || 'Kursiyer')}</strong>
-                        <div style="font-size:11px;color:var(--text-muted);">@${escapeHtml(s.studentUsername || '')}</div>
-                    </td>
-                    <td><span class="badge" style="background:rgba(255,255,255,0.06);">${escapeHtml(s.className || s.classId || '-')}</span></td>
-                    <td>
-                        <div style="font-size:13px;color:white;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                            ${escapeHtml(s.examTitle || 'Sınav')}
-                        </div>
-                    </td>
-                    <td style="font-size:12px;color:var(--text-muted);">
-                        ${new Date(s.submittedAt || Date.now()).toLocaleDateString('tr-TR')} ${new Date(s.submittedAt || Date.now()).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td style="font-size:12px;">${mins} dk</td>
-                    <td style="font-weight:bold;color:#60a5fa;">${s.autoScore || 0}</td>
-                    <td style="font-weight:bold;color:#fbbf24;">${s.manualScore || 0}</td>
-                    <td>
-                        ${(s.bonusScore || s.adminAdjustmentScore) ? `
-                            <span style="font-size:11px;color:#34d399;">
-                                ${s.bonusScore > 0 ? ('+' + s.bonusScore + 'B ') : ''}
-                                ${s.adminAdjustmentScore ? (s.adminAdjustmentScore > 0 ? ('+' + s.adminAdjustmentScore + 'K') : (s.adminAdjustmentScore + 'K')) : ''}
-                            </span>
-                        ` : '-'}
-                    </td>
-                    <td>
-                        <strong style="font-size:16px;color:${scoreColor};background:rgba(0,0,0,0.3);padding:2px 8px;border-radius:6px;border:1px solid ${scoreColor};">
-                            ${s.finalScore}
-                        </strong>
-                    </td>
-                    <td>
-                        <span class="badge" style="background:${isGraded ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)'};color:${isGraded ? '#34d399' : '#fbbf24'};border:1px solid ${isGraded ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'};">
-                            ${isGraded ? '✓ Onaylandı' : '⏳ İnceleme Bekliyor'}
-                        </span>
-                    </td>
-                    <td style="text-align:right;">
-                        <button class="btn btn-primary btn-sm" onclick="openGradingModal('${s.id}')">
-                            📄 İncele & Notlandır
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-    }
-
-    // ==================== EVRAK İNCELEME & AÇIK UÇLU NOTLANDIRMA MODALI ====================
-
-    function openGradingModal(subId) {
-        const sub = lmsStorage.getExamSubmissionById(subId);
-        if (!sub) return;
-        currentGradingSubmission = JSON.parse(JSON.stringify(sub));
-        const exam = lmsStorage.getExamById(sub.examId);
-
-        const metaEl = document.getElementById('gradingModalMeta');
-        if (metaEl) metaEl.textContent = 'Evrak No: ' + sub.id + ' • ' + (sub.studentName || '') + ' (' + (sub.className || '') + ')';
-
-        const body = document.getElementById('gradingModalBody');
-        if (!body) return;
-
-        const results = Array.isArray(sub.questionResults) ? sub.questionResults : [];
-        const examQuestions = exam && Array.isArray(exam.questions) ? exam.questions : [];
-
-        body.innerHTML = `
-            <!-- KURSİYER ÖZET BİLGİ KARTI -->
-            <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
-                <div><strong>Kursiyer:</strong> <span style="color:white;">${escapeHtml(sub.studentName)}</span></div>
-                <div><strong>Sınıf:</strong> <span style="color:white;">${escapeHtml(sub.className || sub.classId)}</span></div>
-                <div><strong>Sınav:</strong> <span style="color:#60a5fa;">${escapeHtml(sub.examTitle)}</span></div>
-                <div><strong>Harcanan Süre:</strong> <span style="color:white;">${Math.floor((sub.timeSpentSeconds||0)/60)} dk ${(sub.timeSpentSeconds||0)%60} sn</span></div>
-                <div><strong>Test Notu:</strong> <span style="color:#60a5fa;font-weight:bold;">${sub.autoScore || 0} Puan</span></div>
-                <div><strong>Açık Uçlu:</strong> <span id="gradingLiveManualScore" style="color:#fbbf24;font-weight:bold;">${sub.manualScore || 0} Puan</span></div>
-                <div><strong>Nihai Not:</strong> <span id="gradingLiveFinalScore" style="color:#34d399;font-weight:800;font-size:16px;">${sub.finalScore} / 100</span></div>
-                <div><strong>Durum:</strong> <span id="gradingLiveStatusBadge" style="color:${sub.status === 'graded' ? '#34d399' : '#fbbf24'};">${sub.status === 'graded' ? '✓ Onaylandı' : '⏳ Değerlendirme Bekliyor'}</span></div>
-            </div>
-
-            <!-- SORU SORU YANIT DÖKÜMÜ -->
-            <h4 style="color:#60a5fa;font-size:14px;margin:16px 0 10px;">📋 Soru ve Yanıt İncelemesi:</h4>
-            <div style="display:flex;flex-direction:column;gap:14px;">
-                ${results.map((r, idx) => {
-                    const originalQ = examQuestions.find(q => q.id === r.questionId) || {};
-                    const isMC = r.type === 'multiple_choice';
-                    const isTF = r.type === 'true_false';
-                    const isOpen = r.type === 'open_ended';
-
-                    return `
-                        <div style="background:rgba(0,0,0,0.25);border:1px solid ${isOpen ? '#f59e0b' : (r.isCorrect ? '#10b981' : '#ef4444')};border-radius:8px;padding:14px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                                <span style="font-weight:bold;color:white;font-size:13px;">Soru ${idx + 1} (${r.maxPoints || 10} Puan)</span>
-                                <span style="font-size:12px;font-weight:bold;color:${isOpen ? '#fbbf24' : (r.isCorrect ? '#34d399' : '#f87171')};">
-                                    ${isOpen ? '✍️ Açık Uçlu Soru' : (r.isCorrect ? '✓ DOĞRU (' + r.earnedPoints + ' Puan)' : '✕ YANLIŞ (0 Puan)')}
-                                </span>
-                            </div>
-
-                            <div style="color:#e2e8f0;font-size:13.5px;margin-bottom:8px;">${escapeHtml(originalQ.text || 'Soru metni')}</div>
-
-                            ${originalQ.image ? `<img src="${originalQ.image}" style="max-height:100px;border-radius:4px;margin-bottom:8px;">` : ''}
-
-                            <!-- CEVAP ALANI -->
-                            <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:6px;font-size:13px;">
-                                <div style="margin-bottom:4px;">
-                                    <strong style="color:var(--text-muted);">Kursiyerin Yanıtı:</strong>
-                                    <span style="color:white;font-weight:600;margin-left:6px;">${escapeHtml(r.studentAnswer || '(Boş Bırakıldı)')}</span>
-                                </div>
-
-                                ${!isOpen ? `
-                                    <div>
-                                        <strong style="color:var(--text-muted);">Doğru Yanıt:</strong>
-                                        <span style="color:#34d399;font-weight:bold;margin-left:6px;">${escapeHtml(r.correctAnswer || '')}</span>
-                                    </div>
-                                ` : `
-                                    <div style="margin-top:6px;border-top:1px dashed var(--border-color);padding-top:6px;">
-                                        <div style="color:#fbbf24;font-size:12px;margin-bottom:4px;"><strong>Öğretmen Referans Cevabı:</strong> ${escapeHtml(originalQ.sampleAnswer || '(Belirtilmemiş)')}</div>
-                                        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
-                                            <span style="font-size:12px;color:white;font-weight:bold;">Bu Soru İçin Verilen Puan:</span>
-                                            <input type="number" id="manualQScore_${r.questionId}" value="${r.earnedPoints || 0}" min="0" max="${r.maxPoints || 20}" style="width:70px;padding:4px 8px;font-weight:bold;color:#34d399;background:var(--bg-main);border:1px solid #34d399;border-radius:4px;" onchange="updateGradingQuestionScore('${r.questionId}', this.value, ${r.maxPoints || 20})">
-                                            <button type="button" class="btn btn-success btn-sm" onclick="setGradingScorePreset('${r.questionId}', ${r.maxPoints || 20}, ${r.maxPoints || 20})">✓ Tam Puan (${r.maxPoints})</button>
-                                            <button type="button" class="btn btn-ghost btn-sm" onclick="setGradingScorePreset('${r.questionId}', Math.round((${r.maxPoints || 20})/2), ${r.maxPoints || 20})" style="color:#fbbf24;">½ Yarım Puan (${Math.round((r.maxPoints||20)/2)})</button>
-                                            <button type="button" class="btn btn-danger btn-sm" onclick="setGradingScorePreset('${r.questionId}', 0, ${r.maxPoints || 20})">✕ 0 Puan</button>
-                                        </div>
-                                    </div>
-                                `}
-                            </div>
-                        </div>
-                    `;
-                }).join('')}
-            </div>
-
-            <!-- ÖĞRETMEN EK PUANI VE GERİ BİLDİRİMİ -->
-            <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;padding:14px;margin-top:16px;">
-                <h4 style="color:#60a5fa;font-size:14px;margin:0 0 10px;">⭐ Ek Puan (Kanaat Notu) & Öğretmen Görüşü:</h4>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
-                    <div>
-                        <label class="form-label" style="font-size:12px;">Admin Ek Puanı (Kanaat):</label>
-                        <input type="number" id="gradingAdminAdjustment" class="form-control" value="${sub.adminAdjustmentScore || 0}" min="-50" max="50" onchange="updateGradingAdjustment(this.value)">
-                        <small style="color:var(--text-muted);font-size:11px;">İsteğe bağlı kanaat puanı ekleyip çıkarabilirsiniz.</small>
-                    </div>
-                    <div>
-                        <label class="form-label" style="font-size:12px;">Öğretmen Değerlendirme Notu / Geri Bildirimi:</label>
-                        <textarea id="gradingTeacherNote" class="form-control" rows="2" placeholder="Kursiyerin görmesini istediğiniz notunuz...">${escapeHtml(sub.teacherNote || '')}</textarea>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        openModal('examGradingModal');
-    }
-
-    function setGradingScorePreset(qId, score, maxPoints) {
-        const inp = document.getElementById('manualQScore_' + qId);
-        if (inp) inp.value = score;
-        updateGradingQuestionScore(qId, score, maxPoints);
-    }
-
-    function updateGradingQuestionScore(qId, score, maxPoints) {
-        if (!currentGradingSubmission) return;
-        const qRes = (currentGradingSubmission.questionResults || []).find(r => r.questionId === qId);
-        if (qRes) {
-            qRes.earnedPoints = Math.min(Math.max(0, parseInt(score) || 0), maxPoints);
-            recalculateLiveGrading();
-        }
-    }
-
-    function updateGradingAdjustment(val) {
-        if (!currentGradingSubmission) return;
-        currentGradingSubmission.adminAdjustmentScore = parseInt(val) || 0;
-        recalculateLiveGrading();
-    }
-
-    function recalculateLiveGrading() {
-        if (!currentGradingSubmission) return;
-        let manual = 0;
-        (currentGradingSubmission.questionResults || []).forEach(r => {
-            if (r.type === 'open_ended') {
-                manual += (parseInt(r.earnedPoints) || 0);
-            }
-        });
-        currentGradingSubmission.manualScore = manual;
-
-        const auto = currentGradingSubmission.autoScore || 0;
-        const bonus = currentGradingSubmission.bonusScore || 0;
-        const adj = currentGradingSubmission.adminAdjustmentScore || 0;
-        const final = Math.max(0, auto + manual + bonus + adj);
-        currentGradingSubmission.finalScore = final;
-
-        const mEl = document.getElementById('gradingLiveManualScore');
-        const fEl = document.getElementById('gradingLiveFinalScore');
-        if (mEl) mEl.textContent = manual + ' Puan';
-        if (fEl) fEl.textContent = final + ' / 100';
-    }
-
-    function saveGradingDecision() {
-        if (!currentGradingSubmission) return;
-        const teacherNote = document.getElementById('gradingTeacherNote')?.value || '';
-        const adj = parseInt(document.getElementById('gradingAdminAdjustment')?.value) || 0;
-
-        currentGradingSubmission.teacherNote = teacherNote;
-        currentGradingSubmission.adminAdjustmentScore = adj;
-        currentGradingSubmission.status = 'graded';
-
-        const res = lmsStorage.gradeExamSubmission(currentGradingSubmission.id, {
-            questionResults: currentGradingSubmission.questionResults,
-            manualScore: currentGradingSubmission.manualScore,
-            adminAdjustmentScore: adj,
-            bonusScore: currentGradingSubmission.bonusScore,
-            teacherNote: teacherNote,
-            status: 'graded'
-        });
-
-        if (res && res.success) {
-            closeModal('examGradingModal');
-            updateExamKPIs();
-            filterAndRenderSubmissionsTable();
-            alert('✓ Kursiyer evrakı başarıyla notlandırıldı ve onaylandı!');
-        } else {
-            alert('Değerlendirme kaydedilemedi.');
-        }
-    }
-
-    // ==================== DIŞA AKTARMA (EXCEL & PDF) ====================
-
-    function exportExamSubmissionsExcel() {
-        if (typeof lmsStorage === 'undefined') return;
-        const subs = lmsStorage.getAllExamSubmissions();
-        if (subs.length === 0) {
-            alert('Dışa aktarılacak sınav sonucu bulunamadı.');
-            return;
-        }
-
-        if (typeof XLSX === 'undefined') {
-            alert('Excel kütüphanesi yüklenemedi.');
-            return;
-        }
-
-        const examFilter = document.getElementById('subExamFilterSelect')?.value || 'all';
-        const filtered = subs.filter(s => examFilter === 'all' || s.examId === examFilter);
-
-        const data = [
-            ['T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ'],
-            ['KURSİYER SINAV SONUÇ VE NOT ÇİZELGESİ'],
-            ['Rapor Tarihi:', new Date().toLocaleString('tr-TR')],
-            [],
-            ['#', 'Kursiyer Adı Soyadı', 'Kullanıcı Adı', 'Sınıf', 'Sınav Başlığı', 'Teslim Tarihi', 'Süre (Dk)', 'Test Notu', 'Açık Uçlu Notu', 'Modül Bonusu', 'Öğretmen Ek Puanı', 'NİHAİ PUAN', 'Durum']
-        ];
-
-        filtered.forEach((s, idx) => {
-            data.push([
-                idx + 1,
-                s.studentName || '',
-                s.studentUsername || '',
-                s.className || s.classId || '',
-                s.examTitle || '',
-                new Date(s.submittedAt || Date.now()).toLocaleString('tr-TR'),
-                Math.floor((s.timeSpentSeconds || 0) / 60),
-                s.autoScore || 0,
-                s.manualScore || 0,
-                s.bonusScore || 0,
-                s.adminAdjustmentScore || 0,
-                s.finalScore || 0,
-                s.status === 'graded' ? 'Onaylandı' : 'İnceleme Bekliyor'
-            ]);
-        });
-
-        const ws = XLSX.utils.aoa_to_sheet(data);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Sınav Sonuçları');
-        XLSX.writeFile(wb, 'EHEM_Sinav_Sonuc_Cizelgesi.xlsx');
-    }
-
-    function printExamSubmissionsReport() {
-        if (typeof lmsStorage === 'undefined') return;
-        const subs = lmsStorage.getAllExamSubmissions();
-        const examFilter = document.getElementById('subExamFilterSelect')?.value || 'all';
-        const filtered = subs.filter(s => examFilter === 'all' || s.examId === examFilter);
-
-        const printWin = window.open('', '_blank');
-        const rows = filtered.map((s, i) => `
-            <tr>
-                <td style="border:1px solid #333;padding:6px;text-align:center;">${i + 1}</td>
-                <td style="border:1px solid #333;padding:6px;font-weight:bold;">${escapeHtml(s.studentName)}</td>
-                <td style="border:1px solid #333;padding:6px;text-align:center;">${escapeHtml(s.className || s.classId)}</td>
-                <td style="border:1px solid #333;padding:6px;">${escapeHtml(s.examTitle)}</td>
-                <td style="border:1px solid #333;padding:6px;text-align:center;">${new Date(s.submittedAt||Date.now()).toLocaleDateString('tr-TR')}</td>
-                <td style="border:1px solid #333;padding:6px;text-align:center;">${s.autoScore || 0}</td>
-                <td style="border:1px solid #333;padding:6px;text-align:center;">${s.manualScore || 0}</td>
-                <td style="border:1px solid #333;padding:6px;text-align:center;">${(s.bonusScore || 0) + (s.adminAdjustmentScore || 0)}</td>
-                <td style="border:1px solid #333;padding:6px;text-align:center;font-weight:bold;font-size:14px;">${s.finalScore}</td>
-                <td style="border:1px solid #333;padding:6px;text-align:center;">${s.status === 'graded' ? 'Onaylandı' : 'Beklemede'}</td>
-            </tr>
-        `).join('');
-
-        printWin.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <title>Sınav Not Çizelgesi</title>
-                <style>
-                    body { font-family: 'Times New Roman', serif; padding: 25px; color: #111; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
-                    th { border: 1px solid #333; padding: 8px; background: #f2f2f2; }
-                    @media print { .no-print { display: none; } }
-                </style>
-            </head>
-            <body>
-                <div class="no-print" style="margin-bottom:15px;">
-                    <button onclick="window.print()" style="padding:8px 16px;cursor:pointer;font-weight:bold;">🖨️ Yazdır / PDF Kaydet</button>
-                </div>
-                <div style="text-align:center;border-bottom:2px double #111;padding-bottom:10px;">
-                    <h3 style="margin:0 0 4px;">T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ MÜDÜRLÜĞÜ</h3>
-                    <h2 style="margin:0 0 4px;">KURSİYER SINAV DEĞERLENDİRME VE NOT ÇİZELGESİ</h2>
-                    <span style="font-size:12px;">Tarih: ${new Date().toLocaleDateString('tr-TR')}</span>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Kursiyer Adı Soyadı</th>
-                            <th>Sınıf</th>
-                            <th>Sınav Başlığı</th>
-                            <th>Tarih</th>
-                            <th>Test</th>
-                            <th>Açık Uçlu</th>
-                            <th>Bonus/Ek</th>
-                            <th>NİHAİ PUAN</th>
-                            <th>Durum</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-                <div style="margin-top:40px;display:flex;justify-content:space-between;">
-                    <div>Düzenleyen: Kurs Öğretmeni<br><br>İmza: .............................</div>
-                    <div>Onaylayan: Kurum Müdürü<br><br>İmza / Mühür: .............................</div>
-                </div>
-            </body>
-            </html>
-        `);
-        printWin.document.close();
-    }
-
-    function printCurrentExamSheet() {
-        if (!currentGradingSubmission) return;
-        const s = currentGradingSubmission;
-        const exam = lmsStorage.getExamById(s.examId);
-        const results = Array.isArray(s.questionResults) ? s.questionResults : [];
-
-        const printWin = window.open('', '_blank');
-        const qRows = results.map((r, i) => `
-            <div style="margin-bottom:12px;border-bottom:1px solid #ddd;padding-bottom:8px;">
-                <strong>Soru ${i + 1}:</strong> ${r.type === 'open_ended' ? '[Açık Uçlu]' : ''}
-                <div style="margin:4px 0;"><strong>Kursiyer Cevabı:</strong> ${escapeHtml(r.studentAnswer || '(Boş)')}</div>
-                ${r.type !== 'open_ended' ? `<div style="color:green;"><strong>Doğru Cevap:</strong> ${escapeHtml(r.correctAnswer || '')}</div>` : ''}
-                <div style="font-weight:bold;">Alınan Puan: ${r.earnedPoints || 0} / ${r.maxPoints || 10}</div>
-            </div>
-        `).join('');
-
-        printWin.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <title>Sınav Evrakı - ${escapeHtml(s.studentName)}</title>
-                <style>
-                    body { font-family: 'Times New Roman', serif; padding: 30px; color: #111; }
-                    @media print { .no-print { display: none; } }
-                </style>
-            </head>
-            <body>
-                <div class="no-print" style="margin-bottom:15px;">
-                    <button onclick="window.print()" style="padding:8px 16px;cursor:pointer;font-weight:bold;">🖨️ Yazdır / PDF İndir</button>
-                </div>
-                <div style="text-align:center;border-bottom:2px double #111;padding-bottom:12px;margin-bottom:16px;">
-                    <h3>T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ MÜDÜRLÜĞÜ</h3>
-                    <h2>BİLGİSAYAR İŞLETMENLİĞİ KURSU SINAV EVRAKI</h2>
-                </div>
-                <table style="width:100%;margin-bottom:20px;border-collapse:collapse;">
-                    <tr>
-                        <td><strong>Kursiyer:</strong> ${escapeHtml(s.studentName)}</td>
-                        <td><strong>Sınav Tarihi:</strong> ${new Date(s.submittedAt||Date.now()).toLocaleDateString('tr-TR')}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Sınıf:</strong> ${escapeHtml(s.className || s.classId)}</td>
-                        <td><strong>Sınav Başlığı:</strong> ${escapeHtml(s.examTitle)}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Harcanan Süre:</strong> ${Math.floor((s.timeSpentSeconds||0)/60)} dk</td>
-                        <td><strong style="font-size:16px;">NİHAİ PUAN: ${s.finalScore} / 100</strong></td>
-                    </tr>
-                </table>
-                <hr>
-                <h4>SORU VE CEVAP DÖKÜMÜ:</h4>
-                ${qRows}
-                ${s.teacherNote ? `<div style="margin-top:14px;background:#f9f9f9;padding:10px;border:1px solid #ccc;"><strong>Öğretmen Görüşü:</strong> ${escapeHtml(s.teacherNote)}</div>` : ''}
-            </body>
-            </html>
-        `);
-        printWin.document.close();
-    }
-
-    function previewExamModal(examId) {
-        const ex = lmsStorage.getExamById(examId);
-        if (!ex) return;
-
-        const titleEl = document.getElementById('previewModalTitle');
-        const content = document.getElementById('previewModalContent');
-        if (titleEl) titleEl.textContent = '👁️ Sınav Önizleme: ' + ex.title;
-
-        if (content) {
-            const qs = Array.isArray(ex.questions) ? ex.questions : [];
-            content.innerHTML = `
-                <div style="background:rgba(255,255,255,0.03);padding:14px;border-radius:8px;margin-bottom:16px;">
-                    <div><strong>Hedef Kitle:</strong> ${escapeHtml(ex.targetClassName || 'Tüm Sınıflar')}</div>
-                    <div><strong>Sınav Süresi:</strong> ${ex.durationMinutes || 40} Dakika</div>
-                    <div><strong>Giriş Şifresi:</strong> <code style="color:#fbbf24;font-weight:bold;">${escapeHtml(ex.pin || '123')}</code></div>
-                    <div><strong>Gezinme:</strong> ${ex.allowNavigation !== false ? 'Serbest İleri-Geri' : 'Yalnızca İleri'}</div>
-                    <div><strong>Sonuçlar:</strong> ${ex.showResultsImmediately ? 'Anında Gösterilsin' : 'Öğretmen Onayından Sonra Gösterilsin'}</div>
-                </div>
-
-                <h4 style="color:#60a5fa;margin-bottom:10px;">Sorular (${qs.length} Soru):</h4>
-                <div style="display:flex;flex-direction:column;gap:12px;">
-                    ${qs.map((q, i) => `
-                        <div style="background:rgba(0,0,0,0.2);padding:12px;border-radius:8px;border:1px solid var(--border-color);">
-                            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                                <strong>Soru ${i + 1}</strong>
-                                <span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;">${q.points || 10} Puan</span>
-                            </div>
-                            <div style="margin-bottom:8px;color:#f1f5f9;">${escapeHtml(q.text)}</div>
-                            ${q.image ? `<img src="${q.image}" style="max-height:120px;border-radius:4px;margin-bottom:8px;">` : ''}
-                            ${q.hint ? `<div style="font-size:12px;color:#fbbf24;margin-bottom:6px;">💡 İpucu: ${escapeHtml(q.hint)}</div>` : ''}
-                            ${q.type === 'multiple_choice' ? `
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-                                    ${(q.options || []).map(opt => `
-                                        <div style="padding:6px 10px;border-radius:4px;background:${q.correctAnswer === opt.id ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.03)'};border:1px solid ${q.correctAnswer === opt.id ? '#10b981' : 'transparent'};color:${q.correctAnswer === opt.id ? '#34d399' : 'white'};">
-                                            <strong>${opt.id})</strong> ${escapeHtml(opt.text)}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : (q.type === 'true_false' ? `
-                                <div style="display:flex;gap:10px;">
-                                    <span style="padding:4px 12px;border-radius:4px;background:${q.correctAnswer === 'D' ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.03)'};color:${q.correctAnswer === 'D' ? '#34d399' : '#94a3b8'};">✓ DOĞRU</span>
-                                    <span style="padding:4px 12px;border-radius:4px;background:${q.correctAnswer === 'Y' ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.03)'};color:${q.correctAnswer === 'Y' ? '#f87171' : '#94a3b8'};">✕ YANLIŞ</span>
-                                </div>
-                            ` : `
-                                <div style="font-size:12px;color:#fbbf24;background:rgba(245,158,11,0.08);padding:8px;border-radius:6px;">
-                                    <strong>Örnek Cevap:</strong> ${escapeHtml(q.sampleAnswer || '(Belirtilmemiş)')}
-                                </div>
-                            `)}
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        openModal('examPreviewModal');
-    }
-
-    async function handlePushExamsToCloud() {
-        if (typeof lmsStorage === 'undefined') return;
-        const res = await lmsStorage.pushAllExamsAndSubmissionsToFirebase();
-        if (res && res.success) {
-            alert(`✓ Harika! ${res.examCount} sınav ve ${res.submissionCount} evrak Firebase bulutuna başarıyla yüklendi!`);
-        } else {
-            alert('Buluta aktarılırken hata: ' + (res ? res.message : 'Bilinmeyen hata'));
-        }
-    }
-
-</script>
+    <script src="js/xlsx.full.min.js"></script>
     <script>
         if (typeof XLSX === 'undefined') {
             document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');
@@ -2710,6 +1572,7 @@
         document.getElementById('kpiCompletedUsers').textContent = cT;
         filterAndRenderUsers();
         updateCloudSyncBadge();
+        if (typeof updateExamKPIs === 'function') updateExamKPIs();
     }
 
     function updateCloudSyncBadge() {
@@ -4814,6 +3677,1148 @@
     // ==================== MODAL YARDIMCILARI ====================
     function openModal(id)  { document.getElementById(id).classList.add('show'); }
     function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+
+    // =========================================================================
+    // ==================== YENİ SINAV VE DEĞERLENDİRME SİSTEMİ (V2) ============
+    // =========================================================================
+
+// =========================================================================
+    // ==================== YENİ SINAV VE DEĞERLENDİRME SİSTEMİ (V2) ============
+    // =========================================================================
+
+    let currentEditorQuestions = [];
+    let currentGradingSubmission = null;
+
+    function loadExamsTab() {
+        updateExamKPIs();
+        populateExamClassDropdowns();
+        populateBonusModuleDropdown();
+        filterAndRenderExamsList();
+        filterAndRenderSubmissionsTable();
+
+        // Arka planda buluttan en güncel sınav ve evrakları çek
+        if (typeof lmsStorage !== 'undefined') {
+            if (lmsStorage.pullExamsFromFirebase) {
+                lmsStorage.pullExamsFromFirebase().then(() => {
+                    updateExamKPIs();
+                    filterAndRenderExamsList();
+                }).catch(() => {});
+            }
+            if (lmsStorage.pullSubmissionsFromFirebase) {
+                lmsStorage.pullSubmissionsFromFirebase().then(() => {
+                    updateExamKPIs();
+                    filterAndRenderSubmissionsTable();
+                }).catch(() => {});
+            }
+        }
+    }
+
+    function updateExamKPIs() {
+        if (typeof lmsStorage === 'undefined') return;
+        const exams = lmsStorage.getAllExams();
+        const subs = lmsStorage.getAllExamSubmissions();
+
+        const activeCount = exams.filter(e => e && e.status === 'active').length;
+        const pendingCount = subs.filter(s => s && s.status === 'pending_review').length;
+
+        const elTotal = document.getElementById('kpiTotalExams');
+        const elActive = document.getElementById('kpiActiveExams');
+        const elSubs = document.getElementById('kpiTotalSubmissions');
+        const elPending = document.getElementById('kpiPendingGrading');
+        const badgeList = document.getElementById('examCountBadge');
+        const badgeSubs = document.getElementById('subCountBadge');
+        const navBadge = document.getElementById('adminExamBadge');
+
+        if (elTotal) elTotal.textContent = exams.length;
+        if (elActive) elActive.textContent = activeCount;
+        if (elSubs) elSubs.textContent = subs.length;
+        if (elPending) elPending.textContent = pendingCount;
+        if (badgeList) badgeList.textContent = exams.length;
+        if (badgeSubs) badgeSubs.textContent = subs.length;
+
+        if (navBadge) {
+            navBadge.textContent = pendingCount > 0 ? pendingCount : exams.length;
+            navBadge.style.display = exams.length > 0 ? 'inline-block' : 'none';
+            navBadge.style.background = pendingCount > 0 ? '#ef4444' : '#3b82f6';
+            navBadge.title = pendingCount > 0 ? (pendingCount + ' evrak inceleme bekliyor') : (exams.length + ' sınav');
+        }
+    }
+
+    function switchExamSubTab(tab) {
+        const secList = document.getElementById('examSubSectionList');
+        const secResults = document.getElementById('examSubSectionResults');
+        const btnList = document.getElementById('btnExamSubTabList');
+        const btnResults = document.getElementById('btnExamSubTabResults');
+
+        if (tab === 'list') {
+            if (secList) secList.style.display = 'block';
+            if (secResults) secResults.style.display = 'none';
+            if (btnList) { btnList.className = 'btn btn-primary btn-sm'; }
+            if (btnResults) { btnResults.className = 'btn btn-ghost btn-sm'; }
+            filterAndRenderExamsList();
+        } else {
+            if (secList) secList.style.display = 'none';
+            if (secResults) secResults.style.display = 'block';
+            if (btnList) { btnList.className = 'btn btn-ghost btn-sm'; }
+            if (btnResults) { btnResults.className = 'btn btn-primary btn-sm'; }
+            filterAndRenderSubmissionsTable();
+        }
+    }
+
+    function populateExamClassDropdowns() {
+        if (typeof lmsStorage === 'undefined') return;
+        const classes = lmsStorage.getAllClasses();
+        const drop1 = document.getElementById('examClassFilter');
+        const drop2 = document.getElementById('editorExamTargetClass');
+        const drop3 = document.getElementById('subClassFilterSelect');
+
+        let opts = '<option value="all">Tüm Sınıflar (Herkes)</option>';
+        classes.forEach(c => {
+            opts += `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`;
+        });
+
+        if (drop1) {
+            const cur = drop1.value;
+            drop1.innerHTML = opts;
+            drop1.value = cur || 'all';
+        }
+        if (drop2) {
+            const cur = drop2.value;
+            drop2.innerHTML = opts;
+            drop2.value = cur || 'all';
+        }
+        if (drop3) {
+            const cur = drop3.value;
+            drop3.innerHTML = opts;
+            drop3.value = cur || 'all';
+        }
+    }
+
+    function populateBonusModuleDropdown() {
+        const drop = document.getElementById('editorExamBonusModule');
+        if (!drop) return;
+        let opts = '<option value="">Bonus Yok</option>';
+        if (typeof COURSE_MODULES !== 'undefined') {
+            COURSE_MODULES.forEach(m => {
+                opts += `<option value="${m.id}">Bölüm ${m.id}: ${escapeHtml(m.title)}</option>`;
+            });
+        }
+        drop.innerHTML = opts;
+    }
+
+    // ==================== SINAVLAR LİSTESİ RENDER ====================
+
+    function filterAndRenderExamsList() {
+        if (typeof lmsStorage === 'undefined') return;
+        const exams = lmsStorage.getAllExams();
+        const subs = lmsStorage.getAllExamSubmissions();
+
+        const search = (document.getElementById('examSearchInput')?.value || '').toLowerCase().trim();
+        const classFilter = document.getElementById('examClassFilter')?.value || 'all';
+        const statusFilter = document.getElementById('examStatusFilter')?.value || 'all';
+
+        const filtered = exams.filter(ex => {
+            if (!ex) return false;
+            if (search && !(ex.title || '').toLowerCase().includes(search)) return false;
+            if (classFilter !== 'all' && ex.targetClassId !== classFilter && ex.targetClassId !== 'all') return false;
+            if (statusFilter !== 'all' && ex.status !== statusFilter) return false;
+            return true;
+        });
+
+        const tbody = document.getElementById('examsTableBody');
+        if (!tbody) return;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="11" style="text-align:center;padding:36px;color:var(--text-muted);">
+                        Tanımlanmış sınav bulunamadı. "➕ Yeni Sınav Hazırla" butonuna basarak ilk sınavınızı oluşturabilirsiniz.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map((ex, idx) => {
+            const examSubs = subs.filter(s => s && s.examId === ex.id);
+            const qCount = Array.isArray(ex.questions) ? ex.questions.length : 0;
+            const isAct = ex.status === 'active';
+
+            return `
+                <tr>
+                    <td style="color:var(--text-muted);font-weight:700;">${idx + 1}</td>
+                    <td>
+                        <strong style="color:white;font-size:14px;">${escapeHtml(ex.title)}</strong>
+                        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+                            Oluşturulma: ${new Date(ex.createdAt || Date.now()).toLocaleDateString('tr-TR')}
+                            ${ex.bonusPoints > 0 ? `<span style="color:#fbbf24;margin-left:6px;">🎁 +${ex.bonusPoints}P Bonus</span>` : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;">
+                            ${escapeHtml(ex.targetClassName || ex.targetClassId || 'Tüm Sınıflar')}
+                        </span>
+                    </td>
+                    <td>${ex.durationMinutes || 40} Dk</td>
+                    <td><strong>${qCount} Soru</strong> <span style="font-size:11px;color:var(--text-muted);">(${ex.totalPoints || 100}P)</span></td>
+                    <td>
+                        <code style="background:rgba(255,255,255,0.08);padding:3px 8px;border-radius:4px;color:#fbbf24;font-weight:bold;">
+                            ${escapeHtml(ex.pin || '123')}
+                        </code>
+                    </td>
+                    <td>
+                        <span style="font-size:12px;color:${ex.allowNavigation !== false ? '#34d399' : '#94a3b8'};">
+                            ${ex.allowNavigation !== false ? '✓ Serbest' : '🔒 Yalnız İleri'}
+                        </span>
+                    </td>
+                    <td>
+                        <span style="font-size:12px;color:${ex.showResultsImmediately ? '#34d399' : '#fbbf24'};">
+                            ${ex.showResultsImmediately ? '✓ Anında' : '🔒 Onaylı'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm" onclick="toggleExamStatus('${ex.id}')" style="padding:2px 8px;font-size:11px;background:${isAct ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};color:${isAct ? '#34d399' : '#f87171'};border:1px solid ${isAct ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'};">
+                            ${isAct ? '✓ Yayında' : '⏸️ Taslak'}
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-ghost btn-sm" onclick="filterSubmissionsByExam('${ex.id}')" title="Bu sınavın evraklarını gör">
+                            <strong>${examSubs.length}</strong> Evrak ➔
+                        </button>
+                    </td>
+                    <td style="text-align:right;">
+                        <div style="display:inline-flex;gap:4px;">
+                            <button class="btn btn-primary btn-sm" onclick="previewExamModal('${ex.id}')" title="Öğretmen Test Modu (Önizle)">
+                                👁️ Test Et
+                            </button>
+                            <button class="btn btn-ghost btn-sm" onclick="openExamEditorModal('${ex.id}')" title="Sınavı ve soruları düzenle">
+                                ✏️ Düzenle
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteExamConfirm('${ex.id}')" title="Sınavı kalıcı olarak sil">
+                                🗑️
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function toggleExamStatus(examId) {
+        const ex = lmsStorage.getExamById(examId);
+        if (!ex) return;
+        ex.status = ex.status === 'active' ? 'draft' : 'active';
+        lmsStorage.saveExam(ex);
+        updateExamKPIs();
+        filterAndRenderExamsList();
+    }
+
+    function filterSubmissionsByExam(examId) {
+        switchExamSubTab('results');
+        const sel = document.getElementById('subExamFilterSelect');
+        if (sel) {
+            sel.value = examId;
+            filterAndRenderSubmissionsTable();
+        }
+    }
+
+    // ==================== SINAV DÜZENLEME & OLUŞTURMA SİHİRBAZI ====================
+
+    function openExamEditorModal(examId) {
+        populateExamClassDropdowns();
+        populateBonusModuleDropdown();
+
+        const titleEl = document.getElementById('examEditorModalTitle');
+        const idInput = document.getElementById('editorExamId');
+        const titleInput = document.getElementById('editorExamTitle');
+        const classSelect = document.getElementById('editorExamTargetClass');
+        const durInput = document.getElementById('editorExamDuration');
+        const pinInput = document.getElementById('editorExamPin');
+        const instInput = document.getElementById('editorExamInstructions');
+        const navSelect = document.getElementById('editorExamAllowNav');
+        const showResSelect = document.getElementById('editorExamShowResults');
+        const randSelect = document.getElementById('editorExamRandomize');
+        const bonusModSelect = document.getElementById('editorExamBonusModule');
+        const bonusPtsInput = document.getElementById('editorExamBonusPoints');
+
+        if (examId) {
+            const ex = lmsStorage.getExamById(examId);
+            if (!ex) return;
+            titleEl.textContent = '✏️ Sınavı Düzenle: ' + ex.title;
+            idInput.value = ex.id;
+            titleInput.value = ex.title || '';
+            classSelect.value = ex.targetClassId || 'all';
+            durInput.value = ex.durationMinutes || 40;
+            pinInput.value = ex.pin || '123';
+            instInput.value = ex.instructions || '';
+            navSelect.value = ex.allowNavigation !== false ? 'true' : 'false';
+            showResSelect.value = ex.showResultsImmediately ? 'true' : 'false';
+            randSelect.value = ex.randomizeQuestions ? 'true' : 'false';
+            bonusModSelect.value = ex.bonusModuleId || '';
+            bonusPtsInput.value = ex.bonusPoints || 0;
+
+            currentEditorQuestions = Array.isArray(ex.questions) ? JSON.parse(JSON.stringify(ex.questions)) : [];
+        } else {
+            titleEl.textContent = '📝 Yeni Sınav Hazırla';
+            idInput.value = '';
+            titleInput.value = '';
+            classSelect.value = 'all';
+            durInput.value = 40;
+            pinInput.value = '123';
+            instInput.value = '1. Sınav süresi 40 dakikadır.\n2. Yanlış cevaplar doğru cevapları etkilemez.';
+            navSelect.value = 'true';
+            showResSelect.value = 'false';
+            randSelect.value = 'false';
+            bonusModSelect.value = '';
+            bonusPtsInput.value = 0;
+
+            currentEditorQuestions = [];
+        }
+
+        renderEditorQuestions();
+        openModal('examEditorModal');
+    }
+
+    function addQuestionToEditor(type) {
+        const qId = 'q_' + Date.now() + '_' + Math.floor(Math.random() * 100);
+        let newQ = {
+            id: qId,
+            type: type || 'multiple_choice',
+            text: '',
+            image: '',
+            hint: '',
+            points: 10
+        };
+
+        if (type === 'multiple_choice') {
+            newQ.options = [
+                { id: 'A', text: '' },
+                { id: 'B', text: '' },
+                { id: 'C', text: '' },
+                { id: 'D', text: '' }
+            ];
+            newQ.correctAnswer = 'A';
+        } else if (type === 'true_false') {
+            newQ.correctAnswer = 'D';
+        } else if (type === 'open_ended') {
+            newQ.sampleAnswer = '';
+            newQ.points = 20;
+        }
+
+        currentEditorQuestions.push(newQ);
+        renderEditorQuestions();
+
+        setTimeout(() => {
+            const el = document.getElementById('qCard_' + qId);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }
+
+    function removeQuestionFromEditor(qId) {
+        currentEditorQuestions = currentEditorQuestions.filter(q => q.id !== qId);
+        renderEditorQuestions();
+    }
+
+    function renderEditorQuestions() {
+        const container = document.getElementById('editorQuestionsContainer');
+        const emptyNotice = document.getElementById('editorEmptyQuestionsNotice');
+        const countText = document.getElementById('editorQuestionCountText');
+        const pointsText = document.getElementById('editorTotalPointsText');
+
+        if (!container) return;
+
+        let totalPoints = 0;
+        currentEditorQuestions.forEach(q => { totalPoints += (parseInt(q.points) || 0); });
+
+        if (countText) countText.textContent = currentEditorQuestions.length + ' Soru';
+        if (pointsText) pointsText.textContent = totalPoints + ' Puan';
+
+        if (currentEditorQuestions.length === 0) {
+            container.innerHTML = '';
+            if (emptyNotice) emptyNotice.style.display = 'block';
+            return;
+        }
+
+        if (emptyNotice) emptyNotice.style.display = 'none';
+
+        container.innerHTML = currentEditorQuestions.map((q, idx) => {
+            const typeLabel = q.type === 'multiple_choice' ? '🔘 Çoktan Seçmeli Test' :
+                             (q.type === 'true_false' ? '⚖️ Doğru / Yanlış Sorusu' : '✍️ Açık Uçlu (Klasik) Soru');
+            const typeColor = q.type === 'multiple_choice' ? '#3b82f6' :
+                             (q.type === 'true_false' ? '#10b981' : '#f59e0b');
+
+            return `
+                <div class="question-editor-card" id="qCard_${q.id}" style="background:var(--bg-card);border:1px solid var(--border-color);border-left:5px solid ${typeColor};border-radius:8px;padding:16px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                        <div style="display:flex;align-items:center;gap:10px;">
+                            <span style="font-weight:800;color:white;font-size:14px;">SORU ${idx + 1}</span>
+                            <span class="badge" style="background:rgba(255,255,255,0.06);color:${typeColor};font-size:11.5px;padding:2px 8px;border-radius:4px;">
+                                ${typeLabel}
+                            </span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <label style="font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:4px;">
+                                Puan:
+                                <input type="number" class="form-control" value="${q.points || 10}" min="1" max="100" style="width:65px;padding:2px 6px;text-align:center;font-weight:bold;" onchange="updateQPoints('${q.id}', this.value)">
+                            </label>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="removeQuestionFromEditor('${q.id}')" title="Bu soruyu sil" style="padding:2px 8px;">
+                                🗑️ Sil
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SORU METNİ -->
+                    <div class="form-group" style="margin-bottom:10px;">
+                        <textarea class="form-control" rows="2" placeholder="Soru metnini buraya yazınız..." oninput="updateQText('${q.id}', this.value)" style="font-size:13.5px;">${escapeHtml(q.text || '')}</textarea>
+                    </div>
+
+                    <!-- GÖRSEL VE İPUCU ALANI -->
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:12px;">
+                        <div style="background:rgba(0,0,0,0.15);padding:10px;border-radius:6px;border:1px dashed var(--border-color);">
+                            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">
+                                🖼️ Soru Görseli (Opsiyonel):
+                            </label>
+                            <input type="file" accept="image/*" onchange="handleQuestionImageUpload('${q.id}', this)" style="font-size:11px;color:var(--text-muted);">
+                            ${q.image ? `
+                                <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+                                    <img src="${q.image}" style="height:48px;border-radius:4px;border:1px solid #3b82f6;">
+                                    <button type="button" class="btn btn-ghost btn-sm" onclick="removeQuestionImage('${q.id}')" style="font-size:11px;padding:2px 6px;color:#ef4444;">Görseli Kaldır</button>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div style="background:rgba(0,0,0,0.15);padding:10px;border-radius:6px;border:1px dashed var(--border-color);">
+                            <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">
+                                💡 İpucu Metni (Opsiyonel):
+                            </label>
+                            <input type="text" class="form-control" placeholder="Öğrenci takıldığında gösterilecek ipucu..." value="${escapeHtml(q.hint || '')}" oninput="updateQHint('${q.id}', this.value)" style="font-size:12px;">
+                        </div>
+                    </div>
+
+                    <!-- SORU TİPİNE ÖZEL ALANLAR -->
+                    ${renderQuestionTypeControls(q)}
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderQuestionTypeControls(q) {
+        if (q.type === 'multiple_choice') {
+            const opts = q.options || [];
+            return `
+                <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:6px;border:1px solid var(--border-color);">
+                    <div style="font-size:12px;font-weight:700;color:white;margin-bottom:8px;">Şıklar ve Doğru Cevap (Doğru olan şıkkı işaretleyiniz):</div>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                        ${opts.map((opt, oIdx) => `
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;">
+                                    <input type="radio" name="cor_${q.id}" value="${opt.id}" ${q.correctAnswer === opt.id ? 'checked' : ''} onchange="updateQCorrectAnswer('${q.id}', '${opt.id}')">
+                                    <strong style="color:${q.correctAnswer === opt.id ? '#34d399' : '#94a3b8'};width:24px;">${opt.id})</strong>
+                                </label>
+                                <input type="text" class="form-control" style="font-size:13px;" placeholder="${opt.id} şıkkı metni..." value="${escapeHtml(opt.text || '')}" oninput="updateQOptionText('${q.id}', ${oIdx}, this.value)">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else if (q.type === 'true_false') {
+            return `
+                <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:6px;border:1px solid var(--border-color);">
+                    <div style="font-size:12px;font-weight:700;color:white;margin-bottom:8px;">Doğru Cevabı Seçiniz:</div>
+                    <div style="display:flex;gap:20px;">
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);padding:8px 16px;border-radius:6px;">
+                            <input type="radio" name="tf_${q.id}" value="D" ${q.correctAnswer === 'D' ? 'checked' : ''} onchange="updateQCorrectAnswer('${q.id}', 'D')">
+                            <span style="font-weight:bold;color:#34d399;">✓ DOĞRU</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);padding:8px 16px;border-radius:6px;">
+                            <input type="radio" name="tf_${q.id}" value="Y" ${q.correctAnswer === 'Y' ? 'checked' : ''} onchange="updateQCorrectAnswer('${q.id}', 'Y')">
+                            <span style="font-weight:bold;color:#f87171;">✕ YANLIŞ</span>
+                        </label>
+                    </div>
+                </div>
+            `;
+        } else if (q.type === 'open_ended') {
+            return `
+                <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:6px;border:1px solid var(--border-color);">
+                    <div style="font-size:12px;font-weight:700;color:#fbbf24;margin-bottom:4px;">✍️ Öğretmenin Referans / Örnek Cevabı (İnceleme Sırasında Size Yardımcı Olur):</div>
+                    <textarea class="form-control" rows="2" placeholder="Öğrenciden beklenen cevap anahtarı veya anahtar kelimeler..." oninput="updateQSampleAnswer('${q.id}', this.value)" style="font-size:13px;">${escapeHtml(q.sampleAnswer || '')}</textarea>
+                    <small style="color:var(--text-muted);font-size:11px;">Açık uçlu sorular sınav teslim edildiğinde admin panelinde sizin değerlendirmenize düşer.</small>
+                </div>
+            `;
+        }
+        return '';
+    }
+
+    function updateQText(qId, val) {
+        const q = currentEditorQuestions.find(x => x.id === qId);
+        if (q) q.text = val;
+    }
+    function updateQHint(qId, val) {
+        const q = currentEditorQuestions.find(x => x.id === qId);
+        if (q) q.hint = val;
+    }
+    function updateQPoints(qId, val) {
+        const q = currentEditorQuestions.find(x => x.id === qId);
+        if (q) {
+            q.points = parseInt(val) || 10;
+            let totalPoints = 0;
+            currentEditorQuestions.forEach(item => { totalPoints += (parseInt(item.points) || 0); });
+            const ptsText = document.getElementById('editorTotalPointsText');
+            if (ptsText) ptsText.textContent = totalPoints + ' Puan';
+        }
+    }
+    function updateQOptionText(qId, optIdx, val) {
+        const q = currentEditorQuestions.find(x => x.id === qId);
+        if (q && q.options && q.options[optIdx]) {
+            q.options[optIdx].text = val;
+        }
+    }
+    function updateQCorrectAnswer(qId, val) {
+        const q = currentEditorQuestions.find(x => x.id === qId);
+        if (q) q.correctAnswer = val;
+    }
+    function updateQSampleAnswer(qId, val) {
+        const q = currentEditorQuestions.find(x => x.id === qId);
+        if (q) q.sampleAnswer = val;
+    }
+
+    function handleQuestionImageUpload(qId, input) {
+        if (!input.files || !input.files[0]) return;
+        const file = input.files[0];
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const rawData = e.target.result;
+            const img = new Image();
+            img.onload = function() {
+                let w = img.width, h = img.height;
+                const maxDim = 800;
+                if (w > maxDim || h > maxDim) {
+                    if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                    else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = w; canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const compressed = canvas.toDataURL('image/jpeg', 0.75);
+
+                const q = currentEditorQuestions.find(x => x.id === qId);
+                if (q) {
+                    q.image = compressed;
+                    renderEditorQuestions();
+                }
+            };
+            img.src = rawData;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function removeQuestionImage(qId) {
+        const q = currentEditorQuestions.find(x => x.id === qId);
+        if (q) {
+            q.image = '';
+            renderEditorQuestions();
+        }
+    }
+
+    function saveExamAsDraft() {
+        saveExamPayloadWithStatus('draft');
+    }
+
+    function handleSaveExamForm(e) {
+        e.preventDefault();
+        saveExamPayloadWithStatus('active');
+    }
+
+    function saveExamPayloadWithStatus(status) {
+        const title = (document.getElementById('editorExamTitle')?.value || '').trim();
+        if (!title) {
+            alert('Lütfen sınav başlığı giriniz!');
+            return;
+        }
+
+        if (currentEditorQuestions.length === 0) {
+            alert('Lütfen sınava en az 1 soru ekleyiniz!');
+            return;
+        }
+
+        const id = document.getElementById('editorExamId')?.value || '';
+        const targetClassId = document.getElementById('editorExamTargetClass')?.value || 'all';
+        const classes = lmsStorage.getAllClasses();
+        const targetClassObj = classes.find(c => c && c.id === targetClassId);
+        const targetClassName = targetClassObj ? targetClassObj.name : 'Tüm Sınıflar';
+
+        const duration = parseInt(document.getElementById('editorExamDuration')?.value) || 40;
+        const pin = (document.getElementById('editorExamPin')?.value || '123').trim().toUpperCase() || '123';
+        const instructions = (document.getElementById('editorExamInstructions')?.value || '').trim();
+        const allowNav = document.getElementById('editorExamAllowNav')?.value === 'true';
+        const showRes = document.getElementById('editorExamShowResults')?.value === 'true';
+        const randQ = document.getElementById('editorExamRandomize')?.value === 'true';
+        const bonusMod = document.getElementById('editorExamBonusModule')?.value || '';
+        const bonusPts = parseInt(document.getElementById('editorExamBonusPoints')?.value) || 0;
+
+        const payload = {
+            id: id || undefined,
+            title: title,
+            instructions: instructions,
+            targetClassId: targetClassId,
+            targetClassName: targetClassName,
+            durationMinutes: duration,
+            pin: pin,
+            allowNavigation: allowNav,
+            showResultsImmediately: showRes,
+            randomizeQuestions: randQ,
+            bonusModuleId: bonusMod,
+            bonusPoints: bonusPts,
+            questions: currentEditorQuestions,
+            status: status
+        };
+
+        const res = lmsStorage.saveExam(payload);
+        if (res && res.success) {
+            closeModal('examEditorModal');
+            updateExamKPIs();
+            filterAndRenderExamsList();
+            populateExamFilterDropdowns();
+            alert('✓ Sınav başarıyla ' + (status === 'active' ? 'kaydedildi ve yayına alındı!' : 'taslak olarak saklandı.'));
+        } else {
+            alert('Sınav kaydedilirken hata oluştu: ' + (res ? res.message : 'Bilinmeyen hata'));
+        }
+    }
+
+    function populateExamFilterDropdowns() {
+        const sel = document.getElementById('subExamFilterSelect');
+        if (!sel || typeof lmsStorage === 'undefined') return;
+        const exams = lmsStorage.getAllExams();
+        const cur = sel.value;
+        let h = '<option value="all">Tüm Sınavlar</option>';
+        exams.forEach(e => {
+            h += `<option value="${e.id}">${escapeHtml(e.title)}</option>`;
+        });
+        sel.innerHTML = h;
+        sel.value = cur || 'all';
+    }
+
+    function deleteExamConfirm(examId) {
+        const ex = lmsStorage.getExamById(examId);
+        if (!ex) return;
+        if (!confirm(`"${ex.title}" başlıklı sınavı ve bu sınava ait tüm kursiyer evraklarını silmek istediğinizden emin misiniz?`)) return;
+        lmsStorage.deleteExam(examId);
+        updateExamKPIs();
+        filterAndRenderExamsList();
+        filterAndRenderSubmissionsTable();
+        populateExamFilterDropdowns();
+    }
+
+    // ==================== KURSİYER SINAV EVRAKLARI & NOT TABLOSU ====================
+
+    function filterAndRenderSubmissionsTable() {
+        if (typeof lmsStorage === 'undefined') return;
+        const subs = lmsStorage.getAllExamSubmissions();
+        const examFilter = document.getElementById('subExamFilterSelect')?.value || 'all';
+        const classFilter = document.getElementById('subClassFilterSelect')?.value || 'all';
+        const search = (document.getElementById('subSearchInput')?.value || '').toLowerCase().trim();
+
+        const filtered = subs.filter(s => {
+            if (!s) return false;
+            if (examFilter !== 'all' && s.examId !== examFilter) return false;
+            if (classFilter !== 'all' && s.classId !== classFilter) return false;
+            if (search) {
+                const name = (s.studentName || '').toLowerCase();
+                const uname = (s.studentUsername || '').toLowerCase();
+                if (!name.includes(search) && !uname.includes(search)) return false;
+            }
+            return true;
+        });
+
+        const tbody = document.getElementById('submissionsTableBody');
+        if (!tbody) return;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="12" style="text-align:center;padding:36px;color:var(--text-muted);">
+                        Henüz sınav evrakı veya sonuç bulunmamaktadır. Kursiyerler sınavı tamamladığında burada listelenecektir.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map((s, idx) => {
+            const isGraded = s.status === 'graded';
+            const scoreColor = s.finalScore >= 50 ? '#34d399' : '#f87171';
+            const mins = Math.floor((s.timeSpentSeconds || 0) / 60);
+
+            return `
+                <tr>
+                    <td style="color:var(--text-muted);font-weight:700;">${idx + 1}</td>
+                    <td>
+                        <strong style="color:white;font-size:13.5px;">${escapeHtml(s.studentName || 'Kursiyer')}</strong>
+                        <div style="font-size:11px;color:var(--text-muted);">@${escapeHtml(s.studentUsername || '')}</div>
+                    </td>
+                    <td><span class="badge" style="background:rgba(255,255,255,0.06);">${escapeHtml(s.className || s.classId || '-')}</span></td>
+                    <td>
+                        <div style="font-size:13px;color:white;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                            ${escapeHtml(s.examTitle || 'Sınav')}
+                        </div>
+                    </td>
+                    <td style="font-size:12px;color:var(--text-muted);">
+                        ${new Date(s.submittedAt || Date.now()).toLocaleDateString('tr-TR')} ${new Date(s.submittedAt || Date.now()).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td style="font-size:12px;">${mins} dk</td>
+                    <td style="font-weight:bold;color:#60a5fa;">${s.autoScore || 0}</td>
+                    <td style="font-weight:bold;color:#fbbf24;">${s.manualScore || 0}</td>
+                    <td>
+                        ${(s.bonusScore || s.adminAdjustmentScore) ? `
+                            <span style="font-size:11px;color:#34d399;">
+                                ${s.bonusScore > 0 ? ('+' + s.bonusScore + 'B ') : ''}
+                                ${s.adminAdjustmentScore ? (s.adminAdjustmentScore > 0 ? ('+' + s.adminAdjustmentScore + 'K') : (s.adminAdjustmentScore + 'K')) : ''}
+                            </span>
+                        ` : '-'}
+                    </td>
+                    <td>
+                        <strong style="font-size:16px;color:${scoreColor};background:rgba(0,0,0,0.3);padding:2px 8px;border-radius:6px;border:1px solid ${scoreColor};">
+                            ${s.finalScore}
+                        </strong>
+                    </td>
+                    <td>
+                        <span class="badge" style="background:${isGraded ? 'rgba(16,185,129,0.15)' : 'rgba(245,158,11,0.15)'};color:${isGraded ? '#34d399' : '#fbbf24'};border:1px solid ${isGraded ? 'rgba(16,185,129,0.3)' : 'rgba(245,158,11,0.3)'};">
+                            ${isGraded ? '✓ Onaylandı' : '⏳ İnceleme Bekliyor'}
+                        </span>
+                    </td>
+                    <td style="text-align:right;">
+                        <button class="btn btn-primary btn-sm" onclick="openGradingModal('${s.id}')">
+                            📄 İncele & Notlandır
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    // ==================== EVRAK İNCELEME & AÇIK UÇLU NOTLANDIRMA MODALI ====================
+
+    function openGradingModal(subId) {
+        const sub = lmsStorage.getExamSubmissionById(subId);
+        if (!sub) return;
+        currentGradingSubmission = JSON.parse(JSON.stringify(sub));
+        const exam = lmsStorage.getExamById(sub.examId);
+
+        const metaEl = document.getElementById('gradingModalMeta');
+        if (metaEl) metaEl.textContent = 'Evrak No: ' + sub.id + ' • ' + (sub.studentName || '') + ' (' + (sub.className || '') + ')';
+
+        const body = document.getElementById('gradingModalBody');
+        if (!body) return;
+
+        const results = Array.isArray(sub.questionResults) ? sub.questionResults : [];
+        const examQuestions = exam && Array.isArray(exam.questions) ? exam.questions : [];
+
+        body.innerHTML = `
+            <!-- KURSİYER ÖZET BİLGİ KARTI -->
+            <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+                <div><strong>Kursiyer:</strong> <span style="color:white;">${escapeHtml(sub.studentName)}</span></div>
+                <div><strong>Sınıf:</strong> <span style="color:white;">${escapeHtml(sub.className || sub.classId)}</span></div>
+                <div><strong>Sınav:</strong> <span style="color:#60a5fa;">${escapeHtml(sub.examTitle)}</span></div>
+                <div><strong>Harcanan Süre:</strong> <span style="color:white;">${Math.floor((sub.timeSpentSeconds||0)/60)} dk ${(sub.timeSpentSeconds||0)%60} sn</span></div>
+                <div><strong>Test Notu:</strong> <span style="color:#60a5fa;font-weight:bold;">${sub.autoScore || 0} Puan</span></div>
+                <div><strong>Açık Uçlu:</strong> <span id="gradingLiveManualScore" style="color:#fbbf24;font-weight:bold;">${sub.manualScore || 0} Puan</span></div>
+                <div><strong>Nihai Not:</strong> <span id="gradingLiveFinalScore" style="color:#34d399;font-weight:800;font-size:16px;">${sub.finalScore} / 100</span></div>
+                <div><strong>Durum:</strong> <span id="gradingLiveStatusBadge" style="color:${sub.status === 'graded' ? '#34d399' : '#fbbf24'};">${sub.status === 'graded' ? '✓ Onaylandı' : '⏳ Değerlendirme Bekliyor'}</span></div>
+            </div>
+
+            <!-- SORU SORU YANIT DÖKÜMÜ -->
+            <h4 style="color:#60a5fa;font-size:14px;margin:16px 0 10px;">📋 Soru ve Yanıt İncelemesi:</h4>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                ${results.map((r, idx) => {
+                    const originalQ = examQuestions.find(q => q.id === r.questionId) || {};
+                    const isMC = r.type === 'multiple_choice';
+                    const isTF = r.type === 'true_false';
+                    const isOpen = r.type === 'open_ended';
+
+                    return `
+                        <div style="background:rgba(0,0,0,0.25);border:1px solid ${isOpen ? '#f59e0b' : (r.isCorrect ? '#10b981' : '#ef4444')};border-radius:8px;padding:14px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                <span style="font-weight:bold;color:white;font-size:13px;">Soru ${idx + 1} (${r.maxPoints || 10} Puan)</span>
+                                <span style="font-size:12px;font-weight:bold;color:${isOpen ? '#fbbf24' : (r.isCorrect ? '#34d399' : '#f87171')};">
+                                    ${isOpen ? '✍️ Açık Uçlu Soru' : (r.isCorrect ? '✓ DOĞRU (' + r.earnedPoints + ' Puan)' : '✕ YANLIŞ (0 Puan)')}
+                                </span>
+                            </div>
+
+                            <div style="color:#e2e8f0;font-size:13.5px;margin-bottom:8px;">${escapeHtml(originalQ.text || 'Soru metni')}</div>
+
+                            ${originalQ.image ? `<img src="${originalQ.image}" style="max-height:100px;border-radius:4px;margin-bottom:8px;">` : ''}
+
+                            <!-- CEVAP ALANI -->
+                            <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:6px;font-size:13px;">
+                                <div style="margin-bottom:4px;">
+                                    <strong style="color:var(--text-muted);">Kursiyerin Yanıtı:</strong>
+                                    <span style="color:white;font-weight:600;margin-left:6px;">${escapeHtml(r.studentAnswer || '(Boş Bırakıldı)')}</span>
+                                </div>
+
+                                ${!isOpen ? `
+                                    <div>
+                                        <strong style="color:var(--text-muted);">Doğru Yanıt:</strong>
+                                        <span style="color:#34d399;font-weight:bold;margin-left:6px;">${escapeHtml(r.correctAnswer || '')}</span>
+                                    </div>
+                                ` : `
+                                    <div style="margin-top:6px;border-top:1px dashed var(--border-color);padding-top:6px;">
+                                        <div style="color:#fbbf24;font-size:12px;margin-bottom:4px;"><strong>Öğretmen Referans Cevabı:</strong> ${escapeHtml(originalQ.sampleAnswer || '(Belirtilmemiş)')}</div>
+                                        <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
+                                            <span style="font-size:12px;color:white;font-weight:bold;">Bu Soru İçin Verilen Puan:</span>
+                                            <input type="number" id="manualQScore_${r.questionId}" value="${r.earnedPoints || 0}" min="0" max="${r.maxPoints || 20}" style="width:70px;padding:4px 8px;font-weight:bold;color:#34d399;background:var(--bg-main);border:1px solid #34d399;border-radius:4px;" onchange="updateGradingQuestionScore('${r.questionId}', this.value, ${r.maxPoints || 20})">
+                                            <button type="button" class="btn btn-success btn-sm" onclick="setGradingScorePreset('${r.questionId}', ${r.maxPoints || 20}, ${r.maxPoints || 20})">✓ Tam Puan (${r.maxPoints})</button>
+                                            <button type="button" class="btn btn-ghost btn-sm" onclick="setGradingScorePreset('${r.questionId}', Math.round((${r.maxPoints || 20})/2), ${r.maxPoints || 20})" style="color:#fbbf24;">½ Yarım Puan (${Math.round((r.maxPoints||20)/2)})</button>
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="setGradingScorePreset('${r.questionId}', 0, ${r.maxPoints || 20})">✕ 0 Puan</button>
+                                        </div>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+
+            <!-- ÖĞRETMEN EK PUANI VE GERİ BİLDİRİMİ -->
+            <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;padding:14px;margin-top:16px;">
+                <h4 style="color:#60a5fa;font-size:14px;margin:0 0 10px;">⭐ Ek Puan (Kanaat Notu) & Öğretmen Görüşü:</h4>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+                    <div>
+                        <label class="form-label" style="font-size:12px;">Admin Ek Puanı (Kanaat):</label>
+                        <input type="number" id="gradingAdminAdjustment" class="form-control" value="${sub.adminAdjustmentScore || 0}" min="-50" max="50" onchange="updateGradingAdjustment(this.value)">
+                        <small style="color:var(--text-muted);font-size:11px;">İsteğe bağlı kanaat puanı ekleyip çıkarabilirsiniz.</small>
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-size:12px;">Öğretmen Değerlendirme Notu / Geri Bildirimi:</label>
+                        <textarea id="gradingTeacherNote" class="form-control" rows="2" placeholder="Kursiyerin görmesini istediğiniz notunuz...">${escapeHtml(sub.teacherNote || '')}</textarea>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        openModal('examGradingModal');
+    }
+
+    function setGradingScorePreset(qId, score, maxPoints) {
+        const inp = document.getElementById('manualQScore_' + qId);
+        if (inp) inp.value = score;
+        updateGradingQuestionScore(qId, score, maxPoints);
+    }
+
+    function updateGradingQuestionScore(qId, score, maxPoints) {
+        if (!currentGradingSubmission) return;
+        const qRes = (currentGradingSubmission.questionResults || []).find(r => r.questionId === qId);
+        if (qRes) {
+            qRes.earnedPoints = Math.min(Math.max(0, parseInt(score) || 0), maxPoints);
+            recalculateLiveGrading();
+        }
+    }
+
+    function updateGradingAdjustment(val) {
+        if (!currentGradingSubmission) return;
+        currentGradingSubmission.adminAdjustmentScore = parseInt(val) || 0;
+        recalculateLiveGrading();
+    }
+
+    function recalculateLiveGrading() {
+        if (!currentGradingSubmission) return;
+        let manual = 0;
+        (currentGradingSubmission.questionResults || []).forEach(r => {
+            if (r.type === 'open_ended') {
+                manual += (parseInt(r.earnedPoints) || 0);
+            }
+        });
+        currentGradingSubmission.manualScore = manual;
+
+        const auto = currentGradingSubmission.autoScore || 0;
+        const bonus = currentGradingSubmission.bonusScore || 0;
+        const adj = currentGradingSubmission.adminAdjustmentScore || 0;
+        const final = Math.max(0, auto + manual + bonus + adj);
+        currentGradingSubmission.finalScore = final;
+
+        const mEl = document.getElementById('gradingLiveManualScore');
+        const fEl = document.getElementById('gradingLiveFinalScore');
+        if (mEl) mEl.textContent = manual + ' Puan';
+        if (fEl) fEl.textContent = final + ' / 100';
+    }
+
+    function saveGradingDecision() {
+        if (!currentGradingSubmission) return;
+        const teacherNote = document.getElementById('gradingTeacherNote')?.value || '';
+        const adj = parseInt(document.getElementById('gradingAdminAdjustment')?.value) || 0;
+
+        currentGradingSubmission.teacherNote = teacherNote;
+        currentGradingSubmission.adminAdjustmentScore = adj;
+        currentGradingSubmission.status = 'graded';
+
+        const res = lmsStorage.gradeExamSubmission(currentGradingSubmission.id, {
+            questionResults: currentGradingSubmission.questionResults,
+            manualScore: currentGradingSubmission.manualScore,
+            adminAdjustmentScore: adj,
+            bonusScore: currentGradingSubmission.bonusScore,
+            teacherNote: teacherNote,
+            status: 'graded'
+        });
+
+        if (res && res.success) {
+            closeModal('examGradingModal');
+            updateExamKPIs();
+            filterAndRenderSubmissionsTable();
+            alert('✓ Kursiyer evrakı başarıyla notlandırıldı ve onaylandı!');
+        } else {
+            alert('Değerlendirme kaydedilemedi.');
+        }
+    }
+
+    // ==================== DIŞA AKTARMA (EXCEL & PDF) ====================
+
+    function exportExamSubmissionsExcel() {
+        if (typeof lmsStorage === 'undefined') return;
+        const subs = lmsStorage.getAllExamSubmissions();
+        if (subs.length === 0) {
+            alert('Dışa aktarılacak sınav sonucu bulunamadı.');
+            return;
+        }
+
+        if (typeof XLSX === 'undefined') {
+            alert('Excel kütüphanesi yüklenemedi.');
+            return;
+        }
+
+        const examFilter = document.getElementById('subExamFilterSelect')?.value || 'all';
+        const filtered = subs.filter(s => examFilter === 'all' || s.examId === examFilter);
+
+        const data = [
+            ['T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ'],
+            ['KURSİYER SINAV SONUÇ VE NOT ÇİZELGESİ'],
+            ['Rapor Tarihi:', new Date().toLocaleString('tr-TR')],
+            [],
+            ['#', 'Kursiyer Adı Soyadı', 'Kullanıcı Adı', 'Sınıf', 'Sınav Başlığı', 'Teslim Tarihi', 'Süre (Dk)', 'Test Notu', 'Açık Uçlu Notu', 'Modül Bonusu', 'Öğretmen Ek Puanı', 'NİHAİ PUAN', 'Durum']
+        ];
+
+        filtered.forEach((s, idx) => {
+            data.push([
+                idx + 1,
+                s.studentName || '',
+                s.studentUsername || '',
+                s.className || s.classId || '',
+                s.examTitle || '',
+                new Date(s.submittedAt || Date.now()).toLocaleString('tr-TR'),
+                Math.floor((s.timeSpentSeconds || 0) / 60),
+                s.autoScore || 0,
+                s.manualScore || 0,
+                s.bonusScore || 0,
+                s.adminAdjustmentScore || 0,
+                s.finalScore || 0,
+                s.status === 'graded' ? 'Onaylandı' : 'İnceleme Bekliyor'
+            ]);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Sınav Sonuçları');
+        XLSX.writeFile(wb, 'EHEM_Sinav_Sonuc_Cizelgesi.xlsx');
+    }
+
+    function printExamSubmissionsReport() {
+        if (typeof lmsStorage === 'undefined') return;
+        const subs = lmsStorage.getAllExamSubmissions();
+        const examFilter = document.getElementById('subExamFilterSelect')?.value || 'all';
+        const filtered = subs.filter(s => examFilter === 'all' || s.examId === examFilter);
+
+        const printWin = window.open('', '_blank');
+        const rows = filtered.map((s, i) => `
+            <tr>
+                <td style="border:1px solid #333;padding:6px;text-align:center;">${i + 1}</td>
+                <td style="border:1px solid #333;padding:6px;font-weight:bold;">${escapeHtml(s.studentName)}</td>
+                <td style="border:1px solid #333;padding:6px;text-align:center;">${escapeHtml(s.className || s.classId)}</td>
+                <td style="border:1px solid #333;padding:6px;">${escapeHtml(s.examTitle)}</td>
+                <td style="border:1px solid #333;padding:6px;text-align:center;">${new Date(s.submittedAt||Date.now()).toLocaleDateString('tr-TR')}</td>
+                <td style="border:1px solid #333;padding:6px;text-align:center;">${s.autoScore || 0}</td>
+                <td style="border:1px solid #333;padding:6px;text-align:center;">${s.manualScore || 0}</td>
+                <td style="border:1px solid #333;padding:6px;text-align:center;">${(s.bonusScore || 0) + (s.adminAdjustmentScore || 0)}</td>
+                <td style="border:1px solid #333;padding:6px;text-align:center;font-weight:bold;font-size:14px;">${s.finalScore}</td>
+                <td style="border:1px solid #333;padding:6px;text-align:center;">${s.status === 'graded' ? 'Onaylandı' : 'Beklemede'}</td>
+            </tr>
+        `).join('');
+
+        printWin.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Sınav Not Çizelgesi</title>
+                <style>
+                    body { font-family: 'Times New Roman', serif; padding: 25px; color: #111; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+                    th { border: 1px solid #333; padding: 8px; background: #f2f2f2; }
+                    @media print { .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="no-print" style="margin-bottom:15px;">
+                    <button onclick="window.print()" style="padding:8px 16px;cursor:pointer;font-weight:bold;">🖨️ Yazdır / PDF Kaydet</button>
+                </div>
+                <div style="text-align:center;border-bottom:2px double #111;padding-bottom:10px;">
+                    <h3 style="margin:0 0 4px;">T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ MÜDÜRLÜĞÜ</h3>
+                    <h2 style="margin:0 0 4px;">KURSİYER SINAV DEĞERLENDİRME VE NOT ÇİZELGESİ</h2>
+                    <span style="font-size:12px;">Tarih: ${new Date().toLocaleDateString('tr-TR')}</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Kursiyer Adı Soyadı</th>
+                            <th>Sınıf</th>
+                            <th>Sınav Başlığı</th>
+                            <th>Tarih</th>
+                            <th>Test</th>
+                            <th>Açık Uçlu</th>
+                            <th>Bonus/Ek</th>
+                            <th>NİHAİ PUAN</th>
+                            <th>Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+                <div style="margin-top:40px;display:flex;justify-content:space-between;">
+                    <div>Düzenleyen: Kurs Öğretmeni<br><br>İmza: .............................</div>
+                    <div>Onaylayan: Kurum Müdürü<br><br>İmza / Mühür: .............................</div>
+                </div>
+            </body>
+            </html>
+        `);
+        printWin.document.close();
+    }
+
+    function printCurrentExamSheet() {
+        if (!currentGradingSubmission) return;
+        const s = currentGradingSubmission;
+        const exam = lmsStorage.getExamById(s.examId);
+        const results = Array.isArray(s.questionResults) ? s.questionResults : [];
+
+        const printWin = window.open('', '_blank');
+        const qRows = results.map((r, i) => `
+            <div style="margin-bottom:12px;border-bottom:1px solid #ddd;padding-bottom:8px;">
+                <strong>Soru ${i + 1}:</strong> ${r.type === 'open_ended' ? '[Açık Uçlu]' : ''}
+                <div style="margin:4px 0;"><strong>Kursiyer Cevabı:</strong> ${escapeHtml(r.studentAnswer || '(Boş)')}</div>
+                ${r.type !== 'open_ended' ? `<div style="color:green;"><strong>Doğru Cevap:</strong> ${escapeHtml(r.correctAnswer || '')}</div>` : ''}
+                <div style="font-weight:bold;">Alınan Puan: ${r.earnedPoints || 0} / ${r.maxPoints || 10}</div>
+            </div>
+        `).join('');
+
+        printWin.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Sınav Evrakı - ${escapeHtml(s.studentName)}</title>
+                <style>
+                    body { font-family: 'Times New Roman', serif; padding: 30px; color: #111; }
+                    @media print { .no-print { display: none; } }
+                </style>
+            </head>
+            <body>
+                <div class="no-print" style="margin-bottom:15px;">
+                    <button onclick="window.print()" style="padding:8px 16px;cursor:pointer;font-weight:bold;">🖨️ Yazdır / PDF İndir</button>
+                </div>
+                <div style="text-align:center;border-bottom:2px double #111;padding-bottom:12px;margin-bottom:16px;">
+                    <h3>T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ MÜDÜRLÜĞÜ</h3>
+                    <h2>BİLGİSAYAR İŞLETMENLİĞİ KURSU SINAV EVRAKI</h2>
+                </div>
+                <table style="width:100%;margin-bottom:20px;border-collapse:collapse;">
+                    <tr>
+                        <td><strong>Kursiyer:</strong> ${escapeHtml(s.studentName)}</td>
+                        <td><strong>Sınav Tarihi:</strong> ${new Date(s.submittedAt||Date.now()).toLocaleDateString('tr-TR')}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sınıf:</strong> ${escapeHtml(s.className || s.classId)}</td>
+                        <td><strong>Sınav Başlığı:</strong> ${escapeHtml(s.examTitle)}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Harcanan Süre:</strong> ${Math.floor((s.timeSpentSeconds||0)/60)} dk</td>
+                        <td><strong style="font-size:16px;">NİHAİ PUAN: ${s.finalScore} / 100</strong></td>
+                    </tr>
+                </table>
+                <hr>
+                <h4>SORU VE CEVAP DÖKÜMÜ:</h4>
+                ${qRows}
+                ${s.teacherNote ? `<div style="margin-top:14px;background:#f9f9f9;padding:10px;border:1px solid #ccc;"><strong>Öğretmen Görüşü:</strong> ${escapeHtml(s.teacherNote)}</div>` : ''}
+            </body>
+            </html>
+        `);
+        printWin.document.close();
+    }
+
+    function previewExamModal(examId) {
+        const ex = lmsStorage.getExamById(examId);
+        if (!ex) return;
+
+        const titleEl = document.getElementById('previewModalTitle');
+        const content = document.getElementById('previewModalContent');
+        if (titleEl) titleEl.textContent = '👁️ Sınav Önizleme: ' + ex.title;
+
+        if (content) {
+            const qs = Array.isArray(ex.questions) ? ex.questions : [];
+            content.innerHTML = `
+                <div style="background:rgba(255,255,255,0.03);padding:14px;border-radius:8px;margin-bottom:16px;">
+                    <div><strong>Hedef Kitle:</strong> ${escapeHtml(ex.targetClassName || 'Tüm Sınıflar')}</div>
+                    <div><strong>Sınav Süresi:</strong> ${ex.durationMinutes || 40} Dakika</div>
+                    <div><strong>Giriş Şifresi:</strong> <code style="color:#fbbf24;font-weight:bold;">${escapeHtml(ex.pin || '123')}</code></div>
+                    <div><strong>Gezinme:</strong> ${ex.allowNavigation !== false ? 'Serbest İleri-Geri' : 'Yalnızca İleri'}</div>
+                    <div><strong>Sonuçlar:</strong> ${ex.showResultsImmediately ? 'Anında Gösterilsin' : 'Öğretmen Onayından Sonra Gösterilsin'}</div>
+                </div>
+
+                <h4 style="color:#60a5fa;margin-bottom:10px;">Sorular (${qs.length} Soru):</h4>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                    ${qs.map((q, i) => `
+                        <div style="background:rgba(0,0,0,0.2);padding:12px;border-radius:8px;border:1px solid var(--border-color);">
+                            <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                                <strong>Soru ${i + 1}</strong>
+                                <span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;">${q.points || 10} Puan</span>
+                            </div>
+                            <div style="margin-bottom:8px;color:#f1f5f9;">${escapeHtml(q.text)}</div>
+                            ${q.image ? `<img src="${q.image}" style="max-height:120px;border-radius:4px;margin-bottom:8px;">` : ''}
+                            ${q.hint ? `<div style="font-size:12px;color:#fbbf24;margin-bottom:6px;">💡 İpucu: ${escapeHtml(q.hint)}</div>` : ''}
+                            ${q.type === 'multiple_choice' ? `
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                                    ${(q.options || []).map(opt => `
+                                        <div style="padding:6px 10px;border-radius:4px;background:${q.correctAnswer === opt.id ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.03)'};border:1px solid ${q.correctAnswer === opt.id ? '#10b981' : 'transparent'};color:${q.correctAnswer === opt.id ? '#34d399' : 'white'};">
+                                            <strong>${opt.id})</strong> ${escapeHtml(opt.text)}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : (q.type === 'true_false' ? `
+                                <div style="display:flex;gap:10px;">
+                                    <span style="padding:4px 12px;border-radius:4px;background:${q.correctAnswer === 'D' ? 'rgba(16,185,129,0.2)' : 'rgba(255,255,255,0.03)'};color:${q.correctAnswer === 'D' ? '#34d399' : '#94a3b8'};">✓ DOĞRU</span>
+                                    <span style="padding:4px 12px;border-radius:4px;background:${q.correctAnswer === 'Y' ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.03)'};color:${q.correctAnswer === 'Y' ? '#f87171' : '#94a3b8'};">✕ YANLIŞ</span>
+                                </div>
+                            ` : `
+                                <div style="font-size:12px;color:#fbbf24;background:rgba(245,158,11,0.08);padding:8px;border-radius:6px;">
+                                    <strong>Örnek Cevap:</strong> ${escapeHtml(q.sampleAnswer || '(Belirtilmemiş)')}
+                                </div>
+                            `)}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        openModal('examPreviewModal');
+    }
+
+    async function handlePushExamsToCloud() {
+        if (typeof lmsStorage === 'undefined') return;
+        const res = await lmsStorage.pushAllExamsAndSubmissionsToFirebase();
+        if (res && res.success) {
+            alert(`✓ Harika! ${res.examCount} sınav ve ${res.submissionCount} evrak Firebase bulutuna başarıyla yüklendi!`);
+        } else {
+            alert('Buluta aktarılırken hata: ' + (res ? res.message : 'Bilinmeyen hata'));
+        }
+    }
 </script>
 </body>
 </html>
