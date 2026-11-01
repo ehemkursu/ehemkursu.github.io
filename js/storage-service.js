@@ -1218,6 +1218,60 @@ const INITIAL_USERS = [
   }
 ];
 
+
+// ==================== OTOMATİK DEPOLAMA KOTASI TEMİZLİĞİ ====================
+(function autoCleanupStorageQuota() {
+    if (typeof localStorage === 'undefined') return;
+    try {
+        // 1. Eski şişkin taslak anahtarlarını temizle
+        const draftKeys = [
+            'coktan_sinavlar', 'cozumlu_sinavlar', 'dogruyanlis_sinavlar',
+            'emailtest_sinavlar', 'etkilesimli_sinavlar', 'dy_kutuphane',
+            'coktan_draft', 'cozumlu_draft', 'dogruyanlis_draft'
+        ];
+        draftKeys.forEach(k => {
+            try { localStorage.removeItem(k); } catch(e) {}
+        });
+
+        // 2. ehem_exams_db_v1 kotayı zorluyorsa (örn: > 400KB), içindeki eski devasa base64 görselleri küçült
+        const raw = localStorage.getItem('ehem_exams_db_v1');
+        if (raw && raw.length > 400000) {
+            const exams = JSON.parse(raw);
+            if (Array.isArray(exams)) {
+                let modified = false;
+                exams.forEach(ex => {
+                    if (ex.coverData && ex.coverData.length > 40000) {
+                        ex.coverData = '';
+                        modified = true;
+                    }
+                    if (Array.isArray(ex.questions)) {
+                        ex.questions.forEach(q => {
+                            if (q.img && q.img.length > 40000) { q.img = ''; modified = true; }
+                            if (q.imgData && q.imgData.length > 40000) { q.imgData = ''; modified = true; }
+                            if (q.qImgData && q.qImgData.length > 40000) { q.qImgData = ''; modified = true; }
+                            if (q.vidData && q.vidData.length > 40000) { q.vidData = ''; modified = true; }
+                            ['optA', 'optB', 'optC', 'optD'].forEach(opt => {
+                                if (q[opt] && q[opt].imgData && q[opt].imgData.length > 40000) {
+                                    q[opt].imgData = '';
+                                    modified = true;
+                                }
+                            });
+                        });
+                    }
+                });
+                if (modified) {
+                    try {
+                        localStorage.setItem('ehem_exams_db_v1', JSON.stringify(exams));
+                        console.log('[Storage] Eski şişkin sınav verileri başarıyla hafifletildi. Kota açıldı!');
+                    } catch(e) {}
+                }
+            }
+        }
+    } catch(err) {
+        console.warn('[Storage] autoCleanupStorageQuota uyarısı:', err);
+    }
+})();
+
 class StorageService {
     constructor() {
         this.init();
@@ -4130,21 +4184,48 @@ class StorageService {
         const clean = Array.isArray(exams) ? exams.filter(Boolean) : [];
         this._examsCache = clean;
 
+        let saved = false;
         try {
             localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(clean));
+            saved = true;
         } catch (quotaErr) {
-            console.warn('[Storage] LocalStorage kotası aşıldı! Eski taslaklar temizleniyor...', quotaErr);
+            console.warn('[Storage] LocalStorage kotası aşıldı! Eski taslaklar temizlenip yer açılıyor...', quotaErr);
             try {
-                ['coktan_sinavlar', 'cozumlu_sinavlar', 'dogruyanlis_sinavlar', 'emailtest_sinavlar', 'etkilesimli_sinavlar'].forEach(k => {
+                ['coktan_sinavlar', 'cozumlu_sinavlar', 'dogruyanlis_sinavlar', 'emailtest_sinavlar', 'etkilesimli_sinavlar', 'dy_kutuphane'].forEach(k => {
                     localStorage.removeItem(k);
                 });
                 localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(clean));
+                saved = true;
                 console.log('[Storage] Eski taslaklar temizlendi ve sınavlar kaydedildi.');
             } catch (e2) {
-                console.warn('[Storage] LocalStorage kotası hala yetersiz. Sınavlar bellek ve Firebase bulutunda güvenle korunuyor.', e2);
+                // Kota hala doluysa, yerel kopya için büyük görselleri hafiflet (Firebase yine de tam veriyi alacak!)
+                try {
+                    const slimExams = clean.map(ex => {
+                        const copy = JSON.parse(JSON.stringify(ex));
+                        if (copy.coverData && copy.coverData.length > 30000) copy.coverData = '';
+                        if (Array.isArray(copy.questions)) {
+                            copy.questions.forEach(q => {
+                                if (q.img && q.img.length > 30000) q.img = '';
+                                if (q.imgData && q.imgData.length > 30000) q.imgData = '';
+                                if (q.qImgData && q.qImgData.length > 30000) q.qImgData = '';
+                                if (q.vidData) q.vidData = '';
+                                ['optA', 'optB', 'optC', 'optD'].forEach(opt => {
+                                    if (q[opt] && q[opt].imgData && q[opt].imgData.length > 30000) q[opt].imgData = '';
+                                });
+                            });
+                        }
+                        return copy;
+                    });
+                    localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(slimExams));
+                    saved = true;
+                    console.log('[Storage] Sınavlar hafifletilerek yerel hafızaya sığdırıldı.');
+                } catch(e3) {
+                    console.warn('[Storage] Yerel hafıza tamamen dolu. Sınavlar bellek ve Firebase bulutunda güvenle korunuyor.');
+                }
             }
         }
 
+        // Firebase senkronizasyonu her zaman TAM ve EKSİKSİZ sınav verisiyle çalışır (Firebase kotasızdır)
         const examMap = {};
         clean.forEach(e => { if (e && e.id) examMap[e.id] = e; });
         this.syncCollectionToFirebase('exams', examMap);
