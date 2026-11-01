@@ -1,7 +1,7 @@
 {
   "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null",
+    ".read": true,
+    ".write": true,
     "kursiyerler": {
       ".indexOn": ["username", "classId"]
     },
@@ -19,6 +19,12 @@
     },
     "custom_modules": {
       ".indexOn": ["id"]
+    },
+    "exams_v2": {
+      ".indexOn": ["createdAt", "targetClassId", "status"]
+    },
+    "exam_submissions_v2": {
+      ".indexOn": ["examId", "studentId", "submittedAt", "status"]
     },
     "_system_ping": {
       ".indexOn": ["ts"]

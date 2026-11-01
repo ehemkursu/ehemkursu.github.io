@@ -1,3 +1,14 @@
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+if (typeof window !== 'undefined') window.escapeHtml = escapeHtml;
+
 /**
  * Edremit HEM Kursu - Depolama ve Oturum Servisi (LMS Storage Service)
  * Çift Modlu: LocalStorage (Varsayılan) + Firebase Realtime Database (Opsiyonel Bulut Senkronizasyonu)
@@ -14,7 +25,9 @@ const STORAGE_KEYS = {
     CUSTOM_MODULES: 'ehem_custom_modules_v1',
     ANNOUNCEMENTS: 'ehem_announcements_v1',
     MESSAGES: 'ehem_messages_v1',
-    DELETED_USERS: 'ehem_deleted_users_v1'
+    DELETED_USERS: 'ehem_deleted_users_v1',
+    EXAMS: 'ehem_exams_v2',
+    EXAM_SUBMISSIONS: 'ehem_exam_submissions_v2'
 };
 
 const DEFAULT_ADMIN = {
@@ -1130,6 +1143,58 @@ const INITIAL_USERS = [
   }
 ];
 
+const INITIAL_EXAMS = [
+  {
+    "id": "exam_demo_bilgisayar_1",
+    "title": "Bilgisayar İşletmenliği Genel Değerlendirme Sınavı",
+    "instructions": "1. Sınav süresi 30 dakikadır.\n2. Yanlış cevaplar doğru cevapları etkilemez.\n3. Sınavı tamamladığınızda sonuçlar ve detaylı evrak anında üretilecektir.",
+    "targetClassId": "",
+    "durationMinutes": 30,
+    "entryPin": "123",
+    "allowNavigation": true,
+    "showResultsImmediately": true,
+    "shuffleQuestions": false,
+    "allowRetake": false,
+    "bonusModuleId": "1",
+    "bonusPoints": 5,
+    "status": "active",
+    "createdAt": "2026-11-01T21:15:40.964Z",
+    "createdBy": "admin",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "mc",
+        "text": "Bilgisayarda verilerin kalıcı olarak saklandığı ana depolama birimi aşağıdakilerden hangisidir?",
+        "points": 35,
+        "options": [
+          "RAM Bellek",
+          "Sabit Disk (Hard Disk / SSD)",
+          "İşlemci (CPU)",
+          "Ekran Kartı (GPU)"
+        ],
+        "correctOption": 1,
+        "hint": "Elektrik kesilse dahi verileri saklayan kalıcı manyetik veya flash depolama donanımıdır."
+      },
+      {
+        "id": "q2",
+        "type": "tf",
+        "text": "Klavye, bilgisayara kullanıcı tarafından veri ve komut girilmesini sağlayan bir 'Giriş Birimi'dir.",
+        "points": 35,
+        "correctTf": true,
+        "hint": "Giriş ve çıkış birimlerinin farkını düşününüz."
+      },
+      {
+        "id": "q3",
+        "type": "open",
+        "text": "İşletim sisteminin bilgisayardaki temel görevlerinden 2 tanesini kısaca açıklayınız.",
+        "points": 30,
+        "referenceAnswer": "Donanım ile yazılım arasındaki iletişimi koordine etmek, dosya ve dizin yapısını yönetmek, bellek ve işlemci kaynaklarını programlar arasında paylaştırmak.",
+        "hint": "Windows başladığında arka planda yönettiği temel donanım ve yazılım süreçlerini düşününüz."
+      }
+    ]
+  }
+];
+
 class StorageService {
     constructor() {
         this.init();
@@ -1140,6 +1205,15 @@ class StorageService {
         ["ehem_exams_db_v1", "ehem_exam_settings_v1", "ehem_exam_submissions_v1", "ehem_exam_pin_verified_session", "coktan_sinavlar", "cozumlu_sinavlar", "dogruyanlis_sinavlar", "emailtest_sinavlar", "etkilesimli_sinavlar", "coktan_draft", "cozumlu_draft", "dogruyanlis_draft"].forEach(k => {
             try { localStorage.removeItem(k); } catch(e) {}
         });
+
+        // Sınavlar veritabanı boşsa varsayılan sınavla başlat
+        try {
+            const rawExams = localStorage.getItem(STORAGE_KEYS.EXAMS);
+            if (!rawExams || rawExams === "[]") {
+                localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(INITIAL_EXAMS));
+                this._examsCache = INITIAL_EXAMS;
+            }
+        } catch (e) {}
 
         // Sınıflar yoksa başlat, eksik olanları ekle
         const existingClasses = this.getAllClasses();
@@ -2384,6 +2458,10 @@ class StorageService {
                 }
             } catch (e) {}
 
+                        // 8. Sınavlar ve Evraklar (V2)
+            try { await this.pullExamsFromFirebase(); } catch (e) {}
+            try { await this.pullSubmissionsFromFirebase(); } catch (e) {}
+
             return { success: true, count, hasChanges };
         } catch (err) {
             return { success: false, message: err.message };
@@ -2459,6 +2537,9 @@ class StorageService {
                     body: JSON.stringify(themeSets)
                 });
             }
+
+                        // Sınavlar ve Evraklar (V2)
+            try { await this.pushAllExamsAndSubmissionsToFirebase(); } catch (e) {}
 
             return { success: true, count: cleanUsers.length };
         } catch (err) {
@@ -3592,6 +3673,393 @@ class StorageService {
         this.saveAllMessages([]);
         messages.forEach(m => this.deleteMessageFromFirebase(m.id));
         return { success: true, count };
+    }
+
+    // ==================== YENİ SINAV SİSTEMİ (V2) ====================
+
+    getAllExams() {
+        if (this._examsCache && Array.isArray(this._examsCache) && this._examsCache.length > 0) {
+            return this._examsCache;
+        }
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.EXAMS);
+            const exams = raw ? JSON.parse(raw) : [];
+            if (Array.isArray(exams)) {
+                this._examsCache = exams;
+                return exams;
+            }
+        } catch (e) {
+            console.warn('[Storage] Sınavlar okunurken hata:', e);
+        }
+        if (typeof INITIAL_EXAMS !== "undefined" && Array.isArray(INITIAL_EXAMS) && INITIAL_EXAMS.length > 0) {
+            this._examsCache = INITIAL_EXAMS;
+            return INITIAL_EXAMS;
+        }
+        return this._examsCache || [];
+    }
+
+    getExamById(examId) {
+        if (!examId) return null;
+        const exams = this.getAllExams();
+        return exams.find(e => e && e.id === examId) || null;
+    }
+
+    getExamsForStudent(studentId) {
+        const student = this.getUserById(studentId) || this.getCurrentStudent();
+        const exams = this.getAllExams();
+        const studentClassId = student ? student.classId : null;
+        const classes = this.getAllClasses();
+        const studentClass = classes.find(c => c && (c.id === studentClassId || c.name === studentClassId));
+        const studentClassName = studentClass ? (studentClass.name || '').toLowerCase() : '';
+
+        return exams.filter(ex => {
+            if (!ex) return false;
+            if (ex.status !== 'active' && ex.status !== 'published') return false;
+
+            const target = String(ex.targetClassId || 'all').trim().toLowerCase();
+            if (!target || target === 'all' || target === 'all_classes' || target === 'genel' || target.includes('tüm') || target.includes('tum')) {
+                return true;
+            }
+
+            if (!studentClassId) return true;
+            if (target === String(studentClassId).trim().toLowerCase()) return true;
+            if (studentClass && target === String(studentClass.id).trim().toLowerCase()) return true;
+            if (studentClassName && (target === studentClassName || studentClassName.includes(target) || target.includes(studentClassName))) return true;
+
+            return false;
+        });
+    }
+
+    saveExam(examData) {
+        if (!examData) return { success: false, message: 'Geçersiz sınav verisi.' };
+        const exams = this.getAllExams();
+        const id = examData.id || ('exam_' + Date.now() + '_' + Math.floor(Math.random() * 1000));
+
+        let totalPoints = 0;
+        const questions = Array.isArray(examData.questions) ? examData.questions : [];
+        questions.forEach(q => {
+            totalPoints += (parseInt(q.points) || 0);
+        });
+
+        const examObj = {
+            id,
+            title: (examData.title || 'Başlıksız Sınav').trim(),
+            instructions: (examData.instructions || '').trim(),
+            targetClassId: examData.targetClassId || 'all',
+            targetClassName: examData.targetClassName || 'Tüm Sınıflar',
+            pin: (examData.pin || '123').trim().toUpperCase(),
+            durationMinutes: parseInt(examData.durationMinutes) || 40,
+            allowNavigation: examData.allowNavigation !== false,
+            showResultsImmediately: !!examData.showResultsImmediately,
+            randomizeQuestions: !!examData.randomizeQuestions,
+            allowRetake: !!examData.allowRetake,
+            bonusModuleId: examData.bonusModuleId || '',
+            bonusPoints: parseInt(examData.bonusPoints) || 0,
+            questions: questions,
+            totalPoints: totalPoints || 100,
+            status: examData.status || 'active',
+            createdAt: examData.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            createdBy: examData.createdBy || 'admin'
+        };
+
+        const existingIdx = exams.findIndex(e => e && e.id === id);
+        if (existingIdx >= 0) {
+            exams[existingIdx] = examObj;
+        } else {
+            exams.unshift(examObj);
+        }
+
+        this.saveAllExams(exams);
+        this.syncExamToFirebase(examObj);
+        return { success: true, exam: examObj };
+    }
+
+    deleteExam(examId) {
+        if (!examId) return { success: false };
+        let exams = this.getAllExams();
+        const initialCount = exams.length;
+        exams = exams.filter(e => e && e.id !== examId);
+        this.saveAllExams(exams);
+        this.deleteExamFromFirebase(examId);
+
+        let subs = this.getAllExamSubmissions();
+        const keptSubs = subs.filter(s => s && s.examId !== examId);
+        if (keptSubs.length !== subs.length) {
+            this.saveAllExamSubmissions(keptSubs);
+        }
+
+        return { success: true, count: initialCount - exams.length };
+    }
+
+    saveAllExams(exams) {
+        const clean = Array.isArray(exams) ? exams.filter(Boolean) : [];
+        this._examsCache = clean;
+        try {
+            localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(clean));
+        } catch (quotaErr) {
+            console.warn('[Storage] LocalStorage kotası aşıldı! Görseller hafifletilip yerel depolanıyor...', quotaErr);
+            try {
+                const slimExams = clean.map(ex => {
+                    const copy = JSON.parse(JSON.stringify(ex));
+                    if (Array.isArray(copy.questions)) {
+                        copy.questions.forEach(q => {
+                            if (q.image && q.image.length > 20000) q.image = '';
+                        });
+                    }
+                    return copy;
+                });
+                localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(slimExams));
+            } catch(e2) {
+                console.warn('[Storage] Sınavlar bellekte tutuluyor.');
+            }
+        }
+    }
+
+    async syncExamToFirebase(exam) {
+        if (!exam || !exam.id) return;
+        try {
+            await this.fetchFirebase(`/exams_v2/${exam.id}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(exam)
+            });
+        } catch (e) {
+            console.warn('[Storage] syncExamToFirebase hatasi:', e);
+        }
+    }
+
+    async deleteExamFromFirebase(examId) {
+        if (!examId) return;
+        try {
+            await this.fetchFirebase(`/exams_v2/${examId}.json`, { method: 'DELETE' });
+        } catch (e) {}
+    }
+
+    async pullExamsFromFirebase() {
+        try {
+            const res = await this.fetchFirebase('/exams_v2.json');
+            if (res && res.ok) {
+                const raw = await res.json();
+                if (raw) {
+                    const cloudExams = Array.isArray(raw) ? raw.filter(Boolean) : Object.values(raw).filter(Boolean);
+                    const localExams = this.getAllExams();
+                    const examMap = new Map();
+                    localExams.forEach(le => { if (le && le.id) examMap.set(le.id, le); });
+                    cloudExams.forEach(ce => { if (ce && ce.id) examMap.set(ce.id, ce); });
+                    const merged = Array.from(examMap.values());
+                    this.saveAllExams(merged);
+                    return merged;
+                }
+            }
+        } catch (e) {}
+        return this.getAllExams();
+    }
+
+    // ==================== SINAV EVRAKLARI & SONUÇLAR (V2) ====================
+
+    getAllExamSubmissions() {
+        if (this._examSubmissionsCache && Array.isArray(this._examSubmissionsCache) && this._examSubmissionsCache.length > 0) {
+            return this._examSubmissionsCache;
+        }
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.EXAM_SUBMISSIONS);
+            const subs = raw ? JSON.parse(raw) : [];
+            if (Array.isArray(subs)) {
+                this._examSubmissionsCache = subs;
+                return subs;
+            }
+        } catch(e) {}
+        return this._examSubmissionsCache || [];
+    }
+
+    getExamSubmissionsByExamId(examId) {
+        if (!examId) return [];
+        const subs = this.getAllExamSubmissions();
+        return subs.filter(s => s && s.examId === examId);
+    }
+
+    getExamSubmissionsForStudent(studentId) {
+        if (!studentId) return [];
+        const subs = this.getAllExamSubmissions();
+        return subs.filter(s => s && String(s.studentId) === String(studentId));
+    }
+
+    getExamSubmissionById(subId) {
+        if (!subId) return null;
+        const subs = this.getAllExamSubmissions();
+        return subs.find(s => s && s.id === subId) || null;
+    }
+
+    saveExamSubmission(submission) {
+        if (!submission || !submission.examId || !submission.studentId) {
+            return { success: false, message: 'Geçersiz sınav gönderim verisi.' };
+        }
+
+        const subs = this.getAllExamSubmissions();
+        const id = submission.id || ('sub_' + Date.now() + '_' + Math.floor(Math.random() * 1000));
+        
+        let bonusScore = parseInt(submission.bonusScore) || 0;
+        const exam = this.getExamById(submission.examId);
+        const student = this.getUserById(submission.studentId) || this.getCurrentStudent();
+        
+        if (exam && exam.bonusModuleId && exam.bonusPoints > 0 && student) {
+            const completed = Array.isArray(student.completedModuleIds) ? student.completedModuleIds : [];
+            if (completed.includes(parseInt(exam.bonusModuleId)) || completed.includes(String(exam.bonusModuleId))) {
+                bonusScore = parseInt(exam.bonusPoints);
+            }
+        }
+
+        const autoScore = parseInt(submission.autoScore) || 0;
+        const manualScore = parseInt(submission.manualScore) || 0;
+        const adminAdjustmentScore = parseInt(submission.adminAdjustmentScore) || 0;
+        const finalScore = Math.max(0, autoScore + manualScore + bonusScore + adminAdjustmentScore);
+
+        const subObj = {
+            id,
+            examId: submission.examId,
+            examTitle: submission.examTitle || (exam ? exam.title : 'Sınav'),
+            studentId: submission.studentId,
+            studentName: submission.studentName || (student ? student.fullName : 'Kursiyer'),
+            studentUsername: submission.studentUsername || (student ? student.username : ''),
+            classId: submission.classId || (student ? student.classId : ''),
+            className: submission.className || '',
+            answers: submission.answers || {},
+            questionResults: Array.isArray(submission.questionResults) ? submission.questionResults : [],
+            timeSpentSeconds: parseInt(submission.timeSpentSeconds) || 0,
+            startedAt: submission.startedAt || new Date().toISOString(),
+            submittedAt: submission.submittedAt || new Date().toISOString(),
+            autoScore: autoScore,
+            manualScore: manualScore,
+            bonusScore: bonusScore,
+            adminAdjustmentScore: adminAdjustmentScore,
+            finalScore: finalScore,
+            status: submission.status || 'pending_review',
+            reviewedByAdmin: !!submission.reviewedByAdmin,
+            teacherNote: submission.teacherNote || '',
+            reviewedAt: submission.reviewedAt || null
+        };
+
+        const existingIdx = subs.findIndex(s => s && s.id === id);
+        if (existingIdx >= 0) {
+            subs[existingIdx] = subObj;
+        } else {
+            subs.unshift(subObj);
+        }
+
+        this.saveAllExamSubmissions(subs);
+        this.syncSubmissionToFirebase(subObj);
+        return { success: true, submission: subObj };
+    }
+
+    gradeExamSubmission(subId, updates) {
+        if (!subId) return { success: false, message: 'Evrak ID belirtilmedi.' };
+        const subs = this.getAllExamSubmissions();
+        const idx = subs.findIndex(s => s && s.id === subId);
+        if (idx < 0) return { success: false, message: 'Evrak bulunamadı.' };
+
+        const current = subs[idx];
+        if (updates.questionResults) current.questionResults = updates.questionResults;
+        if (updates.manualScore !== undefined) current.manualScore = parseInt(updates.manualScore) || 0;
+        if (updates.adminAdjustmentScore !== undefined) current.adminAdjustmentScore = parseInt(updates.adminAdjustmentScore) || 0;
+        if (updates.bonusScore !== undefined) current.bonusScore = parseInt(updates.bonusScore) || 0;
+        if (updates.teacherNote !== undefined) current.teacherNote = String(updates.teacherNote || '');
+        if (updates.status) current.status = updates.status;
+
+        current.finalScore = Math.max(0, (current.autoScore || 0) + (current.manualScore || 0) + (current.bonusScore || 0) + (current.adminAdjustmentScore || 0));
+        current.reviewedByAdmin = true;
+        current.reviewedAt = new Date().toISOString();
+
+        subs[idx] = current;
+        this.saveAllExamSubmissions(subs);
+        this.syncSubmissionToFirebase(current);
+        return { success: true, submission: current };
+    }
+
+    deleteExamSubmission(subId) {
+        if (!subId) return { success: false };
+        let subs = this.getAllExamSubmissions();
+        const initialCount = subs.length;
+        subs = subs.filter(s => s && s.id !== subId);
+        this.saveAllExamSubmissions(subs);
+        this.deleteSubmissionFromFirebase(subId);
+        return { success: true, count: initialCount - subs.length };
+    }
+
+    saveAllExamSubmissions(subs) {
+        const clean = Array.isArray(subs) ? subs.filter(Boolean) : [];
+        this._examSubmissionsCache = clean;
+        try {
+            localStorage.setItem(STORAGE_KEYS.EXAM_SUBMISSIONS, JSON.stringify(clean));
+        } catch (e) {
+            console.warn('[Storage] saveAllExamSubmissions LocalStorage hatasi:', e);
+        }
+    }
+
+    async syncSubmissionToFirebase(submission) {
+        if (!submission || !submission.id) return;
+        try {
+            await this.fetchFirebase(`/exam_submissions_v2/${submission.id}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(submission)
+            });
+        } catch (e) {
+            console.warn('[Storage] syncSubmissionToFirebase hatasi:', e);
+        }
+    }
+
+    async deleteSubmissionFromFirebase(subId) {
+        if (!subId) return;
+        try {
+            await this.fetchFirebase(`/exam_submissions_v2/${subId}.json`, { method: 'DELETE' });
+        } catch(e) {}
+    }
+
+    async pullSubmissionsFromFirebase() {
+        try {
+            const res = await this.fetchFirebase('/exam_submissions_v2.json');
+            if (res && res.ok) {
+                const raw = await res.json();
+                if (raw) {
+                    const cloudSubs = Array.isArray(raw) ? raw.filter(Boolean) : Object.values(raw).filter(Boolean);
+                    const localSubs = this.getAllExamSubmissions();
+                    const subMap = new Map();
+                    localSubs.forEach(ls => { if (ls && ls.id) subMap.set(ls.id, ls); });
+                    cloudSubs.forEach(cs => { if (cs && cs.id) subMap.set(cs.id, cs); });
+                    const merged = Array.from(subMap.values());
+                    merged.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+                    this.saveAllExamSubmissions(merged);
+                    return merged;
+                }
+            }
+        } catch (e) {}
+        return this.getAllExamSubmissions();
+    }
+
+    async pushAllExamsAndSubmissionsToFirebase() {
+        const exams = this.getAllExams();
+        const subs = this.getAllExamSubmissions();
+        const examMap = {};
+        exams.forEach(e => { if (e && e.id) examMap[e.id] = e; });
+        const subMap = {};
+        subs.forEach(s => { if (s && s.id) subMap[s.id] = s; });
+
+        try {
+            const r1 = await this.fetchFirebase('/exams_v2.json', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(examMap)
+            });
+            const r2 = await this.fetchFirebase('/exam_submissions_v2.json', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(subMap)
+            });
+            return { success: r1.ok && r2.ok, examCount: exams.length, submissionCount: subs.length };
+        } catch(e) {
+            return { success: false, message: e.message };
+        }
     }
 }
 
