@@ -1597,26 +1597,8 @@
                 badge.style.color = '#ef4444';
                 badge.style.borderColor = 'rgba(239,68,68,0.3)';
                 badge.innerHTML = '⚠️ Bulut Kapalı';
-                badge.onclick = () => switchAdminTab('settings');
-                badge.style.cursor = 'pointer';
-            }
-            if (navBadge) {
-                navBadge.style.color = '#ef4444';
-                navBadge.style.background = 'rgba(239,68,68,0.12)';
-                navBadge.style.borderColor = 'rgba(239,68,68,0.3)';
-                navBadge.innerHTML = '⚠️ Bulut Kapalı';
-            }
-            return;
-        }
-
-        if (lmsStorage._lastAuthError) {
-            if (badge) {
-                badge.style.background = 'rgba(239,68,68,0.18)';
-                badge.style.color = '#ef4444';
-                badge.style.borderColor = 'rgba(239,68,68,0.5)';
-                badge.innerHTML = '🚫 Firebase İzin Hatası (Kurallar Engellendi!)';
-                badge.onclick = () => switchAdminTab('settings');
-                badge.title = 'Firebase güvenlik kuralları erişimi engelliyor. Ayarlar sekmesinden kuralları kontrol edin.';
+                badge.onclick = () => openFirebaseTroubleshootModal();
+                badge.title = 'Firebase güvenlik kuralları erişimi engelliyor. Çözüm rehberi için tıklayın.';
                 badge.style.cursor = 'pointer';
             }
             if (navBadge) {
@@ -1624,7 +1606,9 @@
                 navBadge.style.background = 'rgba(239,68,68,0.18)';
                 navBadge.style.borderColor = 'rgba(239,68,68,0.5)';
                 navBadge.innerHTML = '🚫 Firebase İzin Hatası!';
-                navBadge.onclick = () => switchAdminTab('settings');
+                navBadge.onclick = () => openFirebaseTroubleshootModal();
+                navBadge.title = 'Firebase izin hatasını çözmek için tıklayın';
+                navBadge.style.cursor = 'pointer';
             }
             return;
         }
@@ -4220,7 +4204,78 @@
                     @media print { body { padding: 0; } }
                 </style>
             </head>
-            <body>${printContent}</body>
+            <body>${printContent}
+<!-- MODAL: FIREBASE İZİN HATASI ÇÖZÜM REHBERİ -->
+<div id="firebaseTroubleshootModal" class="modal-overlay">
+    <div class="modal-content" style="max-width:700px;max-height:90vh;overflow-y:auto;">
+        <div class="modal-header">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:24px;">🚫</span>
+                <div>
+                    <h3 style="color:#ef4444;font-size:18px;margin:0;">Firebase İzin Hatası Çözüm Rehberi</h3>
+                    <span style="font-size:12px;color:var(--text-muted);">HTTP 401: Erişim Reddedildi (Permission Denied)</span>
+                </div>
+            </div>
+            <button class="modal-close" onclick="closeModal('firebaseTroubleshootModal')">&times;</button>
+        </div>
+
+        <div style="padding:10px 0;font-size:13.5px;color:var(--text-secondary);line-height:1.6;">
+            <p style="margin-top:0;">
+                Bu uyarı, Google Firebase bulut veritabanınızın (<strong>Realtime Database</strong>) mevcut güvenlik kuralları nedeniyle okuma ve yazma isteklerini engellediği (HTTP 401) anlamına gelir.
+            </p>
+
+            <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:10px;padding:14px;margin-bottom:18px;">
+                <h4 style="color:#60a5fa;margin:0 0 8px;font-size:14px;">⚡ 1. En Hızlı Çözüm: Kuralları Açık Hale Getirmek (30 Saniye)</h4>
+                <ol style="margin:0;padding-left:18px;font-size:13px;color:#e2e8f0;line-height:1.6;">
+                    <li><a href="https://console.firebase.google.com" target="_blank" style="color:#38bdf8;text-decoration:underline;font-weight:bold;">Firebase Console</a> sayfasına gidin ve projenizi açın.</li>
+                    <li>Sol menüden <strong>Realtime Database</strong> &gt; üst sekmeden <strong>Rules (Kurallar)</strong> bölümüne tıklayın.</li>
+                    <li>Mevcut kuralların yerine aşağıdaki kodu yapıştırıp <strong>Publish (Yayınla)</strong> butonuna tıklayın:</li>
+                </ol>
+                <div style="position:relative;margin-top:10px;">
+                    <textarea id="quickOpenRulesCode" readonly style="width:100%;height:85px;background:#0f172a;color:#10b981;font-family:monospace;font-size:12px;padding:10px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;resize:none;">{
+  "rules": {
+    ".read": true,
+    ".write": true
+  }
+}</textarea>
+                    <button class="btn btn-primary btn-sm" onclick="copyQuickOpenRules()" style="margin-top:6px;font-size:11px;">📋 Kuralları Panoya Kopyala</button>
+                </div>
+            </div>
+
+            <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);border-radius:10px;padding:14px;margin-bottom:18px;">
+                <h4 style="color:#10b981;margin:0 0 8px;font-size:14px;">🔒 2. Alternatif: Kimlik Doğrulamalı Kurallar (Anonymous Auth)</h4>
+                <p style="font-size:12.5px;color:#cbd5e1;margin:0 0 8px;">
+                    Kurallarınızda <code>auth != null</code> kalmasını istiyorsanız:
+                </p>
+                <ul style="margin:0;padding-left:18px;font-size:12.5px;color:#e2e8f0;line-height:1.5;">
+                    <li>Firebase Console &gt; <strong>Authentication</strong> &gt; <strong>Sign-in method</strong> sekmesinden <strong>Anonymous (Anonim)</strong> girişini etkinleştirin.</li>
+                    <li>Firebase Console &gt; <strong>Proje Ayarları</strong> &gt; <strong>Genel</strong> sekmesindeki <strong>Web API Key</strong> değerini kopyalayıp Yönetici Paneli &gt; Ayarlar sekmesine yapıştırın.</li>
+                </ul>
+            </div>
+
+            <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:14px;">
+                <h4 style="color:#f87171;margin:0 0 8px;font-size:14px;">💻 3. Bulut Senkronizasyonunu Kapatmak</h4>
+                <p style="font-size:12.5px;color:#cbd5e1;margin:0 0 10px;">
+                    Eğer Firebase bulutunu kullanmak istemiyorsanız ve yalnızca bu bilgisayarda yerel çalışacaksanız senkronizasyonu tek tıkla kapatabilirsiniz:
+                </p>
+                <button class="btn btn-danger btn-sm" onclick="disableFirebaseSyncFromModal()">
+                    🚫 Firebase Senkronizasyonunu Kapat (Yalnızca Yerel Çalış)
+                </button>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;border-top:1px solid var(--border-color);padding-top:16px;">
+            <button class="btn btn-primary btn-sm" onclick="closeModal('firebaseTroubleshootModal'); switchAdminTab('settings');">
+                ⚙️ Ayarlar Sekmesini Aç
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="closeModal('firebaseTroubleshootModal')">
+                Kapat
+            </button>
+        </div>
+    </div>
+</div>
+
+</body>
             </html>
         `);
         printWin.document.close();
@@ -4362,6 +4417,40 @@
             populateExamFilterOptions();
         }
     });
+
+    
+    function openFirebaseTroubleshootModal() {
+        openModal('firebaseTroubleshootModal');
+    }
+
+    function copyQuickOpenRules() {
+        const el = document.getElementById('quickOpenRulesCode');
+        if (el) {
+            el.select();
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(el.value).then(() => {
+                    alert('✓ Açık Firebase kuralları panoya kopyalandı!\n\nŞimdi Firebase Console -> Realtime Database -> Rules (Kurallar) sekmesine yapıştırıp Publish (Yayınla) butonuna basınız.');
+                }).catch(() => {
+                    alert('Lütfen metni seçip CTRL+C ile kopyalayınız.');
+                });
+            } else {
+                alert('Lütfen metni seçip CTRL+C ile kopyalayınız.');
+            }
+        }
+    }
+
+    function disableFirebaseSyncFromModal() {
+        if (!confirm('Firebase senkronizasyonunu kapatmak istediğinizden emin misiniz?\n\nVerileriniz yalnızca bu bilgisayarın yerel tarayıcı hafızasında saklanacaktır.')) return;
+        const cfg = lmsStorage.getFirebaseConfig();
+        cfg.enabled = false;
+        lmsStorage.saveFirebaseConfig(cfg);
+        lmsStorage._lastAuthError = null;
+        closeModal('firebaseTroubleshootModal');
+        updateFirebaseBadge();
+        const fbEnabledBox = document.getElementById('fbEnabled');
+        if (fbEnabledBox) fbEnabledBox.checked = false;
+        alert('✓ Firebase senkronizasyonu kapatıldı. Hata uyarısı kaldırıldı.');
+    }
 
     function openModal(id)  { document.getElementById(id).classList.add('show'); }
     function closeModal(id) { document.getElementById(id).classList.remove('show'); }
