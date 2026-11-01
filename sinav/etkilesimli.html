@@ -154,16 +154,128 @@
         let questionCount = 0;
         const STORAGE_KEY = 'etkilesimli_sinavlar';
 
+        
+        // Otomatik Görsel Sıkıştırma (LocalStorage 5MB Kotası Aşımını Önler)
+        function compressImageFile(file, maxWidth = 800, maxHeight = 800, quality = 0.75) {
+            return new Promise((resolve) => {
+                if (!file || !file.type.startsWith('image/')) {
+                    resolve('');
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const rawData = e.target.result;
+                    const img = new Image();
+                    img.onload = function() {
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > maxWidth || h > maxHeight) {
+                            if (w > h) {
+                                h = Math.round((h * maxWidth) / w);
+                                w = maxWidth;
+                            } else {
+                                w = Math.round((w * maxHeight) / h);
+                                h = maxHeight;
+                            }
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        try {
+                            const compressed = canvas.toDataURL('image/jpeg', quality);
+                            resolve(compressed);
+                        pubBtns.forEach((b, i) => { b.disabled = false; if (origTexts[i]) b.innerHTML = origTexts[i]; });
+            } catch(err) {
+                pubBtns.forEach((b, i) => { b.disabled = false; if (origTexts[i]) b.innerHTML = origTexts[i]; });
+                            resolve(rawData);
+                        }
+                    };
+                    img.onerror = function() { resolve(rawData); };
+                    img.src = rawData;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function compressDataUrl(dataUrl, maxWidth = 800, maxHeight = 800, quality = 0.75) {
+            return new Promise((resolve) => {
+                if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+                    resolve(dataUrl || '');
+                    return;
+                }
+                if (dataUrl.length < 80000) {
+                    resolve(dataUrl);
+                    return;
+                }
+                const img = new Image();
+                img.onload = function() {
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxWidth || h > maxHeight) {
+                        if (w > h) {
+                            h = Math.round((h * maxWidth) / w);
+                            w = maxWidth;
+                        } else {
+                            w = Math.round((w * maxHeight) / h);
+                            h = maxHeight;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    try {
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    } catch(e) {
+                        resolve(dataUrl);
+                    }
+                };
+                img.onerror = function() { resolve(dataUrl); };
+                img.src = dataUrl;
+            });
+        }
+
+        async function optimizeExamPayload(payload) {
+            if (!payload) return payload;
+            if (payload.coverData && payload.coverData.length > 80000) {
+                payload.coverData = await compressDataUrl(payload.coverData, 800, 800, 0.75);
+            }
+            if (Array.isArray(payload.questions)) {
+                for (let q of payload.questions) {
+                    if (q.img && q.img.length > 80000) {
+                        q.img = await compressDataUrl(q.img, 800, 800, 0.75);
+                    }
+                    if (q.qImgData && q.qImgData.length > 80000) {
+                        q.qImgData = await compressDataUrl(q.qImgData, 800, 800, 0.75);
+                    }
+                    if (q.media && q.media.length > 80000 && q.media.startsWith('data:image/')) {
+                        q.media = await compressDataUrl(q.media, 800, 800, 0.75);
+                    }
+                    for (let opt of ['optA', 'optB', 'optC', 'optD']) {
+                        if (q[opt] && q[opt].imgData && q[opt].imgData.length > 80000) {
+                            q[opt].imgData = await compressDataUrl(q[opt].imgData, 600, 600, 0.75);
+                        }
+                    }
+                }
+            }
+            return payload;
+        }
+
         function previewImage(input, previewId) {
             if (!input.files || !input.files[0]) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
+            compressImageFile(input.files[0], 800, 800, 0.75).then(compressed => {
                 const img = document.getElementById(previewId);
-                img.src = e.target.result;
-                img.style.display = 'block';
-                img.onclick = function() { openZoom(e.target.result); };
-            };
-            reader.readAsDataURL(input.files[0]);
+                if (img) {
+                    img.src = compressed;
+                    img.style.display = 'block';
+                    if (typeof openZoom === 'function') {
+                        img.onclick = function() { openZoom(compressed); };
+                    }
+                }
+            });
         }
 
         function openZoom(src) {
@@ -222,13 +334,21 @@
 
         function previewVideo(input, previewId) {
             if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            if (file.size > 1.5 * 1024 * 1024) {
+                alert('⚠️ Video boyutu (' + (file.size / (1024 * 1024)).toFixed(1) + ' MB) tarayıcı hafıza kotasını (5 MB) aşabilir.\n\nLütfen 1 MB altı kısa video dosyası yükleyin veya harici video bağlantısı kullanın.');
+                input.value = '';
+                return;
+            }
             const reader = new FileReader();
             reader.onload = function(e) {
-                const vid = document.getElementById(previewId);
-                vid.src = e.target.result;
-                vid.style.display = 'block';
+                const el = document.getElementById(previewId);
+                if (el) {
+                    el.src = e.target.result;
+                    el.style.display = 'block';
+                }
             };
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(file);
         }
 
         function collectData() {
@@ -436,7 +556,10 @@ function check(){var v=trLow(document.getElementById("ans").value);var msg=docum
     
 /* LMS_SCRIPTS_START */
 
-        function publishExamToLMS() {
+        async function publishExamToLMS() {
+            const pubBtns = document.querySelectorAll(".publish-btn");
+            const origTexts = [];
+            pubBtns.forEach((b, i) => { origTexts[i] = b.innerHTML; b.disabled = true; b.innerText = "⏳ Sıkıştırılıyor & Yayınlanıyor..."; });
             try {
                 const data = collectData();
                 const title = (data.title || '').trim();
@@ -475,6 +598,7 @@ function check(){var v=trLow(document.getElementById("ans").value);var msg=docum
                     return;
                 }
 
+                await optimizeExamPayload(examPayload);
                 const saveRes = lmsStorage.saveExam(examPayload);
                 if (saveRes && saveRes.success) {
                     lastPublishedExamId = saveRes.exam.id;

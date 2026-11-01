@@ -4019,13 +4019,20 @@ class StorageService {
     }
 
     getAllExams() {
+        if (this._examsCache && Array.isArray(this._examsCache) && this._examsCache.length > 0) {
+            return this._examsCache;
+        }
         try {
             const raw = localStorage.getItem(STORAGE_KEYS.EXAMS);
             const exams = raw ? JSON.parse(raw) : [];
-            return Array.isArray(exams) ? exams : [];
+            if (Array.isArray(exams) && exams.length > 0) {
+                this._examsCache = exams;
+                return exams;
+            }
         } catch (e) {
             return [];
         }
+        return this._examsCache || [];
     }
 
     getExamsForStudent(userId) {
@@ -4121,7 +4128,23 @@ class StorageService {
 
     saveAllExams(exams) {
         const clean = Array.isArray(exams) ? exams.filter(Boolean) : [];
-        localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(clean));
+        this._examsCache = clean;
+
+        try {
+            localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(clean));
+        } catch (quotaErr) {
+            console.warn('[Storage] LocalStorage kotası aşıldı! Eski taslaklar temizleniyor...', quotaErr);
+            try {
+                ['coktan_sinavlar', 'cozumlu_sinavlar', 'dogruyanlis_sinavlar', 'emailtest_sinavlar', 'etkilesimli_sinavlar'].forEach(k => {
+                    localStorage.removeItem(k);
+                });
+                localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(clean));
+                console.log('[Storage] Eski taslaklar temizlendi ve sınavlar kaydedildi.');
+            } catch (e2) {
+                console.warn('[Storage] LocalStorage kotası hala yetersiz. Sınavlar bellek ve Firebase bulutunda güvenle korunuyor.', e2);
+            }
+        }
+
         const examMap = {};
         clean.forEach(e => { if (e && e.id) examMap[e.id] = e; });
         this.syncCollectionToFirebase('exams', examMap);
@@ -4157,7 +4180,12 @@ class StorageService {
                     localExams.forEach(le => { if (le && le.id) examMap.set(le.id, le); });
                     cloudExams.forEach(ce => { if (ce && ce.id) examMap.set(ce.id, ce); });
                     const merged = Array.from(examMap.values());
-                    localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(merged));
+                    this._examsCache = merged;
+                    try {
+                        localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(merged));
+                    } catch(qe) {
+                        console.warn('[Storage] Buluttan çekilen sınavlar için LocalStorage kotası yetersiz, bellekte tutuluyor.');
+                    }
                     return merged;
                 }
             }
