@@ -113,7 +113,7 @@ const DEFAULT_ADMIN = {
 
 const DEFAULT_FIREBASE_CONFIG = {
     enabled: true,
-    databaseURL: 'https://bilisimkursum-b2f17-default-rtdb.europe-west1.firebasedatabase.app',
+    databaseURL: 'https://ehem-7db70-default-rtdb.europe-west1.firebasedatabase.app',
     apiKey: ''
 };
 
@@ -2133,7 +2133,7 @@ class StorageService {
             if (raw) {
                 const parsed = JSON.parse(raw);
                 if (parsed && parsed.databaseURL) {
-                    if (parsed.databaseURL.includes('firebaseio.com')) {
+                    if (parsed.databaseURL.includes('firebaseio.com') || parsed.databaseURL.includes('bilisimkursum-b2f17')) {
                         parsed.databaseURL = DEFAULT_FIREBASE_CONFIG.databaseURL;
                     }
                     if (parsed.enabled === undefined) parsed.enabled = true;
