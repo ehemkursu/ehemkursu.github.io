@@ -155,10 +155,10 @@
         const STORAGE_KEY = 'etkilesimli_sinavlar';
 
         
-        // Otomatik Görsel Sıkıştırma (LocalStorage 5MB Kotası Aşımını Önler)
+                // Otomatik Görsel Sıkıştırma (LocalStorage 5MB Kotası Aşımını Önler)
         function compressImageFile(file, maxWidth = 800, maxHeight = 800, quality = 0.75) {
             return new Promise((resolve) => {
-                if (!file || !file.type.startsWith('image/')) {
+                if (!file || !file.type || !file.type.startsWith('image/')) {
                     resolve('');
                     return;
                 }
@@ -167,6 +167,49 @@
                     const rawData = e.target.result;
                     const img = new Image();
                     img.onload = function() {
+                        try {
+                            let w = img.width;
+                            let h = img.height;
+                            if (w > maxWidth || h > maxHeight) {
+                                if (w > h) {
+                                    h = Math.round((h * maxWidth) / w);
+                                    w = maxWidth;
+                                } else {
+                                    w = Math.round((w * maxHeight) / h);
+                                    h = maxHeight;
+                                }
+                            }
+                            const canvas = document.createElement('canvas');
+                            canvas.width = w;
+                            canvas.height = h;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, w, h);
+                            resolve(canvas.toDataURL('image/jpeg', quality));
+                        } catch(err) {
+                            resolve(rawData);
+                        }
+                    };
+                    img.onerror = function() { resolve(rawData); };
+                    img.src = rawData;
+                };
+                reader.onerror = function() { resolve(''); };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function compressDataUrl(dataUrl, maxWidth = 800, maxHeight = 800, quality = 0.75) {
+            return new Promise((resolve) => {
+                if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
+                    resolve(dataUrl || '');
+                    return;
+                }
+                if (dataUrl.length < 50000) {
+                    resolve(dataUrl);
+                    return;
+                }
+                const img = new Image();
+                img.onload = function() {
+                    try {
                         let w = img.width;
                         let h = img.height;
                         if (w > maxWidth || h > maxHeight) {
@@ -183,51 +226,6 @@
                         canvas.height = h;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, w, h);
-                        try {
-                            const compressed = canvas.toDataURL('image/jpeg', quality);
-                            resolve(compressed);
-                        pubBtns.forEach((b, i) => { b.disabled = false; if (origTexts[i]) b.innerHTML = origTexts[i]; });
-            } catch(err) {
-                pubBtns.forEach((b, i) => { b.disabled = false; if (origTexts[i]) b.innerHTML = origTexts[i]; });
-                            resolve(rawData);
-                        }
-                    };
-                    img.onerror = function() { resolve(rawData); };
-                    img.src = rawData;
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function compressDataUrl(dataUrl, maxWidth = 800, maxHeight = 800, quality = 0.75) {
-            return new Promise((resolve) => {
-                if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image/')) {
-                    resolve(dataUrl || '');
-                    return;
-                }
-                if (dataUrl.length < 80000) {
-                    resolve(dataUrl);
-                    return;
-                }
-                const img = new Image();
-                img.onload = function() {
-                    let w = img.width;
-                    let h = img.height;
-                    if (w > maxWidth || h > maxHeight) {
-                        if (w > h) {
-                            h = Math.round((h * maxWidth) / w);
-                            w = maxWidth;
-                        } else {
-                            w = Math.round((w * maxHeight) / h);
-                            h = maxHeight;
-                        }
-                    }
-                    const canvas = document.createElement('canvas');
-                    canvas.width = w;
-                    canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, w, h);
-                    try {
                         resolve(canvas.toDataURL('image/jpeg', quality));
                     } catch(e) {
                         resolve(dataUrl);
@@ -240,23 +238,20 @@
 
         async function optimizeExamPayload(payload) {
             if (!payload) return payload;
-            if (payload.coverData && payload.coverData.length > 80000) {
-                payload.coverData = await compressDataUrl(payload.coverData, 800, 800, 0.75);
+            if (payload.coverData && payload.coverData.length > 50000) {
+                try { payload.coverData = await compressDataUrl(payload.coverData, 800, 800, 0.75); } catch(e){}
             }
             if (Array.isArray(payload.questions)) {
                 for (let q of payload.questions) {
-                    if (q.img && q.img.length > 80000) {
-                        q.img = await compressDataUrl(q.img, 800, 800, 0.75);
-                    }
-                    if (q.qImgData && q.qImgData.length > 80000) {
-                        q.qImgData = await compressDataUrl(q.qImgData, 800, 800, 0.75);
-                    }
-                    if (q.media && q.media.length > 80000 && q.media.startsWith('data:image/')) {
-                        q.media = await compressDataUrl(q.media, 800, 800, 0.75);
+                    const imgKeys = ['img', 'imgData', 'qImgData', 'media', 'soruImgData', 'cozumImgData', 'hintImgData'];
+                    for (let k of imgKeys) {
+                        if (q[k] && typeof q[k] === 'string' && q[k].length > 50000 && q[k].startsWith('data:image/')) {
+                            try { q[k] = await compressDataUrl(q[k], 800, 800, 0.75); } catch(e){}
+                        }
                     }
                     for (let opt of ['optA', 'optB', 'optC', 'optD']) {
-                        if (q[opt] && q[opt].imgData && q[opt].imgData.length > 80000) {
-                            q[opt].imgData = await compressDataUrl(q[opt].imgData, 600, 600, 0.75);
+                        if (q[opt] && typeof q[opt] === 'object' && q[opt].imgData && q[opt].imgData.length > 50000) {
+                            try { q[opt].imgData = await compressDataUrl(q[opt].imgData, 600, 600, 0.75); } catch(e){}
                         }
                     }
                 }
@@ -621,6 +616,11 @@ function check(){var v=trLow(document.getElementById("ans").value);var msg=docum
             } catch(err) {
                 console.error('publishExamToLMS hatasi:', err);
                 alert('Sınav yayınlama hatası: ' + err.message);
+            } finally {
+                pubBtns.forEach((b, i) => {
+                    b.disabled = false;
+                    if (origTexts[i]) b.innerHTML = origTexts[i];
+                });
             }
         }
 

@@ -802,49 +802,88 @@
         }
 
         // ==================== SAYFA BAŞLANGICI VE KONTROLLER ====================
-        window.addEventListener('DOMContentLoaded', async () => {
-            const examId = getQueryParam('id') || getQueryParam('exam');
-            currentUser = lmsStorage.getCurrentStudent() || lmsStorage.getCurrentUser();
+        async function initExamRunner() {
+            try {
+                const examId = getQueryParam('id') || getQueryParam('exam');
+                const isTestMode = getQueryParam('mode') === 'test';
+                const adminSession = (typeof lmsStorage !== 'undefined' && lmsStorage.getCurrentAdmin) ? lmsStorage.getCurrentAdmin() : null;
 
-            // 1. Kayıtlı kullanıcı kontrolü ("kayıtlı olmayan kullanıcılar buraya giremiyecek")
-            if (!currentUser) {
-                document.getElementById('authRequiredGate').style.display = 'block';
-                return;
-            }
+                // 1. Kullanıcı belirleme (Öğretmen Test Modu veya Kayıtlı Kursiyer)
+                if (adminSession || isTestMode) {
+                    currentUser = {
+                        id: 'admin_preview',
+                        fullName: 'Kurs Yöneticisi (Öğretmen Test Modu)',
+                        username: 'admin',
+                        classId: 'all'
+                    };
+                } else if (typeof lmsStorage !== 'undefined' && lmsStorage.getCurrentStudent) {
+                    currentUser = lmsStorage.getCurrentStudent();
+                }
 
-            // 2. Sınav ID kontrolü
-            if (!examId) {
-                // Eğer sınav ID'si verilmemişse, ilk aktif sınavı seç veya uyar
-                const allExams = lmsStorage.getAllExams();
-                if (allExams.length > 0) {
-                    currentExam = allExams[0];
-                } else {
-                    alert('Sistemde henüz yayınlanmış bir sınav bulunmamaktadır.');
+                if (!currentUser) {
+                    const gate = document.getElementById('authRequiredGate');
+                    if (gate) gate.style.display = 'block';
+                    return;
+                }
+
+                // 2. Sınav ID kontrolü ve Buluttan Çekme
+                let ex = null;
+                if (typeof lmsStorage !== 'undefined') {
+                    if (examId) ex = lmsStorage.getExamById(examId);
+                    if (!ex && lmsStorage.pullExamsFromFirebase) {
+                        try {
+                            await lmsStorage.pullExamsFromFirebase();
+                            if (examId) ex = lmsStorage.getExamById(examId);
+                        } catch(e) {}
+                    }
+                    if (!ex) {
+                        const allExams = lmsStorage.getAllExams();
+                        if (allExams.length > 0) {
+                            ex = examId ? allExams.find(e => e.id === examId) || allExams[0] : allExams[0];
+                        }
+                    }
+                }
+
+                if (!ex) {
+                    alert('Belirtilen sınav bulunamadı veya henüz yayına alınmamış.');
                     window.location.href = '../index.html';
                     return;
                 }
-            } else {
-                currentExam = lmsStorage.getExamById(examId);
-                if (!currentExam) {
-                    alert('Belirtilen sınav bulunamadı veya yayından kaldırılmış.');
-                    window.location.href = '../index.html';
+
+                currentExam = ex;
+                const topTitle = document.getElementById('topBarTitle');
+                if (topTitle) topTitle.innerText = currentExam.title || 'Sınav Salonu';
+
+                // 3. Şifre Kontrolü (Öğretmen test modundaysa şifreyi otomatik onayla)
+                if (adminSession || isTestMode) {
+                    showIntroScreen();
                     return;
                 }
+
+                const isPinVerified = lmsStorage.isExamPinVerifiedInSession ? lmsStorage.isExamPinVerifiedInSession() : false;
+                if (!isPinVerified) {
+                    const pinGate = document.getElementById('pinChallengeGate');
+                    if (pinGate) {
+                        pinGate.style.display = 'block';
+                        const pinInp = document.getElementById('gatePinInput');
+                        if (pinInp) pinInp.focus();
+                    }
+                    return;
+                }
+
+                // Şifre onaylanmış, tanıtım ekranına geç
+                showIntroScreen();
+            } catch(err) {
+                console.error('initExamRunner hatasi:', err);
+                alert('Sınav yüklenirken hata oluştu: ' + err.message);
             }
+        }
 
-            document.getElementById('topBarTitle').innerText = currentExam.title;
-
-            // 3. 3 Karakterlik Giriş Şifresi Kontrolü ("sınav bölümüne adminin belirlediği 3 karakterlik bir şifre ile girilebilecek")
-            const isPinVerified = lmsStorage.isExamPinVerifiedInSession();
-            if (!isPinVerified) {
-                document.getElementById('pinChallengeGate').style.display = 'block';
-                document.getElementById('gatePinInput').focus();
-                return;
-            }
-
-            // Şifre onaylanmış, tanıtım ekranına geç
-            showIntroScreen();
-        });
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initExamRunner);
+        } else {
+            initExamRunner();
+        }
 
         // 3 Karakterlik Şifre Doğrulama
         function handlePinSubmit(e) {

@@ -1226,7 +1226,7 @@ const INITIAL_USERS = [
         // 1. Eski şişkin taslak anahtarlarını temizle
         const draftKeys = [
             'coktan_sinavlar', 'cozumlu_sinavlar', 'dogruyanlis_sinavlar',
-            'emailtest_sinavlar', 'etkilesimli_sinavlar', 'dy_kutuphane',
+            'emailtest_sinavlar', 'etkilesimli_sinavlar',
             'coktan_draft', 'cozumlu_draft', 'dogruyanlis_draft'
         ];
         draftKeys.forEach(k => {
@@ -1246,12 +1246,14 @@ const INITIAL_USERS = [
                     }
                     if (Array.isArray(ex.questions)) {
                         ex.questions.forEach(q => {
-                            if (q.img && q.img.length > 40000) { q.img = ''; modified = true; }
-                            if (q.imgData && q.imgData.length > 40000) { q.imgData = ''; modified = true; }
-                            if (q.qImgData && q.qImgData.length > 40000) { q.qImgData = ''; modified = true; }
-                            if (q.vidData && q.vidData.length > 40000) { q.vidData = ''; modified = true; }
+                            for (let f in q) {
+                                if (typeof q[f] === 'string' && q[f].length > 40000 && q[f].startsWith('data:image/')) {
+                                    q[f] = '';
+                                    modified = true;
+                                }
+                            }
                             ['optA', 'optB', 'optC', 'optD'].forEach(opt => {
-                                if (q[opt] && q[opt].imgData && q[opt].imgData.length > 40000) {
+                                if (q[opt] && typeof q[opt] === 'object' && q[opt].imgData && q[opt].imgData.length > 40000) {
                                     q[opt].imgData = '';
                                     modified = true;
                                 }
@@ -4191,7 +4193,7 @@ class StorageService {
         } catch (quotaErr) {
             console.warn('[Storage] LocalStorage kotası aşıldı! Eski taslaklar temizlenip yer açılıyor...', quotaErr);
             try {
-                ['coktan_sinavlar', 'cozumlu_sinavlar', 'dogruyanlis_sinavlar', 'emailtest_sinavlar', 'etkilesimli_sinavlar', 'dy_kutuphane'].forEach(k => {
+                ['coktan_sinavlar', 'cozumlu_sinavlar', 'dogruyanlis_sinavlar', 'emailtest_sinavlar', 'etkilesimli_sinavlar'].forEach(k => {
                     localStorage.removeItem(k);
                 });
                 localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(clean));
@@ -4202,15 +4204,18 @@ class StorageService {
                 try {
                     const slimExams = clean.map(ex => {
                         const copy = JSON.parse(JSON.stringify(ex));
-                        if (copy.coverData && copy.coverData.length > 30000) copy.coverData = '';
+                        if (copy.coverData && copy.coverData.length > 25000) copy.coverData = '';
                         if (Array.isArray(copy.questions)) {
                             copy.questions.forEach(q => {
-                                if (q.img && q.img.length > 30000) q.img = '';
-                                if (q.imgData && q.imgData.length > 30000) q.imgData = '';
-                                if (q.qImgData && q.qImgData.length > 30000) q.qImgData = '';
-                                if (q.vidData) q.vidData = '';
+                                for (let f in q) {
+                                    if (typeof q[f] === 'string' && q[f].length > 25000 && q[f].startsWith('data:image/')) {
+                                        q[f] = '';
+                                    }
+                                }
                                 ['optA', 'optB', 'optC', 'optD'].forEach(opt => {
-                                    if (q[opt] && q[opt].imgData && q[opt].imgData.length > 30000) q[opt].imgData = '';
+                                    if (q[opt] && typeof q[opt] === 'object' && q[opt].imgData && q[opt].imgData.length > 25000) {
+                                        q[opt].imgData = '';
+                                    }
                                 });
                             });
                         }
@@ -4265,12 +4270,38 @@ class StorageService {
                     try {
                         localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(merged));
                     } catch(qe) {
-                        console.warn('[Storage] Buluttan çekilen sınavlar için LocalStorage kotası yetersiz, bellekte tutuluyor.');
+                        console.warn('[Storage] Buluttan çekilen sınavlar için LocalStorage kotası yetersiz, hafifletilip saklanıyor...');
+                        try {
+                            const slim = merged.map(ex => {
+                                const copy = JSON.parse(JSON.stringify(ex));
+                                if (copy.coverData && copy.coverData.length > 25000) copy.coverData = '';
+                                if (Array.isArray(copy.questions)) {
+                                    copy.questions.forEach(q => {
+                                        for (let f in q) {
+                                            if (typeof q[f] === 'string' && q[f].length > 25000 && q[f].startsWith('data:image/')) {
+                                                q[f] = '';
+                                            }
+                                        }
+                                        ['optA', 'optB', 'optC', 'optD'].forEach(opt => {
+                                            if (q[opt] && typeof q[opt] === 'object' && q[opt].imgData && q[opt].imgData.length > 25000) {
+                                                q[opt].imgData = '';
+                                            }
+                                        });
+                                    });
+                                }
+                                return copy;
+                            });
+                            localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(slim));
+                        } catch(e2) {
+                            console.warn('[Storage] Yerel hafıza dolu, sınavlar bellekte tutuldu.');
+                        }
                     }
                     return merged;
                 }
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('[Storage] pullExamsFromFirebase hatası:', e);
+        }
         return this.getAllExams();
     }
 

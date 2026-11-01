@@ -719,6 +719,19 @@
         document.addEventListener('DOMContentLoaded', () => {
             refreshCustomModules();
             checkAuthAndRender();
+            if (typeof lmsStorage !== 'undefined' && lmsStorage.pullExamsFromFirebase) {
+                lmsStorage.pullExamsFromFirebase().then(() => {
+                    const student = lmsStorage.getCurrentStudent();
+                    if (student) {
+                        updateStudentExamsBadge(student.id);
+                        renderStudentActiveExamBanner(student);
+                        const examsContent = document.getElementById('portalExamsContent');
+                        if (examsContent && examsContent.style.display !== 'none') {
+                            renderStudentExamsSection();
+                        }
+                    }
+                }).catch(() => {});
+            }
                 if (window.location.hash === '#exams' || window.location.hash === '#sinavlar') {
                     switchPortalSection('exams');
                 }
@@ -732,7 +745,12 @@
                 if (student) {
                     renderAnnouncementsBanner(student.id);
                     updateStudentUnreadBadge(student.id);
-                updateStudentExamsBadge(student.id);
+                    updateStudentExamsBadge(student.id);
+                    renderStudentActiveExamBanner(student);
+                    const examsContent = document.getElementById('portalExamsContent');
+                    if (examsContent && examsContent.style.display !== 'none') {
+                        renderStudentExamsSection();
+                    }
                 }
             });
 
@@ -923,6 +941,18 @@
 
                 renderStudentRoadmap(student);
                 updateStudentUnreadBadge(student.id);
+                updateStudentExamsBadge(student.id);
+                renderStudentActiveExamBanner(student);
+                if (lmsStorage.pullExamsFromFirebase) {
+                    lmsStorage.pullExamsFromFirebase().then(() => {
+                        updateStudentExamsBadge(student.id);
+                        renderStudentActiveExamBanner(student);
+                        const examsContent = document.getElementById('portalExamsContent');
+                        if (examsContent && examsContent.style.display !== 'none') {
+                            renderStudentExamsSection();
+                        }
+                    }).catch(() => {});
+                }
                 return;
             }
 
