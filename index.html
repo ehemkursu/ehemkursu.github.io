@@ -576,6 +576,17 @@
     <script src="js/modules-data.js?v=20260929_1530"></script>
     <script src="js/storage-service.js?v=20260930_2230"></script>
     <script>
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+        window.escapeHtml = escapeHtml;
+
         let currentViewingModuleId = null;
 
         // Temayı ve Menü Ayarlarını Başlat
@@ -1820,6 +1831,11 @@
             }
 
             if (!isCourses) {
+                if (lmsStorage.pullExamsFromFirebase) {
+                    lmsStorage.pullExamsFromFirebase().then(() => {
+                        renderStudentExamsSection();
+                    });
+                }
                 const isVerified = lmsStorage.isExamPinVerifiedInSession();
                 const gate = document.getElementById('portalPinGateCard');
                 const content = document.getElementById('portalExamsContent');
@@ -1863,69 +1879,79 @@
         }
 
         function renderStudentExamsSection() {
-            const student = lmsStorage.getCurrentStudent();
-            if (!student) return;
+            try {
+                const student = lmsStorage.getCurrentStudent();
+                if (!student) return;
 
-            const settings = lmsStorage.getExamSettings();
-            document.getElementById('portalExamInstitutionTitle').innerText = settings.headerInstitution;
-            document.getElementById('portalExamCourseTitle').innerText = settings.headerCourse;
-            document.getElementById('portalExamInstructions').innerText = settings.instructions;
+                const settings = lmsStorage.getExamSettings();
+                const instEl = document.getElementById('portalExamInstitutionTitle');
+                if (instEl) instEl.innerText = settings.headerInstitution;
+                const crsEl = document.getElementById('portalExamCourseTitle');
+                if (crsEl) crsEl.innerText = settings.headerCourse;
+                const instsEl = document.getElementById('portalExamInstructions');
+                if (instsEl) instsEl.innerText = settings.instructions;
 
-            const exams = lmsStorage.getExamsForStudent(student.id);
-            const subs = lmsStorage.getExamSubmissionsForStudent(student.id);
+                const exams = lmsStorage.getExamsForStudent(student.id);
+                const subs = lmsStorage.getExamSubmissionsForStudent(student.id);
 
-            // Aktif sınavlar
-            document.getElementById('portalActiveExamsCountText').innerText = `${exams.length} Sınav Yayında`;
-            const badge = document.getElementById('portalActiveExamsBadge');
-            if (badge) badge.innerText = exams.length;
+                // Aktif sınavlar
+                const countText = document.getElementById('portalActiveExamsCountText');
+                if (countText) countText.innerText = `${exams.length} Sınav Yayında`;
+                const badge = document.getElementById('portalActiveExamsBadge');
+                if (badge) badge.innerText = exams.length;
 
-            const navBadge = document.getElementById('navStudentExamsBadge');
-            if (navBadge) {
-                navBadge.innerText = exams.length;
-                navBadge.style.display = exams.length > 0 ? 'inline-block' : 'none';
-            }
+                const navBadge = document.getElementById('navStudentExamsBadge');
+                if (navBadge) {
+                    navBadge.innerText = exams.length;
+                    navBadge.style.display = exams.length > 0 ? 'inline-block' : 'none';
+                }
 
-            const grid = document.getElementById('portalActiveExamsGrid');
-            if (exams.length === 0) {
-                grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-muted);background:var(--bg-card);border-radius:12px;border:1px solid var(--border-color);">Şu anda sınıfınız için yayınlanmış aktif bir sınav bulunmamaktadır.</div>';
-            } else {
-                grid.innerHTML = exams.map(e => {
-                    const mySub = subs.find(s => s && s.examId === e.id);
-                    const isTaken = !!mySub;
+                const grid = document.getElementById('portalActiveExamsGrid');
+                if (grid) {
+                    if (exams.length === 0) {
+                        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-muted);background:var(--bg-card);border-radius:12px;border:1px solid var(--border-color);">Şu anda sınıfınız için yayınlanmış aktif bir sınav bulunmamaktadır.</div>';
+                    } else {
+                        grid.innerHTML = exams.map(e => {
+                            const mySub = subs.find(s => s && s.examId === e.id);
+                            const isTaken = !!mySub;
 
-                    return `
-                        <div class="table-card" style="padding:20px;border-top:4px solid var(--accent-blue);display:flex;flex-direction:column;justify-content:space-between;">
-                            <div>
-                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-                                    <span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);font-size:11px;padding:2px 8px;border-radius:6px;font-weight:700;">
-                                        ${escapeHtml(e.typeName || e.type)}
-                                    </span>
-                                    <span style="font-size:12px;color:var(--text-muted);">⏱️ ${e.durationMinutes || 40} Dk</span>
+                            return `
+                                <div class="table-card" style="padding:20px;border-top:4px solid var(--accent-blue);display:flex;flex-direction:column;justify-content:space-between;">
+                                    <div>
+                                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                                            <span class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.3);font-size:11px;padding:2px 8px;border-radius:6px;font-weight:700;">
+                                                ${escapeHtml(e.typeName || e.type || 'Sınav')}
+                                            </span>
+                                            <span style="font-size:12px;color:var(--text-muted);">⏱️ ${e.durationMinutes || 40} Dk</span>
+                                        </div>
+                                        <h3 style="color:white;font-size:16px;margin:0 0 6px;">${escapeHtml(e.title || 'Başlıksız Sınav')}</h3>
+                                        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">
+                                            Toplam ${e.questions ? e.questions.length : 0} Soru • Evraklı Değerlendirme
+                                        </p>
+                                    </div>
+                                    <div>
+                                        ${isTaken ? `
+                                            <div style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+                                                <span style="font-size:12px;color:#34d399;font-weight:700;">✓ Tamamlandı</span>
+                                                <strong style="color:white;font-size:14px;">Puan: ${mySub.score}</strong>
+                                            </div>
+                                            <div style="display:flex;gap:8px;">
+                                                <button class="btn btn-ghost btn-sm" onclick="viewStudentSubmissionModal('${mySub.id}')" style="flex:1;">📄 Evrakımı Gör</button>
+                                                <button class="btn btn-primary btn-sm" onclick="openStudentExamRunner('${e.id}')" style="flex:1;">Tekrar Çöz</button>
+                                            </div>
+                                        ` : `
+                                            <button class="btn btn-primary" onclick="openStudentExamRunner('${e.id}')" style="width:100%;justify-content:center;padding:10px;font-weight:700;">
+                                                ▶ Sınava Başla
+                                            </button>
+                                        `}
+                                    </div>
                                 </div>
-                                <h3 style="color:white;font-size:16px;margin:0 0 6px;">${escapeHtml(e.title)}</h3>
-                                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">
-                                    Toplam ${e.questions ? e.questions.length : 0} Soru • Evraklı Değerlendirme
-                                </p>
-                            </div>
-                            <div>
-                                ${isTaken ? `
-                                    <div style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
-                                        <span style="font-size:12px;color:#34d399;font-weight:700;">✓ Tamamlandı</span>
-                                        <strong style="color:white;font-size:14px;">Puan: ${mySub.score}</strong>
-                                    </div>
-                                    <div style="display:flex;gap:8px;">
-                                        <button class="btn btn-ghost btn-sm" onclick="viewStudentSubmissionModal('${mySub.id}')" style="flex:1;">📄 Evrakımı Gör</button>
-                                        <button class="btn btn-primary btn-sm" onclick="openStudentExamRunner('${e.id}')" style="flex:1;">Tekrar Çöz</button>
-                                    </div>
-                                ` : `
-                                    <button class="btn btn-primary" onclick="openStudentExamRunner('${e.id}')" style="width:100%;justify-content:center;padding:10px;">
-                                        ▶ Sınava Başla
-                                    </button>
-                                `}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
+                            `;
+                        }).join('');
+                    }
+                }
+            } catch(err) {
+                console.error('renderStudentExamsSection hatasi:', err);
             }
 
             // Geçmiş evraklar

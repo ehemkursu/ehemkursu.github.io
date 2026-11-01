@@ -655,7 +655,10 @@
             <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
                 <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
                     <button class="btn btn-primary" onclick="openSelectExamTypeModal()">➕ Yeni Sınav Hazırla</button>
-                    <button class="btn btn-success" onclick="handleForcePushToFirebase()" title="Sınavları ve evrakları Firebase bulutuna aktarır">☁️ Sınavları Buluta Aktar</button>
+                    <button class="btn btn-success" id="btnPushExamsCloud" onclick="handlePushExamsToFirebase()" title="Sınavları ve evrakları Firebase bulutuna aktarır">☁️ Sınavları Buluta Aktar</button>
+                    <button class="btn btn-ghost btn-sm" onclick="exportExamsBackup()" title="Tüm sınavları JSON dosyası olarak indir">📥 JSON İndir</button>
+                    <button class="btn btn-ghost btn-sm" onclick="triggerImportExamsJson()" title="JSON dosyasından sınav yükle">📤 JSON Yükle</button>
+                    <input type="file" id="examJsonFileInput" accept=".json" style="display:none;" onchange="handleImportExamsJsonFile(event)">
                 </div>
                 <div style="display:flex;gap:10px;align-items:center;">
                     <input type="text" id="searchExamInput" class="form-control" style="width:240px;padding:8px 12px;font-size:13px;" placeholder="🔍 Sınav başlığı ara..." oninput="renderExamsList()">
@@ -1375,6 +1378,17 @@
 <script src="js/modules-data.js?v=20260929_1530"></script>
 <script src="js/storage-service.js?v=20260930_2230"></script>
 <script>
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+    window.escapeHtml = escapeHtml;
+
     let currentSelectedStudentId = null;
     let excelParsedRows = [];
     let _bulkClassId = null;
@@ -3978,6 +3992,80 @@
         }
     }
 
+    async function handlePushExamsToFirebase() {
+        const exams = lmsStorage.getAllExams();
+        if (exams.length === 0) {
+            alert('Henüz buluta aktarılacak hazırlanmış bir sınav bulunmuyor.');
+            return;
+        }
+
+        const btn = document.getElementById('btnPushExamsCloud');
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Aktarılıyor...'; }
+
+        try {
+            const res = await lmsStorage.pushExamsAndSubmissionsToFirebase();
+            if (res.success) {
+                alert('✓ Harika! ' + exams.length + ' adet sınav, sınav ayarları ve evraklar Firebase bulutuna başarıyla yüklendi!\n\nArtık tüm öğrenciler sınavları anında görebilir.');
+                loadExamsKPIs();
+                renderExamsList();
+            } else {
+                if (res.status === 401 || res.status === 403 || (res.message && res.message.includes('401'))) {
+                    openFirebaseTroubleshootModal();
+                } else {
+                    alert('Buluta aktarma başarısız: ' + res.message);
+                }
+            }
+        } catch(err) {
+            alert('Hata: ' + err.message);
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+        }
+    }
+
+    function exportExamsBackup() {
+        const exams = lmsStorage.getAllExams();
+        if (exams.length === 0) {
+            alert('Dışa aktarılacak sınav bulunmuyor.');
+            return;
+        }
+        const jsonStr = lmsStorage.exportExamsToJson();
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `ehem_sinavlar_${new Date().toISOString().slice(0, 10)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function triggerImportExamsJson() {
+        const el = document.getElementById('examJsonFileInput');
+        if (el) el.click();
+    }
+
+    function handleImportExamsJsonFile(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const content = evt.target.result;
+            const res = lmsStorage.importExamsFromJson(content);
+            if (res.success) {
+                alert(`✓ Başarılı! ${res.count} sınav sisteme aktarıldı.`);
+                renderExamsList();
+                loadExamsKPIs();
+                populateExamFilterOptions();
+            } else {
+                alert('İçe aktarma hatası: ' + res.message);
+            }
+            e.target.value = '';
+        };
+        reader.readAsText(file);
+    }
+
     // Builder Modalleri
     function openSelectExamTypeModal() {
         openModal('adminSelectExamTypeModal');
@@ -4225,10 +4313,14 @@
             </p>
 
             <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:10px;padding:14px;margin-bottom:18px;">
-                <h4 style="color:#60a5fa;margin:0 0 8px;font-size:14px;">⚡ 1. En Hızlı Çözüm: Kuralları Açık Hale Getirmek (30 Saniye)</h4>
+                <h4 style="color:#60a5fa;margin:0 0 8px;font-size:14px;">⚡ 1. Kesin ve Hızlı Çözüm: Realtime Database Kuralları (30 Saniye)</h4>
+                <div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;color:#fde68a;">
+                    ⚠️ <strong>DİKKAT:</strong> Bu ayar <em>Authentication</em> veya <em>Firestore</em> sekmesinde değil, sol menüdeki <strong>Realtime Database (Gerçek Zamanlı Veritabanı)</strong> sekmesinde yapılır! Henüz veritabanı açmadıysanız önce "Create Database" (Veritabanı Oluştur) deyiniz.
+                </div>
                 <ol style="margin:0;padding-left:18px;font-size:13px;color:#e2e8f0;line-height:1.6;">
-                    <li><a href="https://console.firebase.google.com" target="_blank" style="color:#38bdf8;text-decoration:underline;font-weight:bold;">Firebase Console</a> sayfasına gidin ve projenizi açın.</li>
-                    <li>Sol menüden <strong>Realtime Database</strong> &gt; üst sekmeden <strong>Rules (Kurallar)</strong> bölümüne tıklayın.</li>
+                    <li><a href="https://console.firebase.google.com" target="_blank" style="color:#38bdf8;text-decoration:underline;font-weight:bold;">Firebase Console</a> sayfasına gidin ve <strong>ehem-7db70</strong> projenizi açın.</li>
+                    <li>Sol menüden <strong>Build</strong> veya <strong>Databases &amp; Storage</strong> altındaki <strong>Realtime Database</strong>'e tıklayın. (Yoksa "Create Database" butonuna basıp bir bölge seçerek oluşturun).</li>
+                    <li>Üstteki <strong>Rules (Kurallar)</strong> sekmesine tıklayın.</li>
                     <li>Mevcut kuralların yerine aşağıdaki kodu yapıştırıp <strong>Publish (Yayınla)</strong> butonuna tıklayın:</li>
                 </ol>
                 <div style="position:relative;margin-top:10px;">
@@ -4239,6 +4331,9 @@
   }
 }</textarea>
                     <button class="btn btn-primary btn-sm" onclick="copyQuickOpenRules()" style="margin-top:6px;font-size:11px;">📋 Kuralları Panoya Kopyala</button>
+                </div>
+                <div style="margin-top:10px;font-size:12.5px;color:#cbd5e1;">
+                    5. Veritabanı adresinizi (Örn: <code>https://ehem-7db70-default-rtdb.firebaseio.com</code>) kopyalayıp Yönetici Paneli &gt; <strong>Ayarlar</strong> &gt; <strong>Firebase Database URL</strong> alanına yapıştırıp "Ayarları Kaydet"e tıklayınız.
                 </div>
             </div>
 

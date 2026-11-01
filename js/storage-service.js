@@ -3,6 +3,19 @@
  * Çift Modlu: LocalStorage (Varsayılan) + Firebase Realtime Database (Opsiyonel Bulut Senkronizasyonu)
  */
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+if (typeof window !== 'undefined') {
+    window.escapeHtml = escapeHtml;
+}
+
 const STORAGE_KEYS = {
     USERS: 'ehem_users_db_v1',
     SESSION: 'ehem_current_session_v1',
@@ -4021,21 +4034,23 @@ class StorageService {
         const studentClassId = student ? student.classId : null;
         const classes = this.getAllClasses();
         const studentClass = classes.find(c => c && (c.id === studentClassId || c.name === studentClassId));
+        const studentClassName = studentClass ? (studentClass.name || '').toLowerCase() : '';
 
         return exams.filter(ex => {
             if (!ex) return false;
             if (ex.isActive === false) return false;
 
-            const target = String(ex.targetClassId || 'all').trim();
-            if (target === 'all' || target === '' || target === 'all_classes' || target.toLowerCase() === 'tüm sınıflar' || target.toLowerCase() === 'tum siniflar') {
+            const target = String(ex.targetClassId || 'all').trim().toLowerCase();
+            if (!target || target === 'all' || target === 'all_classes' || target === 'genel' || target.includes('tüm') || target.includes('tum')) {
                 return true;
             }
 
             if (!studentClassId) return true;
 
-            if (target === String(studentClassId).trim()) return true;
+            if (target === String(studentClassId).trim().toLowerCase()) return true;
 
-            if (studentClass && (target === studentClass.id || target.toLowerCase() === (studentClass.name || '').toLowerCase())) return true;
+            if (studentClass && target === String(studentClass.id).trim().toLowerCase()) return true;
+            if (studentClassName && (target === studentClassName || studentClassName.includes(target) || target.includes(studentClassName))) return true;
 
             return false;
         });
@@ -4148,6 +4163,100 @@ class StorageService {
             }
         } catch (e) {}
         return this.getAllExams();
+    }
+
+    async pushExamsAndSubmissionsToFirebase() {
+        const cfg = this.getFirebaseConfig();
+        if (!cfg || !cfg.enabled || !cfg.databaseURL) {
+            return { success: false, message: 'Firebase bulut senkronizasyonu kapalı veya Database URL tanımlanmamış.' };
+        }
+
+        try {
+            // 1. Sınav Ayarları
+            const examSettings = this.getExamSettings();
+            const setRes = await this.fetchFirebase('/exam_settings.json', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(examSettings)
+            });
+            if (setRes && (setRes.status === 401 || setRes.status === 403)) {
+                return { success: false, status: setRes.status, message: 'Firebase Erişim İzni Reddedildi (HTTP ' + setRes.status + '). Lütfen veritabanı kurallarınızı kontrol ediniz.' };
+            }
+
+            // 2. Sınavlar
+            const exams = this.getAllExams();
+            const examMap = {};
+            exams.forEach(e => { if (e && e.id) examMap[e.id] = e; });
+            const exRes = await this.fetchFirebase('/exams.json', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(examMap)
+            });
+            if (exRes && (exRes.status === 401 || exRes.status === 403)) {
+                return { success: false, status: exRes.status, message: 'Firebase Erişim İzni Reddedildi (HTTP ' + exRes.status + ').' };
+            }
+
+            // 3. Sınav Evrakları
+            const subs = this.getAllExamSubmissions();
+            const subMap = {};
+            subs.forEach(s => { if (s && s.id) subMap[s.id] = s; });
+            await this.fetchFirebase('/exam_submissions.json', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(subMap)
+            });
+
+            return { success: true, count: exams.length };
+        } catch(err) {
+            return { success: false, message: err.message };
+        }
+    }
+
+    exportExamsToJson() {
+        const data = {
+            exportedAt: new Date().toISOString(),
+            examSettings: this.getExamSettings(),
+            exams: this.getAllExams(),
+            submissions: this.getAllExamSubmissions()
+        };
+        return JSON.stringify(data, null, 2);
+    }
+
+    importExamsFromJson(jsonString) {
+        try {
+            const data = JSON.parse(jsonString);
+            if (!data) return { success: false, message: 'Geçersiz veri formatı!' };
+
+            if (data.examSettings) {
+                this.saveExamSettings(data.examSettings);
+            }
+
+            let addedCount = 0;
+            if (Array.isArray(data.exams)) {
+                const current = this.getAllExams();
+                const map = new Map();
+                current.forEach(e => { if (e && e.id) map.set(e.id, e); });
+                data.exams.forEach(e => {
+                    if (e && e.id) {
+                        map.set(e.id, e);
+                        addedCount++;
+                    }
+                });
+                this.saveAllExams(Array.from(map.values()));
+            }
+
+            if (Array.isArray(data.submissions)) {
+                const currentSubs = this.getAllExamSubmissions();
+                const subMap = new Map();
+                currentSubs.forEach(s => { if (s && s.id) subMap[s.id] = s; });
+                data.submissions.forEach(s => { if (s && s.id) subMap[s.id] = s; });
+                this.saveAllExamSubmissions(Array.from(subMap.values()));
+            }
+
+            return { success: true, count: addedCount };
+        } catch(err) {
+            return { success: false, message: 'JSON okuma hatası: ' + err.message };
+        }
     }
 
     // ==================== SINAV EVRAKLARI (SUBMISSIONS) ====================
