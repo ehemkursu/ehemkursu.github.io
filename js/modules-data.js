@@ -133,6 +133,17 @@ const COURSE_MODULES = [
         description: "Disk birleştirme, disk temizleme ve bilgisayar bakım adımları."
     },
     {
+        id: 27,
+        slug: "bilgisayara-giris-denemesi",
+        title: "Bilgisayara Giriş Denemesi",
+        category: "Modül Sınavı",
+        categoryColor: "#3b82f6",
+        menuPosition: "left",
+        path: "html/sinav/bgiris.html",
+        icon: "📄",
+        description: "Bilgisayara Giriş modül sınavı ve değerlendirme testi."
+    },
+    {
         id: 13,
         slug: "bilgisayari-tanima",
         title: "13. Bilgisayarı Tanıma",

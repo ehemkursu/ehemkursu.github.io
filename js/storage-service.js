@@ -10,11 +10,86 @@ const STORAGE_KEYS = {
     STUDENT_SESSION: 'ehem_student_session_v1',
     ADMIN_CREDS: 'ehem_admin_creds_v1',
     FIREBASE_CONFIG: 'ehem_firebase_config_v1',
+    FIREBASE_AUTH: 'ehem_firebase_auth_token_v1',
     CLASSES: 'ehem_classes_db_v1',
     CUSTOM_MODULES: 'ehem_custom_modules_v1',
     ANNOUNCEMENTS: 'ehem_announcements_v1',
     MESSAGES: 'ehem_messages_v1',
-    DELETED_USERS: 'ehem_deleted_users_v1'
+    DELETED_USERS: 'ehem_deleted_users_v1',
+    EXAMS: 'ehem_exams_db_v1',
+    EXAM_SUBMISSIONS: 'ehem_exam_submissions_v1',
+    EXAM_SETTINGS: 'ehem_exam_settings_v1',
+    EXAM_PIN_SESSION: 'ehem_exam_pin_verified_v1'
+};
+
+
+const INITIAL_EXAMS = [
+    {
+        id: "exam_initial_demo_1",
+        title: "Bilgisayar İşletmenliği Genel Değerlendirme Sınavı",
+        type: "coktan",
+        typeName: "Çoktan Seçmeli Test",
+        targetClassId: "all",
+        pin: "123",
+        durationMinutes: 40,
+        isActive: true,
+        headerInfo: "T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ MÜDÜRLÜĞÜ",
+        instructions: "1. Sınav süresi 40 dakikadır.\n2. Yanlışlar doğruları götürmez.\n3. Sınavı tamamladığınızda sınav evrakınız sistemimize kaydedilecektir.",
+        createdAt: "2026-11-01T10:00:00.000Z",
+        questions: [
+            {
+                q: "Bilgisayarda silinen dosya ve klasörler kalıcı olarak silinmeden önce ilk olarak nereye taşınır?",
+                correct: "B",
+                optA: { text: "Belgelerim Klasörüne", imgData: "" },
+                optB: { text: "Geri Dönüşüm Kutusu'na", imgData: "" },
+                optC: { text: "İndirilenler Klasörüne", imgData: "" },
+                optD: { text: "Ağ Bağlantılarına", imgData: "" }
+            },
+            {
+                q: "Seçili bir metni veya nesneyi kopyalamak için kullanılan standart klavye kısayolu aşağıdakilerden hangisidir?",
+                correct: "A",
+                optA: { text: "Ctrl + C", imgData: "" },
+                optB: { text: "Ctrl + V", imgData: "" },
+                optC: { text: "Ctrl + X", imgData: "" },
+                optD: { text: "Ctrl + Z", imgData: "" }
+            },
+            {
+                q: "Microsoft Excel programında bir hücreye formül veya fonksiyon yazarken ilk olarak hangi karakter kullanılır?",
+                correct: "C",
+                optA: { text: "+ (Artı)", imgData: "" },
+                optB: { text: "# (Kare)", imgData: "" },
+                optC: { text: "= (Eşittir)", imgData: "" },
+                optD: { text: ": (İki Nokta)", imgData: "" }
+            },
+            {
+                q: "Web sayfalarını internet üzerinden görüntülemek ve sayfalar arasında gezinmek için kullanılan yazılımlara ne ad verilir?",
+                correct: "D",
+                optA: { text: "İşletim Sistemi", imgData: "" },
+                optB: { text: "Antivirüs Yazılımı", imgData: "" },
+                optC: { text: "Kelime İşlemci", imgData: "" },
+                optD: { text: "Web Tarayıcısı (Browser)", imgData: "" }
+            },
+            {
+                q: "Bir belgede yapılan değişiklikleri kaydetmek için en sık kullanılan klavye kısayolu hangisidir?",
+                correct: "A",
+                optA: { text: "Ctrl + S", imgData: "" },
+                optB: { text: "Ctrl + P", imgData: "" },
+                optC: { text: "Ctrl + A", imgData: "" },
+                optD: { text: "Alt + F4", imgData: "" }
+            }
+        ]
+    }
+];
+
+const DEFAULT_EXAM_SETTINGS = {
+    examPin: '123',
+    headerInstitution: 'T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ MÜDÜRLÜĞÜ',
+    headerCourse: 'BİLGİSAYAR İŞLETMENLİĞİ KURSU DEĞERLENDİRME SINAVI',
+    instructions: '1. Sınav süresi 40 dakikadır.\n2. Sınav sorularını dikkatlice okuyunuz ve en doğru cevabı işaretleyiniz.\n3. Yanlış cevaplar doğru cevapları etkilemez.\n4. Sınavı tamamladığınızda sınav evrakınız ve sonucunuz otomatik olarak sisteme kaydedilecektir.\n5. Sınav sonuçlarınızı ve cevap kağıdınızı Sınavlarım sekmesinden dilediğiniz an inceleyebilirsiniz.',
+    requireLogin: true,
+    passScore: 50,
+    activeStatus: true,
+    updatedAt: '2026-11-01T12:00:00.000Z'
 };
 
 const DEFAULT_ADMIN = {
@@ -1171,6 +1246,16 @@ class StorageService {
             localStorage.setItem(STORAGE_KEYS.ADMIN_CREDS, JSON.stringify(DEFAULT_ADMIN));
         }
 
+        // Sınav tanımları yoksa varsayılan ile başlat
+        if (!localStorage.getItem(STORAGE_KEYS.EXAM_SETTINGS)) {
+            localStorage.setItem(STORAGE_KEYS.EXAM_SETTINGS, JSON.stringify(DEFAULT_EXAM_SETTINGS));
+        }
+
+        // Örnek sınav yoksa başlat
+        if (!localStorage.getItem(STORAGE_KEYS.EXAMS)) {
+            localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(INITIAL_EXAMS));
+        }
+
         // Bulut ayarları
         this.firebaseConfig = this.getFirebaseConfig();
         if (this.firebaseConfig && this.firebaseConfig.enabled && this.firebaseConfig.databaseURL) {
@@ -1864,11 +1949,9 @@ class StorageService {
         const user = this.getUserById(userId);
         if (!user) return { success: false, message: 'Kullanıcı bulunamadı.' };
 
-        // Özel modülleri kullan, yoksa 1-26 varsayılan
-        const customMods = this.getCustomModules();
-        const allModuleIds = customMods
-            ? customMods.map(m => m.id)
-            : Array.from({ length: 26 }, (_, i) => i + 1);
+        // Menüdeki tam görsel ve mantıksal sıraya göre modülleri al
+        const orderedMods = this.getOrderedModules();
+        const allModuleIds = orderedMods.map(m => m.id);
         const totalModules = allModuleIds.length;
 
         moduleId = parseInt(moduleId);
@@ -1878,7 +1961,7 @@ class StorageService {
         completed.add(moduleId);
         unlocked.add(moduleId);
 
-        // Sıradaki bölümü bul ve aç
+        // Sıradaki bölümü menüdeki sıraya göre bul ve aç
         const currentIdx = allModuleIds.indexOf(moduleId);
         const nextModuleId = (currentIdx >= 0 && currentIdx < allModuleIds.length - 1)
             ? allModuleIds[currentIdx + 1]
@@ -1886,8 +1969,9 @@ class StorageService {
 
         if (nextModuleId) unlocked.add(nextModuleId);
 
-        user.completedModuleIds = Array.from(completed).sort((a, b) => a - b);
-        user.unlockedModuleIds = Array.from(unlocked).sort((a, b) => a - b);
+        // Modülleri menüdeki çalışma sırasına göre sırala (id numarasına göre değil)
+        user.completedModuleIds = Array.from(completed).sort((a, b) => allModuleIds.indexOf(a) - allModuleIds.indexOf(b));
+        user.unlockedModuleIds = Array.from(unlocked).sort((a, b) => allModuleIds.indexOf(a) - allModuleIds.indexOf(b));
         user.currentModuleId = nextModuleId || moduleId;
         user.lastActive = new Date().toISOString();
 
@@ -1908,31 +1992,33 @@ class StorageService {
 
     normalizeUserProgress(user) {
         if (!user) return user;
-        const customMods = this.getCustomModules();
-        const allModuleIds = customMods
-            ? customMods.map(m => m.id)
-            : Array.from({ length: 26 }, (_, i) => i + 1);
+        const orderedMods = this.getOrderedModules();
+        const allModuleIds = orderedMods.map(m => m.id);
 
         const unlocked = new Set(user.unlockedModuleIds || [allModuleIds[0] || 1]);
         const completed = new Set(user.completedModuleIds || []);
 
-        const maxUnlocked = Math.max(...unlocked, 1);
-        const targetIdx = allModuleIds.indexOf(maxUnlocked);
+        // Menü sırasındaki en yüksek açık bölüm indeksini bul
+        let maxUnlockedIdx = 0;
+        unlocked.forEach(id => {
+            const idx = allModuleIds.indexOf(parseInt(id));
+            if (idx > maxUnlockedIdx) maxUnlockedIdx = idx;
+        });
 
-        // En yüksek açık bölüme kadar olan tüm önceki bölümleri tamamlanmış say
-        if (targetIdx > 0) {
-            for (let i = 0; i < targetIdx; i++) {
+        // En yüksek açık bölüme kadar olan tüm önceki bölümleri tamamlanmış ve açık say
+        if (maxUnlockedIdx > 0) {
+            for (let i = 0; i < maxUnlockedIdx; i++) {
                 completed.add(allModuleIds[i]);
                 unlocked.add(allModuleIds[i]);
             }
         }
 
-        user.completedModuleIds = Array.from(completed).sort((a, b) => a - b);
-        user.unlockedModuleIds = Array.from(unlocked).sort((a, b) => a - b);
+        user.completedModuleIds = Array.from(completed).sort((a, b) => allModuleIds.indexOf(a) - allModuleIds.indexOf(b));
+        user.unlockedModuleIds = Array.from(unlocked).sort((a, b) => allModuleIds.indexOf(a) - allModuleIds.indexOf(b));
 
         // Sıradaki tamamlanmamış açık bölüm, yoksa en yüksek açık bölüm
         const nextIncomplete = allModuleIds.find(id => unlocked.has(id) && !completed.has(id));
-        user.currentModuleId = nextIncomplete || maxUnlocked || 1;
+        user.currentModuleId = nextIncomplete || allModuleIds[maxUnlockedIdx] || allModuleIds[0] || 1;
 
         return user;
     }
@@ -1941,13 +2027,11 @@ class StorageService {
         const user = this.getUserById(userId);
         if (!user) return { success: false };
 
-        const customMods = this.getCustomModules();
-        const allModuleIds = customMods
-            ? customMods.map(m => m.id)
-            : Array.from({ length: 26 }, (_, i) => i + 1);
+        const orderedMods = this.getOrderedModules();
+        const allModuleIds = orderedMods.map(m => m.id);
 
         moduleId = parseInt(moduleId);
-        const unlocked = new Set(user.unlockedModuleIds || [1]);
+        const unlocked = new Set(user.unlockedModuleIds || [allModuleIds[0] || 1]);
         const completed = new Set(user.completedModuleIds || []);
 
         const isCompleted = completed.has(moduleId);
@@ -1992,8 +2076,8 @@ class StorageService {
             }
         }
 
-        user.unlockedModuleIds = Array.from(unlocked).sort((a, b) => a - b);
-        user.completedModuleIds = Array.from(completed).sort((a, b) => a - b);
+        user.unlockedModuleIds = Array.from(unlocked).sort((a, b) => allModuleIds.indexOf(a) - allModuleIds.indexOf(b));
+        user.completedModuleIds = Array.from(completed).sort((a, b) => allModuleIds.indexOf(a) - allModuleIds.indexOf(b));
         user.lastActive = new Date().toISOString();
         this.updateUser(userId, user);
         return { success: true, user };
@@ -2003,12 +2087,10 @@ class StorageService {
         const user = this.getUserById(userId);
         if (!user) return { success: false };
 
-        const customMods = this.getCustomModules();
-        const allIds = customMods
-            ? customMods.map(m => m.id)
-            : Array.from({ length: 26 }, (_, i) => i + 1);
-        user.unlockedModuleIds = allIds;
-        user.completedModuleIds = allIds;
+        const orderedMods = this.getOrderedModules();
+        const allIds = orderedMods.map(m => m.id);
+        user.unlockedModuleIds = [...allIds];
+        user.completedModuleIds = [...allIds];
         user.currentModuleId = allIds[allIds.length - 1];
         user.lastActive = new Date().toISOString();
         this.updateUser(userId, user);
@@ -2019,9 +2101,11 @@ class StorageService {
         const user = this.getUserById(userId);
         if (!user) return { success: false };
 
+        const orderedMods = this.getOrderedModules();
+        const firstId = orderedMods.length > 0 ? orderedMods[0].id : 1;
         user.completedModuleIds = [];
-        user.unlockedModuleIds = [1];
-        user.currentModuleId = 1;
+        user.unlockedModuleIds = [firstId];
+        user.currentModuleId = firstId;
         user.lastActive = new Date().toISOString();
 
         this.updateUser(userId, user);
@@ -2040,6 +2124,9 @@ class StorageService {
                         parsed.databaseURL = DEFAULT_FIREBASE_CONFIG.databaseURL;
                     }
                     if (parsed.enabled === undefined) parsed.enabled = true;
+                    if (!parsed.apiKey && DEFAULT_FIREBASE_CONFIG.apiKey) {
+                        parsed.apiKey = DEFAULT_FIREBASE_CONFIG.apiKey;
+                    }
                     return parsed;
                 }
             }
@@ -2052,14 +2139,121 @@ class StorageService {
     saveFirebaseConfig(cfg) {
         localStorage.setItem(STORAGE_KEYS.FIREBASE_CONFIG, JSON.stringify(cfg));
         this.firebaseConfig = cfg;
+        try {
+            localStorage.removeItem(STORAGE_KEYS.FIREBASE_AUTH);
+        } catch (e) {}
         if (cfg && cfg.enabled) {
             this.startRealtimeSync();
         }
     }
 
     /**
+     * Firebase Anonim Kimlik Doğrulama (Anonymous Auth) token'ı alır ve önbellekler.
+     * Token süresi dolmadan önce otomatik olarak yeniler.
+     */
+    async getValidFirebaseAuthToken(forceRefresh = false) {
+        const cfg = this.getFirebaseConfig();
+        if (!cfg || !cfg.apiKey) return null;
+
+        if (this._authPromise && !forceRefresh) {
+            return this._authPromise;
+        }
+
+        this._authPromise = (async () => {
+            const apiKey = (cfg.apiKey || '').trim();
+            if (!apiKey) return null;
+
+            let cached = null;
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.FIREBASE_AUTH);
+                if (raw) cached = JSON.parse(raw);
+            } catch (e) {}
+
+            const now = Date.now();
+
+            // 1. Önbellekteki ID token geçerli mi? (5 dakika pay bırak)
+            if (!forceRefresh && cached && cached.idToken && cached.expiresAt && (cached.expiresAt - now > 5 * 60 * 1000)) {
+                return cached.idToken;
+            }
+
+            // 2. Refresh Token ile ID Token'ı yenilemeyi dene
+            if (cached && cached.refreshToken) {
+                try {
+                    const refUrl = `https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(apiKey)}`;
+                    const refRes = await fetch(refUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `grant_type=refresh_token&refresh_token=${encodeURIComponent(cached.refreshToken)}`
+                    });
+                    if (refRes.ok) {
+                        const refData = await refRes.json();
+                        const updated = {
+                            idToken: refData.id_token,
+                            refreshToken: refData.refresh_token || cached.refreshToken,
+                            expiresAt: now + (parseInt(refData.expires_in, 10) * 1000),
+                            userId: refData.user_id || cached.userId
+                        };
+                        try {
+                            localStorage.setItem(STORAGE_KEYS.FIREBASE_AUTH, JSON.stringify(updated));
+                        } catch (e) {}
+                        return updated.idToken;
+                    }
+                } catch (e) {
+                    console.warn('[Firebase Auth] Token yenileme hatası, sıfırdan anonim oturum açılacak:', e);
+                }
+            }
+
+            // 3. Sıfırdan Anonim Oturum Aç (Google Identity Toolkit)
+            try {
+                const signUpUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${encodeURIComponent(apiKey)}`;
+                const signUpRes = await fetch(signUpUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ returnSecureToken: true })
+                });
+                const data = await signUpRes.json();
+                if (signUpRes.ok && data.idToken) {
+                    const authObj = {
+                        idToken: data.idToken,
+                        refreshToken: data.refreshToken,
+                        expiresAt: now + (parseInt(data.expiresIn, 10) * 1000),
+                        userId: data.localId
+                    };
+                    try {
+                        localStorage.setItem(STORAGE_KEYS.FIREBASE_AUTH, JSON.stringify(authObj));
+                    } catch (e) {}
+                    console.log('[Firebase Auth] Anonim oturum başarıyla oluşturuldu. UID:', data.localId);
+                    this._lastAuthError = null;
+                    return authObj.idToken;
+                } else {
+                    const errMsg = data && data.error && data.error.message ? data.error.message : 'Bilinmeyen Hata';
+                    console.error('[Firebase Auth] Anonim oturum açılamadı:', errMsg);
+                    this._lastAuthError = {
+                        type: 'AUTH_FAILED',
+                        message: errMsg,
+                        time: new Date().toISOString()
+                    };
+                    return null;
+                }
+            } catch (err) {
+                console.error('[Firebase Auth] Bağlantı hatası:', err);
+                this._lastAuthError = {
+                    type: 'NETWORK_ERROR',
+                    message: err.message,
+                    time: new Date().toISOString()
+                };
+                return null;
+            }
+        })().finally(() => {
+            this._authPromise = null;
+        });
+
+        return this._authPromise;
+    }
+
+    /**
      * Firebase REST API çağrıları için önbellek kırma (cache-busting),
-     * no-store başlıkları ve otomatik yeniden deneme (retry) desteği
+     * Anonim Kimlik Doğrulama token desteği, no-store başlıkları ve otomatik yeniden deneme (retry) desteği
      */
     async fetchFirebase(endpoint, options = {}, retries = 3) {
         const cfg = this.getFirebaseConfig();
@@ -2070,9 +2264,15 @@ class StorageService {
         const baseUrl = cfg.databaseURL.replace(/\/$/, '');
         const cleanPath = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
         const separator = cleanPath.includes('?') ? '&' : '?';
-        const auth = cfg.apiKey ? `auth=${encodeURIComponent(cfg.apiKey)}&` : '';
-        const cacheBuster = `_ts=${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-        const url = `${baseUrl}${cleanPath}${separator}${auth}${cacheBuster}`;
+
+        // Anonim auth token al (varsa)
+        let authToken = cfg.apiKey ? await this.getValidFirebaseAuthToken() : null;
+
+        const buildUrl = (token) => {
+            const auth = token ? `auth=${encodeURIComponent(token)}&` : '';
+            const cacheBuster = `_ts=${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+            return `${baseUrl}${cleanPath}${separator}${auth}${cacheBuster}`;
+        };
 
         const fetchOptions = {
             ...options,
@@ -2088,11 +2288,38 @@ class StorageService {
             const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
             const timeoutId = controller ? setTimeout(() => controller.abort(), 8000) : null;
             try {
+                const url = buildUrl(authToken);
                 const res = await fetch(url, {
                     ...fetchOptions,
                     signal: controller ? controller.signal : undefined
                 });
                 if (timeoutId) clearTimeout(timeoutId);
+
+                // Token geçersiz/süresi dolmuş olabilir (401/403) - eğer apiKey varsa bir kez token yenileyip tekrar dene
+                if ((res.status === 401 || res.status === 403) && cfg.apiKey && attempt < retries) {
+                    console.warn(`[Firebase] HTTP ${res.status} alındı, anonim token yenilenerek tekrar deneniyor...`);
+                    authToken = await this.getValidFirebaseAuthToken(true);
+                    continue;
+                }
+
+                if (res.status === 401 || res.status === 403) {
+                    this._lastAuthError = {
+                        status: res.status,
+                        time: new Date().toISOString(),
+                        endpoint
+                    };
+                    console.error(`[Firebase] Erişim İzni Reddedildi (HTTP ${res.status}): ${endpoint}. Güvenlik kurallarının süresi dolmuş veya Anonim Giriş aktif edilmemiş olabilir!`);
+                    if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('ehem:firebase-auth-error', {
+                            detail: { status: res.status, endpoint }
+                        }));
+                    }
+                    return res;
+                }
+
+                if (res.ok) {
+                    this._lastAuthError = null;
+                }
                 return res;
             } catch (err) {
                 if (timeoutId) clearTimeout(timeoutId);
@@ -2102,6 +2329,95 @@ class StorageService {
                 }
                 await new Promise(r => setTimeout(r, attempt * 600));
             }
+        }
+    }
+
+    /**
+     * Firebase bağlantı durumunu, Anonim Kimlik Doğrulamayı ve veritabanı okuma/yazma kurallarını test eder
+     */
+    async testFirebaseConnection() {
+        const cfg = this.getFirebaseConfig();
+        if (!cfg || !cfg.enabled || !cfg.databaseURL) {
+            return {
+                success: false,
+                code: 'DISABLED',
+                message: 'Firebase bulut senkronizasyonu kapalı veya Database URL tanımlanmamış.'
+            };
+        }
+
+        // 1. Web API Key girilmişse önce Anonim Kimlik Doğrulamayı test et
+        let authToken = null;
+        if (cfg.apiKey) {
+            authToken = await this.getValidFirebaseAuthToken();
+            if (!authToken) {
+                const lastErr = this._lastAuthError && this._lastAuthError.message ? this._lastAuthError.message : 'Bilinmeyen Hata';
+                let tip = '';
+                if (lastErr.includes('ADMIN_ONLY_OPERATION') || lastErr.includes('OPERATION_NOT_ALLOWED')) {
+                    tip = '\n\n💡 Çözüm: Firebase Console -> Authentication -> Sign-in method sekmesinden "Anonymous" (Anonim) seçeneğini etkinleştirin (Enable).';
+                } else if (lastErr.includes('API_KEY_INVALID')) {
+                    tip = '\n\n💡 Çözüm: Girilen Web API Key geçersiz. Firebase Console -> Proje Ayarları (Genel) sayfasından kontrol edin.';
+                }
+                return {
+                    success: false,
+                    code: 'AUTH_FAILED',
+                    message: `⚠️ Firebase Anonim Kimlik Doğrulama Başarısız!\n\nHata: ${lastErr}${tip}`
+                };
+            }
+        }
+
+        // 2. Okuma iznini test et (kursiyerler düğümü üzerinden)
+        try {
+            const readRes = await this.fetchFirebase('/kursiyerler.json?shallow=true');
+            if (readRes && (readRes.status === 401 || readRes.status === 403)) {
+                this._lastAuthError = { status: readRes.status, time: new Date().toISOString() };
+                const extraNote = !cfg.apiKey ? '\n\n💡 İpucu: Kurallarınız "auth != null" ise, Web API Key alanını doldurmanız ve Firebase Console\'da Anonim Girişi etkinleştirmeniz gerekmektedir.' : '';
+                return {
+                    success: false,
+                    code: 'PERMISSION_DENIED',
+                    message: `⚠️ Firebase Okuma İzni Reddedildi (HTTP ${readRes.status})!\n\nVeritabanı kurallarınızı Firebase Console -> Realtime Database -> Kurallar sekmesinden kontrol edin.${extraNote}`
+                };
+            }
+            if (!readRes || !readRes.ok) {
+                return {
+                    success: false,
+                    code: 'HTTP_ERROR',
+                    message: `Firebase yanıt vermedi: ${readRes ? (readRes.statusText || readRes.error || readRes.status) : 'Bağlantı kesildi'}`
+                };
+            }
+
+            // 3. Yazma iznini test etmek için geçici bir ping kaydı oluştur ve sil
+            const pingId = `_ping_${Date.now()}`;
+            const writeRes = await this.fetchFirebase(`/_system_ping/${pingId}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ts: Date.now(), test: true })
+            });
+
+            if (writeRes && (writeRes.status === 401 || writeRes.status === 403)) {
+                return {
+                    success: false,
+                    code: 'WRITE_PERMISSION_DENIED',
+                    message: `⚠️ Okuma izni açık ancak Yazma İzni Reddedildi (HTTP ${writeRes.status})!\n\nVeritabanı güvenlik kurallarında ".write": "auth != null" izni verildiğinden emin olun.`
+                };
+            }
+
+            if (writeRes && writeRes.ok) {
+                this.fetchFirebase(`/_system_ping/${pingId}.json`, { method: 'DELETE' }).catch(() => {});
+            }
+
+            this._lastAuthError = null;
+            const authMsg = authToken ? '✓ Anonim Kimlik Doğrulama (Anonymous Auth) aktif ve geçerli.\n' : 'ℹ️ Kimlik doğrulamasız modda çalışıyor (Web API Key girilmedi).\n';
+            return {
+                success: true,
+                code: 'OK',
+                message: `✓ Firebase bulut veritabanı bağlantısı başarılı!\n\n${authMsg}✓ Okuma ve yazma kuralları sorunsuz çalışıyor!`
+            };
+        } catch (err) {
+            return {
+                success: false,
+                code: 'NETWORK_ERROR',
+                message: `Firebase sunucusuna bağlanılamadı: ${err.message}`
+            };
         }
     }
 
@@ -2230,7 +2546,11 @@ class StorageService {
             if (res && res.ok) {
                 return { success: true };
             } else {
-                return { success: false, message: res ? res.error : 'İstek başarısız' };
+                let msg = res ? (res.error || `HTTP ${res.status}`) : 'İstek başarısız';
+                if (res && (res.status === 401 || res.status === 403)) {
+                    msg = 'Firebase Erişim İzni Reddedildi (HTTP 401/403). Güvenlik kurallarının süresi dolmuş olabilir.';
+                }
+                return { success: false, message: msg };
             }
         } catch (err) {
             return { success: false, message: err.message };
@@ -2253,6 +2573,9 @@ class StorageService {
             let validClassIds = new Set();
             try {
                 const classesRes = await this.fetchFirebase('/classes.json');
+                if (classesRes && (classesRes.status === 401 || classesRes.status === 403)) {
+                    return { success: false, message: 'Firebase Erişim İzni Reddedildi (HTTP 401/403). Güvenlik kurallarının süresi dolmuş veya okuma izni verilmemiş olabilir.' };
+                }
                 if (classesRes && classesRes.ok) {
                     const classesRaw = await classesRes.json();
                     const cloudClasses = Array.isArray(classesRaw) ? classesRaw.filter(Boolean) : (classesRaw && typeof classesRaw === 'object' ? Object.values(classesRaw).filter(Boolean) : []);
@@ -2296,6 +2619,9 @@ class StorageService {
             let hasChanges = false;
             try {
                 const usersRes = await this.fetchFirebase('/kursiyerler.json');
+                if (usersRes && (usersRes.status === 401 || usersRes.status === 403)) {
+                    return { success: false, message: 'Firebase Erişim İzni Reddedildi (HTTP 401/403). Güvenlik kurallarının süresi dolmuş veya okuma izni verilmemiş olabilir.' };
+                }
                 if (usersRes && usersRes.ok) {
                     const usersData = await usersRes.json();
                     const cloudUsers = Array.isArray(usersData) ? usersData.filter(Boolean) : (usersData && typeof usersData === 'object' ? Object.values(usersData).filter(Boolean) : []);
@@ -2379,6 +2705,15 @@ class StorageService {
                 }
             } catch (e) {}
 
+            // 8. Sınav Ayarları / Tanımları
+            try { await this.pullExamSettingsFromFirebase(); } catch (e) {}
+
+            // 9. Sınavlar
+            try { await this.pullExamsFromFirebase(); } catch (e) {}
+
+            // 10. Sınav Evrakları / Gönderimler
+            try { await this.pullExamSubmissionsFromFirebase(); } catch (e) {}
+
             return { success: true, count, hasChanges };
         } catch (err) {
             return { success: false, message: err.message };
@@ -2394,7 +2729,10 @@ class StorageService {
 
         try {
             // Önce buluttan en son verileri çek ve birleştir (Asla diğer bilgisayarların verisini ezme!)
-            await this.pullFromFirebase();
+            const pullRes = await this.pullFromFirebase();
+            if (pullRes && !pullRes.success && (pullRes.message || '').includes('401/403')) {
+                return pullRes;
+            }
 
             const cleanUsers = this.deduplicateUserList(this.getAllUsers());
             localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(cleanUsers));
@@ -2402,11 +2740,17 @@ class StorageService {
             // Kursiyerleri anahtarlı nesne olarak aktar
             const userMap = {};
             cleanUsers.forEach(u => { if (u && u.id) userMap[u.id] = u; });
-            await this.fetchFirebase('/kursiyerler.json', {
+            const uRes = await this.fetchFirebase('/kursiyerler.json', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(userMap)
             });
+            if (uRes && (uRes.status === 401 || uRes.status === 403)) {
+                return {
+                    success: false,
+                    message: 'Firebase Erişim İzni Reddedildi (HTTP 401/403). Güvenlik kurallarının süresi dolmuş veya yazma izni verilmemiş olabilir.'
+                };
+            }
 
             // Sınıflar
             const classMap = {};
@@ -2433,6 +2777,32 @@ class StorageService {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(msgMap)
+            });
+
+            // Sınav Ayarları
+            const examSettings = this.getExamSettings();
+            await this.fetchFirebase('/exam_settings.json', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(examSettings)
+            });
+
+            // Sınavlar
+            const examMap = {};
+            this.getAllExams().forEach(e => { if (e && e.id) examMap[e.id] = e; });
+            await this.fetchFirebase('/exams.json', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(examMap)
+            });
+
+            // Sınav Evrakları
+            const subMap = {};
+            this.getAllExamSubmissions().forEach(s => { if (s && s.id) subMap[s.id] = s; });
+            await this.fetchFirebase('/exam_submissions.json', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(subMap)
             });
 
             // Özel Modüller
@@ -2473,88 +2843,95 @@ class StorageService {
         if (!cfg || !cfg.enabled || !cfg.databaseURL) return;
 
         // 1. Firebase Server-Sent Events (SSE) Dinleyicisi
-        try {
-            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
-            const authParam = cfg.apiKey ? `?auth=${encodeURIComponent(cfg.apiKey)}` : '';
-            const sseUrl = `${baseUrl}/kursiyerler.json${authParam}`;
+        const setupSSE = async () => {
+            try {
+                const baseUrl = cfg.databaseURL.replace(/\/$/, '');
+                const authToken = cfg.apiKey ? await this.getValidFirebaseAuthToken() : null;
+                const authParam = authToken ? `?auth=${encodeURIComponent(authToken)}` : '';
+                const sseUrl = `${baseUrl}/kursiyerler.json${authParam}`;
 
-            if (typeof EventSource !== 'undefined') {
-                const es = new EventSource(sseUrl);
-                this._eventSource = es;
+                if (typeof EventSource !== 'undefined') {
+                    if (this._eventSource) {
+                        try { this._eventSource.close(); } catch (e) {}
+                    }
+                    const es = new EventSource(sseUrl);
+                    this._eventSource = es;
 
-                es.addEventListener('put', (e) => {
-                    try {
-                        const payload = JSON.parse(e.data);
-                        if (!payload) return;
-                        
-                        if (payload.path === '/') {
-                            // Kök düğüm güncellendi (tam liste)
-                            if (payload.data) {
-                                const raw = payload.data;
-                                const incoming = Array.isArray(raw) ? raw.filter(Boolean) : (raw && typeof raw === 'object' ? Object.values(raw).filter(Boolean) : []);
-                                if (incoming.length > 0) {
-                                    this.pullFromFirebase().then(res => {
-                                        if (res && res.success) {
-                                            if (typeof onUpdateCallback === 'function') onUpdateCallback();
-                                            window.dispatchEvent(new CustomEvent('ehem:data-synced', { detail: { source: 'sse-root', count: res.count } }));
+                    es.addEventListener('put', (e) => {
+                        try {
+                            const payload = JSON.parse(e.data);
+                            if (!payload) return;
+                            
+                            if (payload.path === '/') {
+                                // Kök düğüm güncellendi (tam liste)
+                                if (payload.data) {
+                                    const raw = payload.data;
+                                    const incoming = Array.isArray(raw) ? raw.filter(Boolean) : (raw && typeof raw === 'object' ? Object.values(raw).filter(Boolean) : []);
+                                    if (incoming.length > 0) {
+                                        this.pullFromFirebase().then(res => {
+                                            if (res && res.success) {
+                                                if (typeof onUpdateCallback === 'function') onUpdateCallback();
+                                                window.dispatchEvent(new CustomEvent('ehem:data-synced', { detail: { source: 'sse-root', count: res.count } }));
+                                            }
+                                        });
+                                    }
+                                }
+                            } else {
+                                // Alt düğüm güncellendi (/usr_123 veya /usr_123/completedModuleIds)
+                                const match = (payload.path || '').match(/^\/([^\/]+)/);
+                                if (match && match[1]) {
+                                    const targetId = match[1];
+                                    if (payload.data === null) {
+                                        // Silindi
+                                        let users = this.getAllUsers();
+                                        const next = users.filter(u => u.id !== targetId);
+                                        if (next.length !== users.length) {
+                                            localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(next));
                                         }
-                                    });
-                                }
-                            }
-                        } else {
-                            // Alt düğüm güncellendi (/usr_123 veya /usr_123/completedModuleIds)
-                            const match = (payload.path || '').match(/^\/([^\/]+)/);
-                            if (match && match[1]) {
-                                const targetId = match[1];
-                                if (payload.data === null) {
-                                    // Silindi
-                                    let users = this.getAllUsers();
-                                    const next = users.filter(u => u.id !== targetId);
-                                    if (next.length !== users.length) {
-                                        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(next));
-                                    }
-                                } else if (payload.path === `/${targetId}` && typeof payload.data === 'object') {
-                                    // Tekil kullanıcı doğrudan güncellendi
-                                    const users = this.getAllUsers();
-                                    const idx = users.findIndex(u => u.id === targetId);
-                                    if (idx >= 0) {
-                                        users[idx] = this.mergeUserProgress(users[idx], payload.data);
+                                    } else if (payload.path === `/${targetId}` && typeof payload.data === 'object') {
+                                        // Tekil kullanıcı doğrudan güncellendi
+                                        const users = this.getAllUsers();
+                                        const idx = users.findIndex(u => u.id === targetId);
+                                        if (idx >= 0) {
+                                            users[idx] = this.mergeUserProgress(users[idx], payload.data);
+                                        } else {
+                                            users.push(this.normalizeUserProgress(payload.data));
+                                        }
+                                        localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(this.deduplicateUserList(users)));
                                     } else {
-                                        users.push(this.normalizeUserProgress(payload.data));
+                                        // Alt alan (örn: completedModuleIds veya lastActive)
+                                        this.pullFromFirebase();
                                     }
-                                    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(this.deduplicateUserList(users)));
-                                } else {
-                                    // Alt alan (örn: completedModuleIds veya lastActive)
-                                    this.pullFromFirebase();
-                                }
-                                if (typeof onUpdateCallback === 'function') onUpdateCallback();
-                                window.dispatchEvent(new CustomEvent('ehem:data-synced', { detail: { source: 'sse-user', targetId } }));
-                            }
-                        }
-                    } catch (err) {}
-                });
-
-                es.addEventListener('patch', (e) => {
-                    try {
-                        const payload = JSON.parse(e.data);
-                        if (payload && payload.data) {
-                            this.pullFromFirebase().then(res => {
-                                if (res && res.success) {
                                     if (typeof onUpdateCallback === 'function') onUpdateCallback();
-                                    window.dispatchEvent(new CustomEvent('ehem:data-synced', { detail: { source: 'sse-patch' } }));
+                                    window.dispatchEvent(new CustomEvent('ehem:data-synced', { detail: { source: 'sse-user', targetId } }));
                                 }
-                            });
-                        }
-                    } catch (err) {}
-                });
+                            }
+                        } catch (err) {}
+                    });
 
-                es.onerror = () => {
-                    // EventSource bağlantıyı otomatik tekrar dener; bu sırada 5sn aralıklı yoklama devrede
-                };
+                    es.addEventListener('patch', (e) => {
+                        try {
+                            const payload = JSON.parse(e.data);
+                            if (payload && payload.data) {
+                                this.pullFromFirebase().then(res => {
+                                    if (res && res.success) {
+                                        if (typeof onUpdateCallback === 'function') onUpdateCallback();
+                                        window.dispatchEvent(new CustomEvent('ehem:data-synced', { detail: { source: 'sse-patch' } }));
+                                    }
+                                });
+                            }
+                        } catch (err) {}
+                    });
+
+                    es.onerror = () => {
+                        // EventSource bağlantıyı otomatik tekrar dener; bu sırada 5sn aralıklı yoklama devrede
+                    };
+                }
+            } catch (e) {
+                console.warn('[SSE] EventSource başlatılamadı, yoklama modu devrede:', e);
             }
-        } catch (e) {
-            console.warn('[SSE] EventSource başlatılamadı, yoklama modu devrede:', e);
-        }
+        };
+        setupSSE();
 
         // 2. Her 5 saniyede bir güvenli, önbelleksiz periyodik yoklama (Fallback Polling)
         if (!this._pollingInterval) {
@@ -2690,9 +3067,35 @@ class StorageService {
         } catch (e) { return null; }
     }
 
+    /**
+     * Modülleri menüdeki kesin görsel ve pedagojik sırasına göre döndürür:
+     * 1. Kısım: Sol Menü Modülleri (sırasıyla)
+     * 2. Kısım: Sağ Menü Modülleri (sırasıyla)
+     * Böylece menüde hangi sırada görünüyorsa, çalışma sırası da birebir o sırada olur.
+     */
+    getOrderedModules() {
+        const custom = this.getCustomModules();
+        const base = (custom && Array.isArray(custom) && custom.length > 0)
+            ? custom
+            : ((typeof COURSE_MODULES !== 'undefined') ? COURSE_MODULES : []);
+        const left = [];
+        const right = [];
+        base.forEach(m => {
+            if (!m) return;
+            if (m.menuPosition !== 'right') left.push(m);
+            else right.push(m);
+        });
+        return [...left, ...right];
+    }
+
     saveCustomModules(modules) {
-        localStorage.setItem(STORAGE_KEYS.CUSTOM_MODULES, JSON.stringify(modules));
-        this.syncCollectionToFirebase('custom_modules', modules);
+        if (!Array.isArray(modules)) return;
+        // Her zaman menüdeki görsel sıraya (Sol Menü, ardından Sağ Menü) göre kaydet
+        const left = modules.filter(m => m && m.menuPosition !== 'right');
+        const right = modules.filter(m => m && m.menuPosition === 'right');
+        const ordered = [...left, ...right];
+        localStorage.setItem(STORAGE_KEYS.CUSTOM_MODULES, JSON.stringify(ordered));
+        this.syncCollectionToFirebase('custom_modules', ordered);
     }
 
     resetModulesToDefault() {
@@ -2791,17 +3194,14 @@ class StorageService {
     }
 
     async syncSingleAnnouncementToFirebase(ann) {
-        const cfg = this.getFirebaseConfig();
-        if (!cfg || !cfg.enabled || !cfg.databaseURL || !ann || !ann.id) return { success: false };
+        if (!ann || !ann.id) return { success: false };
         try {
-            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
-            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
-            const res = await fetch(`${baseUrl}/announcements/${ann.id}.json${authParam}`, {
+            const res = await this.fetchFirebase(`/announcements/${ann.id}.json`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(ann)
             });
-            return { success: res.ok };
+            return { success: !!(res && res.ok) };
         } catch (err) {
             console.warn(`Firebase announcement ${ann.id} sync hatası:`, err);
             return { success: false };
@@ -2809,15 +3209,12 @@ class StorageService {
     }
 
     async deleteAnnouncementFromFirebase(annId) {
-        const cfg = this.getFirebaseConfig();
-        if (!cfg || !cfg.enabled || !cfg.databaseURL || !annId) return { success: false };
+        if (!annId) return { success: false };
         try {
-            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
-            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
-            const res = await fetch(`${baseUrl}/announcements/${annId}.json${authParam}`, {
+            const res = await this.fetchFirebase(`/announcements/${annId}.json`, {
                 method: 'DELETE'
             });
-            return { success: res.ok };
+            return { success: !!(res && res.ok) };
         } catch (err) {
             console.warn(`Firebase announcement ${annId} silme hatası:`, err);
             return { success: false };
@@ -2825,14 +3222,9 @@ class StorageService {
     }
 
     async pullAnnouncementsFromFirebase() {
-        const cfg = this.getFirebaseConfig();
-        if (!cfg || !cfg.enabled || !cfg.databaseURL) return { success: false, list: this.getAllAnnouncements() };
-
         try {
-            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
-            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
-            const annsRes = await fetch(`${baseUrl}/announcements.json${authParam}`);
-            if (annsRes.ok) {
+            const annsRes = await this.fetchFirebase('/announcements.json');
+            if (annsRes && annsRes.ok) {
                 const annsRaw = await annsRes.json();
                 let cloudList = [];
                 if (Array.isArray(annsRaw)) {
@@ -2879,40 +3271,16 @@ class StorageService {
         localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(anns));
 
         // 2. Firebase'den doğrudan ve temiz sil
-        const cfg = this.getFirebaseConfig();
-        if (cfg && cfg.enabled && cfg.databaseURL) {
-            try {
-                const baseUrl = cfg.databaseURL.replace(/\/$/, '');
-                const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
-
-                // Tekil duyuruyu sil
-                await fetch(`${baseUrl}/announcements/${annId}.json${authParam}`, {
-                    method: 'DELETE'
-                });
-
-                // Eğer hiç duyuru kalmadıysa buluttaki ana duyuru düğümünü temizle
-                if (anns.length === 0) {
-                    await fetch(`${baseUrl}/announcements.json${authParam}`, {
-                        method: 'DELETE'
-                    });
-                }
-            } catch (err) {
-                console.warn(`Firebase duyuru ${annId} silme hatası:`, err);
-            }
+        await this.deleteAnnouncementFromFirebase(annId);
+        if (anns.length === 0) {
+            await this.fetchFirebase('/announcements.json', { method: 'DELETE' });
         }
         return { success: true };
     }
 
     async deleteAllAnnouncements() {
         localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify([]));
-        const cfg = this.getFirebaseConfig();
-        if (cfg && cfg.enabled && cfg.databaseURL) {
-            try {
-                const baseUrl = cfg.databaseURL.replace(/\/$/, '');
-                const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
-                await fetch(`${baseUrl}/announcements.json${authParam}`, { method: 'DELETE' });
-            } catch (e) {}
-        }
+        await this.fetchFirebase('/announcements.json', { method: 'DELETE' });
         return { success: true };
     }
 
@@ -2958,20 +3326,11 @@ class StorageService {
         }
 
         // 4. Firebase'e doğrudan tekil atomic yaz
-        const cfg = this.getFirebaseConfig();
-        if (cfg && cfg.enabled && cfg.databaseURL) {
-            try {
-                const baseUrl = cfg.databaseURL.replace(/\/$/, '');
-                const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
-                await fetch(`${baseUrl}/announcements/${annId}/readBy/${userId}.json${authParam}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(readRecord)
-                });
-            } catch (err) {
-                console.warn('Firebase readBy senkronizasyon hatası:', err);
-            }
-        }
+        await this.fetchFirebase(`/announcements/${annId}/readBy/${userId}.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(readRecord)
+        });
 
         return { success: true };
     }
@@ -3007,27 +3366,17 @@ class StorageService {
         localStorage.setItem(STORAGE_KEYS.ANNOUNCEMENTS, JSON.stringify(anns));
 
         // Firebase'e atomik yaz ve readBy düğümünü tamamen temizle
-        const cfg = this.getFirebaseConfig();
-        if (cfg && cfg.enabled && cfg.databaseURL) {
-            try {
-                const baseUrl = cfg.databaseURL.replace(/\/$/, '');
-                const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
-                
-                const cleanAnn = { ...ann };
-                delete cleanAnn.readBy;
+        const cleanAnn = { ...ann };
+        delete cleanAnn.readBy;
 
-                await fetch(`${baseUrl}/announcements/${annId}.json${authParam}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(cleanAnn)
-                });
-                await fetch(`${baseUrl}/announcements/${annId}/readBy.json${authParam}`, {
-                    method: 'DELETE'
-                });
-            } catch (err) {
-                console.warn('Firebase resendAnnouncement hatası:', err);
-            }
-        }
+        await this.fetchFirebase(`/announcements/${annId}.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(cleanAnn)
+        });
+        await this.fetchFirebase(`/announcements/${annId}/readBy.json`, {
+            method: 'DELETE'
+        });
 
         return { success: true, announcement: ann };
     }
@@ -3197,12 +3546,9 @@ class StorageService {
     }
 
     async syncSingleMessageToFirebase(msg) {
-        const cfg = this.getFirebaseConfig();
-        if (!cfg || !cfg.enabled || !cfg.databaseURL || !msg || !msg.id) return;
+        if (!msg || !msg.id) return;
         try {
-            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
-            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
-            await fetch(`${baseUrl}/messages/${msg.id}.json${authParam}`, {
+            await this.fetchFirebase(`/messages/${msg.id}.json`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(msg)
@@ -3213,12 +3559,9 @@ class StorageService {
     }
 
     async deleteMessageFromFirebase(messageId) {
-        const cfg = this.getFirebaseConfig();
-        if (!cfg || !cfg.enabled || !cfg.databaseURL || !messageId) return;
+        if (!messageId) return;
         try {
-            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
-            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
-            await fetch(`${baseUrl}/messages/${messageId}.json${authParam}`, {
+            await this.fetchFirebase(`/messages/${messageId}.json`, {
                 method: 'DELETE'
             });
         } catch (err) {
@@ -3227,14 +3570,9 @@ class StorageService {
     }
 
     async pullMessagesFromFirebase() {
-        const cfg = this.getFirebaseConfig();
-        if (!cfg || !cfg.enabled || !cfg.databaseURL) return { success: false };
-
         try {
-            const baseUrl = cfg.databaseURL.replace(/\/$/, '');
-            const authParam = cfg.apiKey ? `?auth=${cfg.apiKey}` : '';
-            const msgsRes = await fetch(`${baseUrl}/messages.json${authParam}`);
-            if (msgsRes.ok) {
+            const msgsRes = await this.fetchFirebase('/messages.json');
+            if (msgsRes && msgsRes.ok) {
                 const msgsRaw = await msgsRes.json();
                 let cloudList = [];
                 if (Array.isArray(msgsRaw)) {
@@ -3588,6 +3926,339 @@ class StorageService {
         messages.forEach(m => this.deleteMessageFromFirebase(m.id));
         return { success: true, count };
     }
+    // ==================== SINAV YÖNETİMİ & EVRAK DEPOLAMA SİSTEMİ ====================
+
+    getExamSettings() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.EXAM_SETTINGS);
+            if (!raw) return { ...DEFAULT_EXAM_SETTINGS };
+            const parsed = JSON.parse(raw);
+            return { ...DEFAULT_EXAM_SETTINGS, ...parsed };
+        } catch (e) {
+            return { ...DEFAULT_EXAM_SETTINGS };
+        }
+    }
+
+    saveExamSettings(settings) {
+        const cur = this.getExamSettings();
+        const next = {
+            ...cur,
+            ...settings,
+            examPin: (settings.examPin || cur.examPin || '123').trim().substring(0, 3),
+            updatedAt: new Date().toISOString()
+        };
+        localStorage.setItem(STORAGE_KEYS.EXAM_SETTINGS, JSON.stringify(next));
+        this.syncCollectionToFirebase('exam_settings', next);
+        return next;
+    }
+
+    async pullExamSettingsFromFirebase() {
+        try {
+            const res = await this.fetchFirebase('/exam_settings.json');
+            if (res && res.ok) {
+                const data = await res.json();
+                if (data && typeof data === 'object') {
+                    const merged = { ...DEFAULT_EXAM_SETTINGS, ...data };
+                    localStorage.setItem(STORAGE_KEYS.EXAM_SETTINGS, JSON.stringify(merged));
+                    return merged;
+                }
+            }
+        } catch (e) {}
+        return this.getExamSettings();
+    }
+
+    verifyExamPin(enteredPin, examId = null) {
+        if (!enteredPin) return false;
+        const cleanEntered = String(enteredPin).trim().toLowerCase();
+
+        if (examId) {
+            const exam = this.getExamById(examId);
+            if (exam && exam.pin) {
+                if (String(exam.pin).trim().toLowerCase() === cleanEntered) return true;
+            }
+        }
+
+        const settings = this.getExamSettings();
+        const globalPin = String(settings.examPin || '123').trim().toLowerCase();
+        return cleanEntered === globalPin;
+    }
+
+    isExamPinVerifiedInSession() {
+        try {
+            return sessionStorage.getItem(STORAGE_KEYS.EXAM_PIN_SESSION) === 'true';
+        } catch (e) {
+            return false;
+        }
+    }
+
+    setExamPinVerifiedInSession(status = true) {
+        try {
+            if (status) {
+                sessionStorage.setItem(STORAGE_KEYS.EXAM_PIN_SESSION, 'true');
+            } else {
+                sessionStorage.removeItem(STORAGE_KEYS.EXAM_PIN_SESSION);
+            }
+        } catch (e) {}
+    }
+
+    clearExamPinSession() {
+        this.setExamPinVerifiedInSession(false);
+    }
+
+    getAllExams() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.EXAMS);
+            const exams = raw ? JSON.parse(raw) : [];
+            return Array.isArray(exams) ? exams : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    getExamsForStudent(userId) {
+        const student = this.getUserById(userId) || this.getCurrentStudent();
+        const exams = this.getAllExams();
+        const studentClassId = student ? student.classId : null;
+
+        return exams.filter(ex => {
+            if (!ex) return false;
+            if (ex.isActive === false) return false;
+            if (!ex.targetClassId || ex.targetClassId === 'all' || ex.targetClassId === '') return true;
+            if (!studentClassId) return false;
+            return String(ex.targetClassId).trim() === String(studentClassId).trim();
+        });
+    }
+
+    getExamById(examId) {
+        if (!examId) return null;
+        const exams = this.getAllExams();
+        return exams.find(e => e && e.id === examId) || null;
+    }
+
+    saveExam(examData) {
+        if (!examData) return { success: false, message: 'Sınav verisi eksik.' };
+        const exams = this.getAllExams();
+        const settings = this.getExamSettings();
+
+        const id = examData.id || ('exam_' + Date.now() + '_' + Math.floor(Math.random() * 1000));
+        const examObj = {
+            id,
+            title: (examData.title || 'Başlıksız Sınav').trim(),
+            type: examData.type || 'coktan',
+            typeName: examData.typeName || this.getExamTypeName(examData.type),
+            coverData: examData.coverData || '',
+            questions: Array.isArray(examData.questions) ? examData.questions : [],
+            targetClassId: examData.targetClassId || 'all',
+            pin: (examData.pin || settings.examPin || '123').trim().substring(0, 3),
+            headerInfo: (examData.headerInfo || settings.headerInstitution || '').trim(),
+            instructions: (examData.instructions || settings.instructions || '').trim(),
+            durationMinutes: parseInt(examData.durationMinutes) || 40,
+            isActive: examData.isActive !== false,
+            createdAt: examData.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            createdBy: examData.createdBy || 'admin'
+        };
+
+        const existingIdx = exams.findIndex(e => e && e.id === id);
+        if (existingIdx >= 0) {
+            exams[existingIdx] = examObj;
+        } else {
+            exams.unshift(examObj);
+        }
+
+        this.saveAllExams(exams);
+        this.syncSingleExamToFirebase(examObj);
+        return { success: true, exam: examObj };
+    }
+
+    getExamTypeName(type) {
+        switch(type) {
+            case 'coktan': return 'Çoktan Seçmeli Test';
+            case 'cozumlu': return 'Çözümlü Sınav';
+            case 'dogruyanlis': return 'Doğru-Yanlış Sınavı';
+            case 'emailtest': return 'Email / Çoktan Seçmeli Test';
+            case 'etkilesimli': return 'Etkileşimli Sınav';
+            default: return 'Sınav';
+        }
+    }
+
+    deleteExam(examId) {
+        if (!examId) return { success: false };
+        let exams = this.getAllExams();
+        const initialCount = exams.length;
+        exams = exams.filter(e => e && e.id !== examId);
+        this.saveAllExams(exams);
+        this.deleteExamFromFirebase(examId);
+        return { success: true, count: initialCount - exams.length };
+    }
+
+    saveAllExams(exams) {
+        const clean = Array.isArray(exams) ? exams.filter(Boolean) : [];
+        localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(clean));
+        const examMap = {};
+        clean.forEach(e => { if (e && e.id) examMap[e.id] = e; });
+        this.syncCollectionToFirebase('exams', examMap);
+    }
+
+    async syncSingleExamToFirebase(exam) {
+        if (!exam || !exam.id) return;
+        try {
+            await this.fetchFirebase(`/exams/${exam.id}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(exam)
+            });
+        } catch (e) {}
+    }
+
+    async deleteExamFromFirebase(examId) {
+        if (!examId) return;
+        try {
+            await this.fetchFirebase(`/exams/${examId}.json`, { method: 'DELETE' });
+        } catch (e) {}
+    }
+
+    async pullExamsFromFirebase() {
+        try {
+            const res = await this.fetchFirebase('/exams.json');
+            if (res && res.ok) {
+                const raw = await res.json();
+                if (raw) {
+                    const cloudExams = Array.isArray(raw) ? raw.filter(Boolean) : Object.values(raw).filter(Boolean);
+                    const localExams = this.getAllExams();
+                    const examMap = new Map();
+                    localExams.forEach(le => { if (le && le.id) examMap.set(le.id, le); });
+                    cloudExams.forEach(ce => { if (ce && ce.id) examMap.set(ce.id, ce); });
+                    const merged = Array.from(examMap.values());
+                    localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(merged));
+                    return merged;
+                }
+            }
+        } catch (e) {}
+        return this.getAllExams();
+    }
+
+    // ==================== SINAV EVRAKLARI (SUBMISSIONS) ====================
+
+    getAllExamSubmissions() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.EXAM_SUBMISSIONS);
+            const subs = raw ? JSON.parse(raw) : [];
+            return Array.isArray(subs) ? subs : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    getExamSubmissionsForExam(examId) {
+        if (!examId) return [];
+        return this.getAllExamSubmissions().filter(s => s && s.examId === examId);
+    }
+
+    getExamSubmissionsForStudent(userId) {
+        if (!userId) return [];
+        return this.getAllExamSubmissions().filter(s => s && (s.userId === userId || s.studentId === userId));
+    }
+
+    getExamSubmissionById(subId) {
+        if (!subId) return null;
+        return this.getAllExamSubmissions().find(s => s && s.id === subId) || null;
+    }
+
+    saveExamSubmission(submission) {
+        if (!submission) return { success: false, message: 'Evrak verisi eksik.' };
+        const subs = this.getAllExamSubmissions();
+        const settings = this.getExamSettings();
+
+        const id = submission.id || ('sub_' + Date.now() + '_' + Math.floor(Math.random() * 1000));
+        const subObj = {
+            id,
+            examId: submission.examId || '',
+            examTitle: submission.examTitle || 'Sınav',
+            examType: submission.examType || 'coktan',
+            userId: submission.userId || '',
+            studentName: submission.studentName || 'Kursiyer',
+            username: submission.username || '',
+            classId: submission.classId || '',
+            className: submission.className || '',
+            studentEmail: submission.studentEmail || '',
+            studentPhone: submission.studentPhone || '',
+            submittedAt: submission.submittedAt || new Date().toISOString(),
+            timeSpentSeconds: submission.timeSpentSeconds || 0,
+            totalQuestions: submission.totalQuestions || (Array.isArray(submission.answers) ? submission.answers.length : 0),
+            correctCount: submission.correctCount || 0,
+            wrongCount: submission.wrongCount || 0,
+            emptyCount: submission.emptyCount || 0,
+            score: typeof submission.score === 'number' ? submission.score : Math.round(((submission.correctCount || 0) / (submission.totalQuestions || 1)) * 100),
+            isPassed: (submission.score !== undefined ? submission.score : 0) >= (settings.passScore || 50),
+            answers: Array.isArray(submission.answers) ? submission.answers : [],
+            headerInfo: submission.headerInfo || settings.headerInstitution,
+            adminNotes: submission.adminNotes || ''
+        };
+
+        subs.unshift(subObj);
+        localStorage.setItem(STORAGE_KEYS.EXAM_SUBMISSIONS, JSON.stringify(subs));
+        this.syncSingleExamSubmissionToFirebase(subObj);
+        return { success: true, submission: subObj };
+    }
+
+    deleteExamSubmission(subId) {
+        if (!subId) return { success: false };
+        let subs = this.getAllExamSubmissions();
+        const initialCount = subs.length;
+        subs = subs.filter(s => s && s.id !== subId);
+        localStorage.setItem(STORAGE_KEYS.EXAM_SUBMISSIONS, JSON.stringify(subs));
+        this.deleteExamSubmissionFromFirebase(subId);
+        return { success: true, count: initialCount - subs.length };
+    }
+
+    deleteAllExamSubmissions() {
+        const subs = this.getAllExamSubmissions();
+        const count = subs.length;
+        localStorage.setItem(STORAGE_KEYS.EXAM_SUBMISSIONS, JSON.stringify([]));
+        subs.forEach(s => this.deleteExamSubmissionFromFirebase(s.id));
+        return { success: true, count };
+    }
+
+    async syncSingleExamSubmissionToFirebase(sub) {
+        if (!sub || !sub.id) return;
+        try {
+            await this.fetchFirebase(`/exam_submissions/${sub.id}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(sub)
+            });
+        } catch (e) {}
+    }
+
+    async deleteExamSubmissionFromFirebase(subId) {
+        if (!subId) return;
+        try {
+            await this.fetchFirebase(`/exam_submissions/${subId}.json`, { method: 'DELETE' });
+        } catch (e) {}
+    }
+
+    async pullExamSubmissionsFromFirebase() {
+        try {
+            const res = await this.fetchFirebase('/exam_submissions.json');
+            if (res && res.ok) {
+                const raw = await res.json();
+                if (raw) {
+                    const cloudSubs = Array.isArray(raw) ? raw.filter(Boolean) : Object.values(raw).filter(Boolean);
+                    const localSubs = this.getAllExamSubmissions();
+                    const subMap = new Map();
+                    localSubs.forEach(ls => { if (ls && ls.id) subMap.set(ls.id, ls); });
+                    cloudSubs.forEach(cs => { if (cs && cs.id) subMap.set(cs.id, cs); });
+                    const merged = Array.from(subMap.values());
+                    merged.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+                    localStorage.setItem(STORAGE_KEYS.EXAM_SUBMISSIONS, JSON.stringify(merged));
+                    return merged;
+                }
+            }
+        } catch (e) {}
+        return this.getAllExamSubmissions();
+    }
+
 }
 
 // Global olarak erişilebilir tekil nesne (Singleton)

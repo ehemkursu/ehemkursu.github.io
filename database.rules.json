@@ -1,0 +1,36 @@
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "kursiyerler": {
+      ".indexOn": ["username", "classId"]
+    },
+    "classes": {
+      ".indexOn": ["name"]
+    },
+    "announcements": {
+      ".indexOn": ["createdAt"]
+    },
+    "messages": {
+      ".indexOn": ["recipientId", "senderId", "createdAt"]
+    },
+    "deleted_users": {
+      ".indexOn": [".value"]
+    },
+    "custom_modules": {
+      ".indexOn": ["id"]
+    },
+    "exams": {
+      ".indexOn": ["createdAt", "targetClassId"]
+    },
+    "exam_submissions": {
+      ".indexOn": ["examId", "userId", "submittedAt"]
+    },
+    "exam_settings": {
+      ".indexOn": ["updatedAt"]
+    },
+    "_system_ping": {
+      ".indexOn": ["ts"]
+    }
+  }
+}

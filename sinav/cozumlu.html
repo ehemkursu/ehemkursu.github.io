@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Çözümlü Sınav Hazırlayıcı</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root { --primary: #e74c3c; --bg: #f0f2f5; --success: #2ecc71; --error: #e74c3c; --hint: #f1c40f; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); padding: 20px; margin: 0; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .header { background: #c0392b; color: white; padding: 20px; border-radius: 10px; margin-bottom: 25px; text-align: center; }
+        .nav { display: flex; gap: 10px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 3px solid #ddd; }
+        .nav a { padding: 12px 25px; text-decoration: none; color: #333; background: #ecf0f1; border-radius: 8px; font-weight: bold; transition: 0.3s; }
+        .nav a:hover { background: #d5dbdb; }
+        .nav a.active { background: var(--primary); color: white; }
+        .question-block { border: 2px solid #eee; padding: 20px; margin-bottom: 20px; border-radius: 12px; position: relative; background: #fff; border-left: 6px solid var(--primary); }
+        .soru-bolum { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 2px solid var(--primary); }
+        .cozum-bolum { background: #fffde7; padding: 15px; border-radius: 8px; border: 2px solid var(--hint); }
+        .section-title { font-size: 18px; color: var(--primary); margin-bottom: 10px; border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
+        .section-title.cozum { color: var(--error); border-color: var(--error); }
+        .preview-img { max-width: 120px; max-height: 80px; display: block; margin: 5px 0; border: 1px dashed #ccc; border-radius: 5px; background: #f9f9f9; cursor: pointer; transition: transform 0.3s; }
+        .preview-img:hover { transform: scale(1.05); }
+        .preview-video { max-width: 200px; max-height: 120px; display: block; margin: 5px 0; border: 1px dashed #ccc; border-radius: 5px; background: #f9f9f9; }
+        label { font-weight: bold; display: block; margin-top: 10px; font-size: 14px; }
+        input[type="text"], textarea { width: 100%; padding: 10px; margin: 5px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-family: inherit; }
+        button { padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .add-btn { background: var(--success); color: white; }
+        .download-btn { background: var(--primary); color: white; flex-grow: 1; font-size: 18px; }
+        .remove-btn { background: var(--error); color: white; position: absolute; right: 15px; top: 15px; padding: 5px 12px; }
+        .save-area { background: #ffeaea; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px dashed var(--primary); }
+        .saved-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .saved-item { background: white; padding: 10px 15px; border-radius: 8px; border: 1px solid #ddd; display: flex; align-items: center; gap: 10px; }
+        .btn-group { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 15px; }
+        .btn-save { background: var(--hint); color: #333; }
+        .btn-export { background: #9b59b6; color: white; }
+        .btn-import { background: #34495e; color: white; }
+        .btn-delete { background: var(--error); color: white; }
+        .btn-excel { background: #27ae60; color: white; }
+        .excel-area { background: #e8f8f5; padding: 15px; border-radius: 8px; margin-top: 10px; border: 2px dashed #27ae60; }
+        #zoomModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; }
+        #zoomModal img { max-width: 90%; max-height: 90%; border-radius: 10px; }
+        #zoomModal .close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; cursor: pointer; }
+    
+    .lms-publish-bar {
+        background: #e8f5e9;
+        border: 2px dashed #2e7d32;
+        padding: 18px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+    .lms-publish-title {
+        color: #1b5e20;
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .publish-btn {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+        color: white !important;
+        font-size: 17px !important;
+        padding: 14px 28px !important;
+        border-radius: 8px !important;
+        cursor: pointer;
+        font-weight: bold;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .publish-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+    }
+    .nav-portal-btn {
+        background: #1e293b !important;
+        color: #38bdf8 !important;
+        margin-left: auto;
+    }
+    .nav-admin-btn {
+        background: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+</style>
+    <script src="../js/storage-service.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Çözümlü Sınav Hazırlayıcı</h1>
+        </div>
+        
+        <div class="nav">
+            <a href="etkilesimli.html">Etkileşimli Sınav</a>
+            <a href="cozumlu.html" class="active">Çözümlü Sınav</a>
+            <a href="coktan.html">Çoktan Seçmeli</a>
+            <a href="dogruyanlis.html">Doğru-Yanlış</a>
+            <a href="emailtest.html">Email ile Cevaplama</a>
+        </div>
+
+        <div class="save-area">
+            <h3>Kaydet / Yükle</h3>
+            <div class="btn-group">
+                <button class="btn-save" onclick="saveData()">Kaydet</button>
+                <button class="btn-export" onclick="exportJSON()">JSON İndir</button>
+                <button class="btn-import" onclick="document.getElementById('fileInput').click()">JSON Yükle</button>
+                <input type="file" id="fileInput" accept=".json" style="display:none" onchange="importJSON(this)">
+                <button class="btn-excel" onclick="document.getElementById('excelInput').click()">Excel Yükle</button>
+                <input type="file" id="excelInput" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
+                <button class="btn-delete" onclick="clearAll()">Temizle</button>
+            </div>
+            <div class="excel-area">
+                <strong>Excel Formatı:</strong> A:SoruMetni | B:SoruResim | C:SoruVideo | D:CevapMetni | E:CevapResim | F:CevapVideo | G:DoğruCevaplar
+            </div>
+            <div id="savedList" class="saved-list"></div>
+        </div>
+
+        <div style="background:#ffeaea; padding:20px; border-radius:10px; margin-bottom:20px;">
+            <label>Sınav Başlığı:</label>
+            <input type="text" id="examTitle" placeholder="Örn: Matematik Çözümlü Sorular">
+            <label>Kapak Resmi:</label>
+            <input type="file" id="coverImg" accept="image/*" onchange="previewImage(this, 'coverPreview')">
+            <img id="coverPreview" class="preview-img" style="display:none">
+        </div>
+
+        
+        <div class="lms-publish-bar">
+            <div class="lms-publish-title">⚙️ Kurs Portalı & Sınav Ayarları</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;">
+                <div>
+                    <label>Sınava Giriş Şifresi (3 Karakter):</label>
+                    <input type="text" id="examPin" maxlength="3" placeholder="123" style="text-align:center;font-weight:bold;font-size:16px;text-transform:uppercase;">
+                </div>
+                <div>
+                    <label>Hedef Sınıf:</label>
+                    <select id="examTargetClass" style="padding:10px;">
+                        <option value="all">Tüm Sınıflar (Herkes)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Sınav Süresi (Dakika):</label>
+                    <input type="number" id="examDuration" value="40" min="5" max="180">
+                </div>
+            </div>
+        </div>
+    
+        <div id="questionArea"></div>
+
+        <div class="btn-group">
+            <button class="add-btn" onclick="addQuestion()">+ Yeni Soru Ekle</button>
+            <button class="publish-btn" onclick="publishExamToLMS()">🚀 SINAVI HAZIRLA VE SİSTEME YAYINLA</button>
+            <button class="download-btn" onclick="buildExam()">💾 HTML Olarak İndir</button>
+        </div>
+    </div>
+
+    <div id="zoomModal" onclick="closeZoom()">
+        <span class="close">&times;</span>
+        <img id="zoomedImg" src="">
+    </div>
+
+    <script>
+        let questionCount = 0;
+        const STORAGE_KEY = 'cozumlu_sinavlar';
+
+        function previewImage(input, previewId) {
+            if (!input.files || !input.files[0]) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById(previewId);
+                img.src = e.target.result;
+                img.style.display = 'block';
+                img.onclick = function() { openZoom(e.target.result); };
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        function previewVideo(input, previewId) {
+            if (!input.files || !input.files[0]) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const vid = document.getElementById(previewId);
+                vid.src = e.target.result;
+                vid.style.display = 'block';
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        function openZoom(src) {
+            document.getElementById('zoomedImg').src = src;
+            document.getElementById('zoomModal').style.display = 'flex';
+        }
+
+        function closeZoom() {
+            document.getElementById('zoomModal').style.display = 'none';
+        }
+
+        function addQuestion(data) {
+            questionCount++;
+            const id = questionCount;
+            const div = document.createElement('div');
+            div.className = 'question-block';
+            div.dataset.id = id;
+            
+            div.innerHTML = `
+                <button class="remove-btn" onclick="this.parentElement.remove()">Sil</button>
+                <h3>Soru ${id}</h3>
+                
+                <div class="soru-bolum">
+                    <div class="section-title">📖 SORU</div>
+                    <label>Soru Metni:</label>
+                    <textarea class="soru-text" rows="2" placeholder="Soruyu yazın...">${data?.soruText || ''}</textarea>
+                    
+                    <label>Soru Resmi:</label>
+                    <input type="file" accept="image/*" onchange="previewImage(this, 'soru-img-${id}')">
+                    <img id="soru-img-${id}" class="preview-img" style="display:none">
+                    
+                    <label>Soru Videosu:</label>
+                    <input type="file" accept="video/*" onchange="previewVideo(this, 'soru-vid-${id}')">
+                    <video id="soru-vid-${id}" class="preview-video" style="display:none" controls></video>
+                </div>
+                
+                <div class="cozum-bolum">
+                    <div class="section-title cozum">💡 ÇÖZÜM</div>
+                    <label>Çözüm Metni:</label>
+                    <textarea class="cozum-text" rows="2" placeholder="Çözümü yazın...">${data?.cozumText || ''}</textarea>
+                    
+                    <label>Çözüm Resmi:</label>
+                    <input type="file" accept="image/*" onchange="previewImage(this, 'cozum-img-${id}')">
+                    <img id="cozum-img-${id}" class="preview-img" style="display:none">
+                    
+                    <label>Çözüm Videosu:</label>
+                    <input type="file" accept="video/*" onchange="previewVideo(this, 'cozum-vid-${id}')">
+                    <video id="cozum-vid-${id}" class="preview-video" style="display:none" controls></video>
+                </div>
+                
+                <label>Doğru Cevaplar (Virgül ile):</label>
+                <input type="text" class="dogru-cevaplar" placeholder="örnek: 5, beş, five" value="${data?.dogruCevaplar || ''}">
+                
+                <label style="margin-top:10px;">
+                    <input type="checkbox" class="karakter-sirasi-onemsiz" ${data?.karakterSirasiOnemsiz ? 'checked' : ''}> 
+                    Karakter sırası önemsiz
+                </label>
+            `;
+            
+            document.getElementById('questionArea').appendChild(div);
+        }
+
+        function collectData() {
+            const questions = [];
+            document.querySelectorAll('.question-block').forEach(block => {
+                const id = block.dataset.id;
+                const soruImgEl = document.getElementById(`soru-img-${id}`);
+                const soruVidEl = document.getElementById(`soru-vid-${id}`);
+                const cozumImgEl = document.getElementById(`cozum-img-${id}`);
+                const cozumVidEl = document.getElementById(`cozum-vid-${id}`);
+                
+                questions.push({
+                    soruText: block.querySelector('.soru-text').value,
+                    soruImgData: soruImgEl?.src || '',
+                    soruVidData: soruVidEl?.src || '',
+                    cozumText: block.querySelector('.cozum-text').value,
+                    cozumImgData: cozumImgEl?.src || '',
+                    cozumVidData: cozumVidEl?.src || '',
+                    dogruCevaplar: block.querySelector('.dogru-cevaplar').value,
+                    karakterSirasiOnemsiz: block.querySelector('.karakter-sirasi-onemsiz').checked
+                });
+            });
+            return {
+                title: document.getElementById('examTitle').value,
+                coverData: document.getElementById('coverPreview').src || '',
+                questions: questions,
+                savedAt: new Date().toLocaleString('tr-TR')
+            };
+        }
+
+        function saveData() {
+            const data = collectData();
+            if (!data.title) { alert('Sınav başlığı girin!'); return; }
+            
+            let saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const idx = saved.findIndex(s => s.title === data.title);
+            if (idx >= 0) {
+                if (!confirm('Bu isimde kayıt var. Üzerine yazılsın mı?')) return;
+                saved[idx] = data;
+            } else {
+                saved.push(data);
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+            refreshSavedList();
+            alert('Kaydedildi!');
+        }
+
+        function refreshSavedList() {
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const container = document.getElementById('savedList');
+            if (!saved.length) { container.innerHTML = '<span style="color:#999">Henüz kayıt yok.</span>'; return; }
+            
+            container.innerHTML = saved.map((s, i) => `
+                <div class="saved-item">
+                    <span>${s.title} <small>(${s.savedAt})</small></span>
+                    <button class="btn-save" onclick="loadData(${i})" style="padding:5px 10px;font-size:12px;">Yükle</button>
+                    <button class="btn-delete" onclick="deleteData(${i})" style="padding:5px 10px;font-size:12px;">Sil</button>
+                </div>
+            `).join('');
+        }
+
+        function loadData(index) {
+            const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            if (!saved[index]) return;
+            const data = saved[index];
+            
+            document.getElementById('examTitle').value = data.title;
+            if (data.coverData) {
+                document.getElementById('coverPreview').src = data.coverData;
+                document.getElementById('coverPreview').style.display = 'block';
+            }
+            
+            document.getElementById('questionArea').innerHTML = '';
+            questionCount = 0;
+            data.questions.forEach(q => addQuestion(q));
+        }
+
+        function deleteData(index) {
+            if (!confirm('Silinsin mi?')) return;
+            let saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            saved.splice(index, 1);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
+            refreshSavedList();
+        }
+
+        function exportJSON() {
+            const data = collectData();
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = (data.title || 'sinav') + '.json';
+            link.click();
+        }
+
+        function importJSON(input) {
+            if (!input.files || !input.files[0]) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    document.getElementById('examTitle').value = data.title || '';
+                    if (data.coverData) {
+                        document.getElementById('coverPreview').src = data.coverData;
+                        document.getElementById('coverPreview').style.display = 'block';
+                    }
+                    document.getElementById('questionArea').innerHTML = '';
+                    questionCount = 0;
+                    (data.questions || []).forEach(q => addQuestion(q));
+                    alert('Yüklendi!');
+                } catch(err) { alert('Hata: ' + err.message); }
+            };
+            reader.readAsText(input.files[0]);
+        }
+
+        function importExcel(input) {
+            if (!input.files || !input.files[0]) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                    
+                    document.getElementById('questionArea').innerHTML = '';
+                    questionCount = 0;
+                    
+                    rows.forEach((row, idx) => {
+                        if (idx === 0 && (!row[0] || row[0].toString().toLowerCase().includes('soru'))) return;
+                        addQuestion({
+                            soruText: row[0] || '',
+                            soruImgData: row[1] || '',
+                            soruVidData: row[2] || '',
+                            cozumText: row[3] || '',
+                            cozumImgData: row[4] || '',
+                            cozumVidData: row[5] || '',
+                            dogruCevaplar: row[6] || ''
+                        });
+                    });
+                    alert(`${rows.length} satır yüklendi!`);
+                } catch(err) { alert('Excel hatası: ' + err.message); }
+            };
+            reader.readAsArrayBuffer(input.files[0]);
+        }
+
+        function clearAll() {
+            if (!confirm('Tüm sorular silinsin mi?')) return;
+            document.getElementById('questionArea').innerHTML = '';
+            document.getElementById('examTitle').value = '';
+            document.getElementById('coverPreview').src = '';
+            document.getElementById('coverPreview').style.display = 'none';
+            questionCount = 0;
+        }
+
+        function escHTML(s) { 
+            return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); 
+        }
+
+        function buildExam() {
+            const data = collectData();
+            if (!data.questions.length) { alert('En az bir soru ekleyin!'); return; }
+            
+            const sTitle = data.title || "Cozumlu Sinav";
+            const coverData = escHTML(data.coverData);
+            
+            // Cevapları encode et
+            const encodedQuestions = data.questions.map(q => ({
+                ...q,
+                encodedAnswers: q.dogruCevaplar ? q.dogruCevaplar.split(',').map(a => a.trim()).filter(a => a).map(a => btoa(unescape(encodeURIComponent(a)))) : []
+            }));
+            const jsonData = JSON.stringify(encodedQuestions);
+            
+            const examHTML = `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>${escHTML(sTitle)}</title>
+<style>
+:root{--primary:#e74c3c;--success:#2ecc71;--error:#e74c3c;--bg:#f8f9fa;--hint:#f1c40f}
+body{font-family:sans-serif;background:var(--bg);margin:0;padding:20px}
+.container{max-width:1200px;margin:0 auto;background:#fff;padding:30px;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,.1)}
+.cover{text-align:center;margin-bottom:30px;padding:20px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:15px;color:white}
+.cover img{max-width:200px;border-radius:10px;margin-bottom:15px;cursor:pointer;transition:transform 0.3s}
+.cover img:hover{transform:scale(1.05)}
+.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.soru-panel{background:#fff;padding:20px;border-radius:12px;border:2px solid var(--primary)}
+.cozum-panel{background:#fffde7;padding:20px;border-radius:12px;border:2px solid var(--hint);display:none}
+.cozum-panel.active{display:block}
+.section-title{font-size:20px;font-weight:bold;margin-bottom:15px;border-bottom:2px solid;padding-bottom:10px}
+.soru-title{color:var(--primary);border-color:var(--primary)}
+.cozum-title{color:var(--error);border-color:var(--error)}
+img{max-width:100%;max-height:250px;border-radius:8px;margin:10px 0;cursor:pointer;transition:transform 0.3s}
+img:hover{transform:scale(1.02)}
+video{max-width:100%;max-height:250px;border-radius:8px;margin:10px 0}
+input{width:90%;padding:15px;border:3px solid #ddd;border-radius:10px;font-size:20px;text-align:center;margin:20px 0;outline:0}
+button{padding:12px 30px;border:none;border-radius:8px;cursor:pointer;font-weight:bold;font-size:16px;background:var(--primary);color:#fff;transition:.3s}
+button:hover{opacity:0.9}
+#cozum-btn{background:var(--hint);color:#333;display:none}
+#cozum-btn.active{display:inline-block}
+#next-btn{background:var(--success);display:none}
+#next-btn.active{display:inline-block}
+.err{color:var(--error);font-weight:bold;margin:10px 0;min-height:24px}
+.success{color:var(--success);font-weight:bold;margin:10px 0}
+.progress{text-align:center;margin-bottom:20px;color:#666;font-size:16px}
+#zoomModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:1000;justify-content:center;align-items:center}
+#zoomModal img{max-width:90%;max-height:90%}
+</style>
+</head>
+<body>
+<div id="zoomModal" onclick="this.style.display='none'"><img id="zoomImg" src=""></div>
+<div class="container">
+<div class="cover">
+<img src="${coverData}" onclick="openZoom(this.src)">
+<h1>${escHTML(sTitle)}</h1>
+</div>
+<div class="progress">Soru <span id="q-num">1</span> / ${data.questions.length}</div>
+<div class="main-layout">
+<div class="soru-panel">
+<div class="section-title soru-title">SORU</div>
+<div id="soru-icerik"></div>
+<input type="text" id="cevap" placeholder="Cevabınızı yazın..." autocomplete="off">
+<div id="mesaj" class="err"></div>
+<button onclick="kontrol()">KONTROL ET</button>
+</div>
+<div class="cozum-panel" id="cozum-panel">
+<div class="section-title cozum-title">ÇÖZÜM</div>
+<div id="cozum-icerik"></div>
+<button id="cozum-btn" onclick="cozumGoster()">ÇÖZÜMÜ GÖSTER</button>
+<button id="next-btn" onclick="sonrakiSoru()">SONRAKİ SORU</button>
+</div>
+</div>
+</div>
+<script>
+var d=${jsonData};
+var c=0;
+var trLow=function(s){return s.toLowerCase().replace(/i̇/g,"i").trim()};
+var dec=function(s){return decodeURIComponent(escape(atob(s)))};
+function openZoom(src){document.getElementById('zoomImg').src=src;document.getElementById('zoomModal').style.display='flex'}
+function gosterSoru(){
+document.getElementById('q-num').innerText=c+1;
+document.getElementById('cozum-panel').classList.remove('active');
+document.getElementById('cozum-btn').classList.remove('active');
+document.getElementById('next-btn').classList.remove('active');
+document.getElementById('cevap').value='';
+document.getElementById('cevap').disabled=false;
+document.getElementById('mesaj').innerText='';
+document.getElementById('mesaj').className='err';
+document.getElementById('cozum-icerik').innerHTML='';
+var h='';
+if(d[c].soruText) h+='<p>'+d[c].soruText+'</p>';
+if(d[c].soruImgData) h+='<img src="'+d[c].soruImgData+'" onclick="openZoom(this.src)">';
+if(d[c].soruVidData) h+='<video src="'+d[c].soruVidData+'" controls></video>';
+document.getElementById('soru-icerik').innerHTML=h;
+document.getElementById('cevap').focus();
+}
+function kontrol(){
+var v=trLow(document.getElementById('cevap').value);
+var cor=d[c].encodedAnswers.map(function(x){return trLow(dec(x))});
+var ok=false;
+if(d[c].karakterSirasiOnemsiz){
+var u=v.replace(/\\s+/g,"").split("").sort().join("");
+ok=cor.some(function(t){return t.replace(/\\s+/g,"").split("").sort().join("")===u});
+}else{ok=cor.includes(v);}
+if(ok){
+document.getElementById('mesaj').className='success';
+document.getElementById('mesaj').innerText='Doğru!';
+document.getElementById('cevap').disabled=true;
+document.getElementById('cozum-panel').classList.add('active');
+document.getElementById('next-btn').classList.add('active');
+document.getElementById('cozum-btn').classList.remove('active');
+cozumIcerikGoster();
+}else{
+document.getElementById('mesaj').className='err';
+document.getElementById('mesaj').innerText='Yanlış! Çözümü izleyip tekrar deneyin.';
+document.getElementById('cozum-panel').classList.add('active');
+document.getElementById('cozum-btn').classList.add('active');
+document.getElementById('next-btn').classList.remove('active');
+}
+}
+function cozumGoster(){
+document.getElementById('cozum-btn').classList.remove('active');
+cozumIcerikGoster();
+document.getElementById('cevap').value='';
+document.getElementById('cevap').disabled=false;
+document.getElementById('cevap').focus();
+document.getElementById('mesaj').innerText='Çözümü izlediniz. Şimdi doğru cevabı yazın.';
+document.getElementById('mesaj').className='';
+}
+function cozumIcerikGoster(){
+var h='';
+if(d[c].cozumText) h+='<p>'+d[c].cozumText+'</p>';
+if(d[c].cozumImgData) h+='<img src="'+d[c].cozumImgData+'" onclick="openZoom(this.src)">';
+if(d[c].cozumVidData) h+='<video src="'+d[c].cozumVidData+'" controls></video>';
+document.getElementById('cozum-icerik').innerHTML=h;
+}
+function sonrakiSoru(){
+c++;
+if(c<d.length){gosterSoru();}
+else{document.querySelector('.main-layout').innerHTML='<div style="grid-column:1/3;text-align:center;padding:50px;"><h2 style="color:var(--success)">Tebrikler! Tüm soruları tamamladınız.</h2></div>';}
+}
+document.getElementById('cevap').onkeypress=function(e){if(e.key==='Enter')kontrol();};
+gosterSoru();
+<\/script>
+<\/body>
+<\/html>`;
+            
+            const blob = new Blob([examHTML], {type:'text/html'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'cozumlu_sinav.html';
+            link.click();
+        }
+
+        window.onload = function() {
+            refreshSavedList();
+        };
+    </script>
+
+<div id="publishSuccessModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;justify-content:center;align-items:center;">
+    <div style="background:white;padding:36px;border-radius:16px;max-width:540px;width:90%;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,0.4);font-family:sans-serif;">
+        <div style="font-size:52px;margin-bottom:12px;">🎉</div>
+        <h2 style="color:#1e293b;margin:0 0 8px;font-size:24px;">Sınav Başarıyla Yayına Alındı!</h2>
+        <p style="color:#64748b;font-size:14px;line-height:1.6;margin-bottom:20px;">
+            Sınavınız sisteme kaydedildi ve Kursiyer Portalındaki <strong>Sınav Sekmesine</strong> eklendi.<br>
+            Kayıtlı kursiyerler 3 karakterlik şifre ile sınav salonuna girip sınavlarını olabilirler.
+        </p>
+        <div style="background:#f1f5f9;padding:14px;border-radius:10px;margin-bottom:24px;display:flex;justify-content:space-around;font-size:13px;color:#334155;">
+            <div><strong>Sınav Başlığı:</strong> <span id="pubModalTitle">-</span></div>
+            <div><strong>Giriş Şifresi:</strong> <span id="pubModalPin" style="color:#2563eb;font-weight:bold;">123</span></div>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+            <button onclick="testPublishedExam()" style="background:#10b981;color:white;padding:12px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
+                ▶ Sınavı Test Et / Aç
+            </button>
+            <button onclick="window.location.href='../admin.html#exams'" style="background:#3b82f6;color:white;padding:12px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
+                🛡️ Yönetici Paneline Dön
+            </button>
+            <button onclick="closePublishModal()" style="background:#e2e8f0;color:#334155;padding:12px 20px;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">
+                Düzenlemeye Devam Et
+            </button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

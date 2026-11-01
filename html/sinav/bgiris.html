@@ -131,6 +131,9 @@
         document.getElementById('quiz-area').style.display = 'none';
         document.getElementById('result-area').style.display = 'block';
         document.getElementById('final-stats').innerText = `Sınav bitti. Toplam ${fails} kez başa dönerek sınavı tamamladınız.`;
+        try {
+            window.parent.postMessage({ action: 'MODULE_FINISHED' }, '*');
+        } catch(e) {}
     }
 
     function resetGame() {
