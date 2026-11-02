@@ -581,6 +581,12 @@
                     <button class="btn btn-primary" onclick="openExamEditorModal()" style="font-weight:700;box-shadow:0 4px 14px rgba(59,130,246,0.35);">
                         <span>➕</span> Yeni Sınav Hazırla
                     </button>
+                    <button class="btn btn-ghost" onclick="openExamImportModal('new')" style="border-color:#3b82f6;color:#60a5fa;font-weight:700;display:inline-flex;align-items:center;gap:6px;" title="Excel dosyasından toplu sınav ve soruları yükleyin">
+                        <span>📥</span> Excel'den Sınav Yükle
+                    </button>
+                    <button class="btn btn-ghost btn-sm" onclick="downloadExamExcelTemplate()" title="Örnek Sınav Excel şablonunu (.xlsx) bilgisayarınıza indirir">
+                        <span>📄</span> Örnek Şablon İndir
+                    </button>
                     <button class="btn btn-success btn-sm" onclick="handlePushExamsToCloud()" title="Tüm sınavları ve evrakları bulutla eşitler">
                         ☁️ Bulutla Eşitle
                     </button>
@@ -835,6 +841,9 @@
                         <button type="button" class="btn btn-ghost btn-sm" onclick="addQuestionToEditor('open_ended')" style="border-color:#f59e0b;color:#fbbf24;">
                             ✍️ Açık Uçlu Soru Ekle
                         </button>
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="openExamImportModal('appendToEditor')" style="border-color:#3b82f6;color:#60a5fa;font-weight:600;" title="Excel dosyasındaki soruları mevcut sınava ekler">
+                            📥 Excel'den Soru Ekle
+                        </button>
                     </div>
                 </div>
 
@@ -926,6 +935,115 @@
         </div>
     </div>
 </div>
+
+<!-- ============================== MODAL: EXCEL'DEN SINAV YÜKLEME ============================== -->
+<div id="examImportModal" class="modal-overlay" onclick="if(event.target===this)closeModal('examImportModal')">
+    <div class="modal-content" style="max-width:760px;max-height:92vh;overflow-y:auto;border:1px solid #3b82f6;">
+        <div class="modal-header" style="position:sticky;top:0;background:var(--bg-card);z-index:10;padding-bottom:12px;border-bottom:1px solid var(--border-color);">
+            <div>
+                <h3 style="color:white;font-size:18px;margin:0;display:flex;align-items:center;gap:8px;">
+                    <span>📥</span> Excel ile Sınav & Soru Yükleme
+                </h3>
+                <span style="font-size:12px;color:var(--text-muted);">Örnek Excel şablonunu doldurarak sınav ve sorularınızı sisteme tek tıkla aktarın.</span>
+            </div>
+            <button class="modal-close" onclick="closeModal('examImportModal')">&times;</button>
+        </div>
+
+        <!-- 1. ADIM: ŞABLON İNDİRME BİLGİ ALANI -->
+        <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div style="flex:1;min-width:260px;">
+                <strong style="color:#93c5fd;font-size:13.5px;display:block;margin-bottom:3px;">Adım 1: Örnek Excel Şablonunu İndirin</strong>
+                <span style="font-size:12px;color:var(--text-secondary);line-height:1.5;">
+                    Çoktan seçmeli, doğru-yanlış ve açık uçlu soru formatlarına uygun hazırlanmış örnek şablonu indirin ve sorularınızı ekleyin.
+                </span>
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" onclick="downloadExamExcelTemplate()" style="display:inline-flex;align-items:center;gap:6px;font-weight:700;white-space:nowrap;box-shadow:0 3px 10px rgba(59,130,246,0.3);">
+                <span>📄</span> Örnek Şablonu İndir (.xlsx)
+            </button>
+        </div>
+
+        <!-- 2. ADIM: DOSYA SEÇİMİ VE SÜRÜKLE - BIRAK -->
+        <div style="margin-bottom:18px;">
+            <label class="form-label" style="font-size:13px;font-weight:700;margin-bottom:6px;display:block;">
+                Adım 2: Hazırladığınız Excel Dosyasını Seçin
+            </label>
+            <div class="excel-drop-zone" id="examDropZone" onclick="document.getElementById('examImportFileInput').click()" style="border:2px dashed rgba(59,130,246,0.45);border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;background:rgba(255,255,255,0.02);transition:all 0.2s ease;">
+                <div style="font-size:40px;margin-bottom:8px;">📊</div>
+                <strong style="color:white;font-size:14px;display:block;margin-bottom:4px;">Excel Dosyasını Buraya Sürükleyin veya Dosya Seçmek İçin Tıklayın</strong>
+                <span style="font-size:12px;color:var(--text-muted);">Desteklenen formatlar: .xlsx, .xls</span>
+                <input type="file" id="examImportFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleExamFileSelect(event)">
+            </div>
+        </div>
+
+        <!-- 3. ADIM: ÖNİZLEME VE AYARLAR ALANI (Dosya seçilince görünür) -->
+        <div id="examImportPreviewSection" style="display:none;background:rgba(255,255,255,0.02);border:1px solid var(--border-color);border-radius:10px;padding:16px;margin-bottom:18px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid var(--border-color);padding-bottom:10px;flex-wrap:wrap;gap:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:18px;">📋</span>
+                    <strong style="color:#34d399;font-size:14px;" id="examImportStatusSummary">✓ 0 Soru Algılandı</strong>
+                </div>
+                <span id="examImportFileBadge" class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;font-size:11.5px;padding:3px 10px;border-radius:4px;">dosya.xlsx</span>
+            </div>
+
+            <!-- Sınav Bilgileri Kontrol / Düzenleme -->
+            <div id="examImportMetaFields" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:14px;">
+                <div class="form-group" style="grid-column:1/-1;margin-bottom:0;">
+                    <label class="form-label" style="font-size:12px;">Sınav Başlığı *</label>
+                    <input type="text" id="importExamTitle" class="form-control" style="font-size:13px;font-weight:700;" placeholder="Sınav Başlığı">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" style="font-size:12px;">Sınav Süresi (Dakika)</label>
+                    <input type="number" id="importExamDuration" class="form-control" value="40" min="5" max="180" style="font-size:13px;">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" style="font-size:12px;">Giriş Şifresi (PIN)</label>
+                    <input type="text" id="importExamPin" class="form-control" value="123" maxlength="10" style="text-align:center;font-weight:bold;letter-spacing:1px;text-transform:uppercase;font-size:13px;">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" style="font-size:12px;">Hedef Sınıf</label>
+                    <select id="importExamTargetClass" class="form-control" style="font-size:13px;">
+                        <option value="all">Tüm Sınıflar (Herkes)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Soru Listesi Mini Önizleme Tablosu -->
+            <div style="margin-top:12px;">
+                <label class="form-label" style="font-size:12px;color:var(--text-muted);margin-bottom:6px;display:block;">
+                    Algılanan Sorular Listesi:
+                </label>
+                <div style="max-height:190px;overflow-y:auto;border:1px solid var(--border-color);border-radius:6px;">
+                    <table class="data-table" style="font-size:12px;margin:0;">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">#</th>
+                                <th style="width:110px;">Tür</th>
+                                <th>Soru Metni</th>
+                                <th style="width:50px;">Puan</th>
+                                <th style="width:70px;">Doğru</th>
+                            </tr>
+                        </thead>
+                        <tbody id="examImportPreviewTbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL ALT BUTONLARI -->
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid var(--border-color);padding-top:14px;">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('examImportModal')">Vazgeç</button>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button type="button" class="btn btn-ghost" id="btnImportToEditor" onclick="applyImportedExamToEditor()" style="display:none;border-color:#3b82f6;color:#60a5fa;font-weight:700;">
+                    ✏️ Düzenleyicide Aç & Düzenle
+                </button>
+                <button type="button" class="btn btn-primary" id="btnImportSaveDirect" onclick="saveImportedExamDirectly()" style="display:none;font-weight:700;box-shadow:0 3px 12px rgba(59,130,246,0.35);">
+                    🚀 Sınavı Oluştur & Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <!-- MODAL: KURSİYER EKLE / DÜZENLE -->
 <div id="userFormModal" class="modal-overlay">
@@ -4851,6 +4969,590 @@
             alert('Buluta aktarılırken hata: ' + (res ? res.message : 'Bilinmeyen hata'));
         }
     }
+
+
+    // =========================================================================
+    // ==================== EXCEL'DEN SINAV YÜKLEME VE ŞABLON (V2) =============
+    // =========================================================================
+
+    let currentImportedExamData = null;
+    let examImportMode = 'new'; // 'new' veya 'appendToEditor'
+
+    function normalizeTr(s) {
+        return String(s || '').toLowerCase()
+            .replace(/ğ/g, 'g')
+            .replace(/ü/g, 'u')
+            .replace(/ş/g, 's')
+            .replace(/ı/g, 'i')
+            .replace(/ö/g, 'o')
+            .replace(/ç/g, 'c')
+            .trim();
+    }
+
+    /**
+     * Örnek Sınav Hazırlama Excel Şablonunu (.xlsx) indirir
+     */
+    function downloadExamExcelTemplate() {
+        if (typeof XLSX === 'undefined') {
+            alert('Excel kütüphanesi yüklenemedi. Lütfen internet bağlantınızı kontrol edip sayfayı yenileyiniz.');
+            return;
+        }
+
+        const wb = XLSX.utils.book_new();
+
+        // 1. Sayfa: Sınav Bilgileri & Kuralları
+        const metaData = [
+            ['AYAR ADI', 'DEĞER', 'AÇIKLAMA'],
+            ['Sınav Başlığı', 'Bilgisayar İşletmenliği Değerlendirme Sınavı', 'Sınavın sistemde görünecek tam başlığı'],
+            ['Sınav Süresi (Dakika)', 40, 'Dakika cinsinden sınav süresi (Varsayılan: 40)'],
+            ['Giriş Şifresi (PIN)', '123', 'Öğrencilerin sınava başlarken gireceği şifre (Varsayılan: 123)'],
+            ['Hedef Sınıf', 'Tüm Sınıflar', 'Tüm Sınıflar veya belirli bir sınıf adı'],
+            ['Gezinme Kuralı', 'Serbest', "'Serbest' (İleri-Geri serbest) veya 'Yalnızca İleri'"],
+            ['Sonuçlar Görünsün mü?', 'Gizli', "'Gizli' (Öğretmen onayından sonra) veya 'Anında' (Sınav biter bitmez)"],
+            ['Soru Karıştırma', 'Hayır', "'Evet' veya 'Hayır'"],
+            ['Sınav Yönergeleri', '1. Sınav süresi 40 dakikadır.\n2. Yanlış cevaplar doğru cevapları etkilemez.', 'Sınav öncesi kurallar']
+        ];
+        const wsMeta = XLSX.utils.aoa_to_sheet(metaData);
+        wsMeta['!cols'] = [{ wch: 24 }, { wch: 38 }, { wch: 45 }];
+        XLSX.utils.book_append_sheet(wb, wsMeta, 'Sınav Bilgileri');
+
+        // 2. Sayfa: Sorular Listesi
+        const questionsData = [
+            [
+                'Soru No',
+                'Soru Türü',
+                'Soru Metni',
+                'Puan',
+                'A Şıkkı',
+                'B Şıkkı',
+                'C Şıkkı',
+                'D Şıkkı',
+                'E Şıkkı',
+                'Doğru Cevap',
+                'Örnek Cevap (Açık Uçlu)',
+                'İpucu'
+            ],
+            [
+                1,
+                'Çoktan Seçmeli',
+                'Bilgisayarda verilerin kalıcı olarak saklandığı ana donanım birimi aşağıdakilerden hangisidir?',
+                35,
+                'RAM Bellek',
+                'Sabit Disk (Hard Disk / SSD)',
+                'İşlemci (CPU)',
+                'Ekran Kartı (GPU)',
+                '',
+                'B',
+                '',
+                'Elektrik kesilse dahi verileri koruyan manyetik veya flash depolama donanımıdır.'
+            ],
+            [
+                2,
+                'Doğru / Yanlış',
+                'Klavye ve fare, bilgisayara kullanıcı tarafından veri ve komut girişi sağlayan temel giriş birimleridir.',
+                35,
+                '',
+                '',
+                '',
+                '',
+                '',
+                'D',
+                '',
+                'Giriş ve çıkış birimlerinin temel farkını düşününüz.'
+            ],
+            [
+                3,
+                'Açık Uçlu',
+                'İşletim sisteminin bilgisayardaki temel görevlerinden 2 tanesini kısaca açıklayınız.',
+                30,
+                '',
+                '',
+                '',
+                '',
+                '',
+                '',
+                'Donanım ile yazılım arasındaki iletişimi koordine etmek, dosya ve dizin yapısını yönetmek, bellek ve işlemci kaynaklarını programlar arasında paylaştırmak.',
+                'Windows başladığında arka planda yürüttüğü temel donanım ve yazılım süreçlerini hatırlayınız.'
+            ]
+        ];
+        const wsQuestions = XLSX.utils.aoa_to_sheet(questionsData);
+        wsQuestions['!cols'] = [
+            { wch: 8 },
+            { wch: 18 },
+            { wch: 48 },
+            { wch: 8 },
+            { wch: 22 },
+            { wch: 22 },
+            { wch: 22 },
+            { wch: 22 },
+            { wch: 22 },
+            { wch: 14 },
+            { wch: 38 },
+            { wch: 30 }
+        ];
+        XLSX.utils.book_append_sheet(wb, wsQuestions, 'Sorular');
+
+        XLSX.writeFile(wb, 'Ornek_Sinav_Yukleme_Sablonu.xlsx');
+    }
+
+    /**
+     * Excel Yükleme Modalı Açılışı
+     */
+    function openExamImportModal(mode) {
+        examImportMode = mode || 'new';
+        currentImportedExamData = null;
+
+        // Dosya girişini ve önizleme alanını sıfırla
+        const fileInp = document.getElementById('examImportFileInput');
+        if (fileInp) fileInp.value = '';
+
+        const prevSec = document.getElementById('examImportPreviewSection');
+        if (prevSec) prevSec.style.display = 'none';
+
+        const btnSave = document.getElementById('btnImportSaveDirect');
+        if (btnSave) btnSave.style.display = 'none';
+
+        const btnEdit = document.getElementById('btnImportToEditor');
+        if (btnEdit) btnEdit.style.display = 'none';
+
+        const metaDiv = document.getElementById('examImportMetaFields');
+        if (metaDiv) metaDiv.style.display = examImportMode === 'appendToEditor' ? 'none' : 'grid';
+
+        // Sınıf seçeneklerini doldur
+        const classSel = document.getElementById('importExamTargetClass');
+        if (classSel && typeof lmsStorage !== 'undefined') {
+            const classes = lmsStorage.getAllClasses();
+            classSel.innerHTML = '<option value="all">Tüm Sınıflar (Herkes)</option>';
+            classes.forEach(c => {
+                if (c && c.id) {
+                    classSel.innerHTML += `<option value="${c.id}">${escapeHtml(c.name || 'İsimsiz Sınıf')}</option>`;
+                }
+            });
+        }
+
+        // Sürükle bırak olaylarını bağla
+        initExamDropZone();
+
+        openModal('examImportModal');
+    }
+
+    function initExamDropZone() {
+        const zone = document.getElementById('examDropZone');
+        if (!zone || zone._initialized) return;
+        zone._initialized = true;
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            zone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.style.borderColor = '#10b981';
+                zone.style.background = 'rgba(16,185,129,0.08)';
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            zone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.style.borderColor = 'rgba(59,130,246,0.45)';
+                zone.style.background = 'rgba(255,255,255,0.02)';
+            }, false);
+        });
+
+        zone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files.length > 0) {
+                processExamExcelFile(files[0]);
+            }
+        }, false);
+    }
+
+    function handleExamFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+            processExamExcelFile(file);
+        }
+    }
+
+    function processExamExcelFile(file) {
+        if (!file) return;
+        if (!file.name.match(/\.(xlsx|xls)$/i)) {
+            alert('Lütfen geçerli bir Excel dosyası (.xlsx veya .xls) seçiniz.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const parsed = parseExamWorkbook(workbook, file.name);
+
+                if (!parsed.success || parsed.questions.length === 0) {
+                    alert('Hata: ' + (parsed.message || 'Excel dosyasında geçerli bir soru satırı bulunamadı. Lütfen örnek şablonu inceleyiniz.'));
+                    return;
+                }
+
+                currentImportedExamData = parsed;
+                renderImportedExamPreview(file.name, parsed);
+
+            } catch (err) {
+                console.error('[Excel Sınav Yükleme Hatası]', err);
+                alert('Excel dosyası okunurken hata oluştu: ' + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    function parseExamWorkbook(workbook, fileName) {
+        let defaultTitle = (fileName || 'Yeni Sınav').replace(/\.(xlsx|xls)$/i, '').replace(/[_-]/g, ' ');
+
+        let examMeta = {
+            title: defaultTitle,
+            durationMinutes: 40,
+            entryPin: '123',
+            targetClassId: 'all',
+            allowNavigation: true,
+            showResultsImmediately: false,
+            shuffleQuestions: false,
+            instructions: '1. Sınav süresi 40 dakikadır.\n2. Yanlış cevaplar doğru cevapları etkilemez.'
+        };
+
+        // 1. Varsa Sınav Bilgileri sayfasını tara
+        const metaSheetName = workbook.SheetNames.find(n => {
+            const s = normalizeTr(n);
+            return s.includes('bilgi') || s.includes('ayar') || s.includes('meta');
+        });
+
+        if (metaSheetName) {
+            const metaRows = XLSX.utils.sheet_to_json(workbook.Sheets[metaSheetName], { header: 1, defval: '' });
+            metaRows.forEach((r, idx) => {
+                if (!Array.isArray(r) || r.length < 2 || idx === 0) return;
+                const key = normalizeTr(r[0]);
+                const val = String(r[1] || '').trim();
+                if (!val) return;
+
+                if (key.includes('basli') || key.includes('sinav adi')) {
+                    examMeta.title = val;
+                } else if (key.includes('sure') || key.includes('dakika')) {
+                    const num = parseInt(val);
+                    if (num > 0) examMeta.durationMinutes = num;
+                } else if (key.includes('sifre') || key.includes('pin')) {
+                    examMeta.entryPin = val;
+                } else if (key.includes('sinif')) {
+                    examMeta.targetClassId = key.includes('tum') ? 'all' : val;
+                } else if (key.includes('gezinme')) {
+                    examMeta.allowNavigation = !normalizeTr(val).includes('yalniz');
+                } else if (key.includes('sonuc')) {
+                    const nVal = normalizeTr(val);
+                    examMeta.showResultsImmediately = nVal.includes('aninda') || nVal.includes('evet');
+                } else if (key.includes('karistir')) {
+                    examMeta.shuffleQuestions = normalizeTr(val).includes('evet');
+                } else if (key.includes('yonerge') || key.includes('kural')) {
+                    examMeta.instructions = val;
+                }
+            });
+        }
+
+        // 2. Sorular sayfasını tara
+        const qSheetName = workbook.SheetNames.find(n => {
+            const s = normalizeTr(n);
+            return s.includes('soru') || s.includes('question') || s.includes('test');
+        }) || workbook.SheetNames[workbook.SheetNames.length > 1 ? 1 : 0];
+
+        const qRows = XLSX.utils.sheet_to_json(workbook.Sheets[qSheetName], { header: 1, defval: '' });
+        if (qRows.length < 2) return { success: false, message: 'Sorular sayfasında soru satırı bulunamadı.' };
+
+        const header = qRows[0].map(h => normalizeTr(h));
+
+        function matchCol(keywords, exactMatches = []) {
+            for (let i = 0; i < header.length; i++) {
+                if (exactMatches.includes(header[i])) return i;
+            }
+            for (let i = 0; i < header.length; i++) {
+                for (const k of keywords) {
+                    if (header[i].includes(k)) return i;
+                }
+            }
+            return -1;
+        }
+
+        let colType = matchCol(['soru turu', 'turu'], ['tur', 'tip', 'type']);
+        let colText = -1;
+        for (let i = 0; i < header.length; i++) {
+            const h = header[i];
+            if (h.includes('metin') || h === 'soru' || h.startsWith('soru met') || (h.includes('soru') && !h.includes('no') && !h.includes('tur') && !h.includes('puan') && !h.includes('sayi'))) {
+                colText = i;
+                break;
+            }
+        }
+        let colPoints = matchCol(['puan'], ['puan', 'point', 'points', 'not']);
+        let colA = matchCol(['a sik', 'secenek a'], ['a', 'a)']);
+        let colB = matchCol(['b sik', 'secenek b'], ['b', 'b)']);
+        let colC = matchCol(['c sik', 'secenek c'], ['c', 'c)']);
+        let colD = matchCol(['d sik', 'secenek d'], ['d', 'd)']);
+        let colE = matchCol(['e sik', 'secenek e'], ['e', 'e)']);
+        let colAnswer = matchCol(['dogru cevap', 'dogru sik', 'yanit'], ['cevap', 'dogru', 'answer', 'correct']);
+        let colSample = matchCol(['ornek cevap', 'referans', 'acik uclu'], ['ornek', 'referans']);
+        let colHint = matchCol(['ipucu', 'ip ucu', 'hint']);
+
+        // Varsayılan pozisyonlar
+        if (colText === -1) colText = 2;
+        if (colType === -1) colType = 1;
+        if (colPoints === -1) colPoints = 3;
+        if (colA === -1) colA = 4;
+        if (colB === -1) colB = 5;
+        if (colC === -1) colC = 6;
+        if (colD === -1) colD = 7;
+        if (colE === -1) colE = 8;
+        if (colAnswer === -1) colAnswer = 9;
+        if (colSample === -1) colSample = 10;
+        if (colHint === -1) colHint = 11;
+
+        const questions = [];
+        for (let i = 1; i < qRows.length; i++) {
+            const r = qRows[i];
+            if (!Array.isArray(r) || r.length === 0) continue;
+
+            const text = String(r[colText] || '').trim();
+            if (!text) continue;
+
+            let rawType = normalizeTr(r[colType]);
+            let optA = String(r[colA] || '').trim();
+            let optB = String(r[colB] || '').trim();
+            let optC = String(r[colC] || '').trim();
+            let optD = String(r[colD] || '').trim();
+            let optE = String(r[colE] || '').trim();
+            let rawAns = String(r[colAnswer] || '').trim().toUpperCase();
+            let sampleAns = String(r[colSample] || '').trim();
+            let hint = String(r[colHint] || '').trim();
+            let pts = parseInt(r[colPoints]) || 10;
+
+            let qType = 'multiple_choice';
+            if (rawType.includes('dogru') || rawType.includes('d/y') || rawType.includes('true') || ((rawAns === 'D' || rawAns === 'Y') && !optA && !optB)) {
+                qType = 'true_false';
+            } else if (rawType.includes('acik') || rawType.includes('klasik') || rawType.includes('metin') || rawType.includes('open') || (!optA && !optB && sampleAns)) {
+                qType = 'open_ended';
+            } else {
+                qType = 'multiple_choice';
+            }
+
+            const qObj = {
+                id: 'q_' + Date.now() + '_' + i + '_' + Math.floor(Math.random() * 1000),
+                type: qType,
+                text: text,
+                points: pts,
+                hint: hint,
+                image: ''
+            };
+
+            if (qType === 'multiple_choice') {
+                const options = [];
+                if (optA) options.push({ id: 'A', text: optA });
+                if (optB) options.push({ id: 'B', text: optB });
+                if (optC) options.push({ id: 'C', text: optC });
+                if (optD) options.push({ id: 'D', text: optD });
+                if (optE) options.push({ id: 'E', text: optE });
+
+                if (options.length === 0) {
+                    options.push({ id: 'A', text: '' }, { id: 'B', text: '' });
+                }
+                qObj.options = options;
+
+                let detectedAns = 'A';
+                if (['A', 'B', 'C', 'D', 'E'].includes(rawAns)) {
+                    detectedAns = rawAns;
+                } else {
+                    const matchedOpt = options.find(o => o.text.trim().toLowerCase() === rawAns.toLowerCase());
+                    if (matchedOpt) detectedAns = matchedOpt.id;
+                }
+                qObj.correctAnswer = detectedAns;
+            } else if (qType === 'true_false') {
+                const isTrue = rawAns === 'D' || rawAns.includes('DOĞRU') || rawAns.includes('DOGRU') || rawAns === 'TRUE' || rawAns === 'T' || rawAns === '1';
+                qObj.correctAnswer = isTrue ? 'D' : 'Y';
+            } else if (qType === 'open_ended') {
+                qObj.sampleAnswer = sampleAns;
+            }
+
+            questions.push(qObj);
+        }
+
+        return {
+            success: questions.length > 0,
+            meta: examMeta,
+            questions: questions,
+            count: questions.length
+        };
+    }
+
+    function renderImportedExamPreview(fileName, parsed) {
+        document.getElementById('examImportPreviewSection').style.display = 'block';
+        document.getElementById('examImportFileBadge').textContent = fileName;
+
+        // Sayım bilgisi
+        const mcCount = parsed.questions.filter(q => q.type === 'multiple_choice').length;
+        const tfCount = parsed.questions.filter(q => q.type === 'true_false').length;
+        const openCount = parsed.questions.filter(q => q.type === 'open_ended').length;
+        let totalPts = 0;
+        parsed.questions.forEach(q => totalPts += (q.points || 0));
+
+        document.getElementById('examImportStatusSummary').textContent = 
+            `✓ ${parsed.questions.length} Soru Algılandı (${mcCount} Test, ${tfCount} D/Y, ${openCount} Açık Uçlu • Toplam ${totalPts} Puan)`;
+
+        // Ayarları doldur
+        const titleInp = document.getElementById('importExamTitle');
+        if (titleInp) titleInp.value = parsed.meta.title || fileName.replace(/\.(xlsx|xls)$/i, '');
+
+        const durInp = document.getElementById('importExamDuration');
+        if (durInp) durInp.value = parsed.meta.durationMinutes || 40;
+
+        const pinInp = document.getElementById('importExamPin');
+        if (pinInp) pinInp.value = parsed.meta.entryPin || '123';
+
+        const classSel = document.getElementById('importExamTargetClass');
+        if (classSel && parsed.meta.targetClassId) {
+            classSel.value = parsed.meta.targetClassId;
+        }
+
+        // Mini Tabloyu doldur
+        const tbody = document.getElementById('examImportPreviewTbody');
+        if (tbody) {
+            tbody.innerHTML = parsed.questions.map((q, idx) => {
+                const typeBadge = q.type === 'multiple_choice' ? '<span style="color:#60a5fa;">🔘 Test</span>' :
+                                 (q.type === 'true_false' ? '<span style="color:#34d399;">⚖️ D/Y</span>' : '<span style="color:#fbbf24;">✍️ Açık Uçlu</span>');
+                const ansLabel = q.type === 'multiple_choice' ? q.correctAnswer :
+                                (q.type === 'true_false' ? (q.correctAnswer === 'D' ? 'Doğru' : 'Yanlış') : 'Örnek Cevaplı');
+                return `
+                    <tr>
+                        <td style="color:var(--text-muted);">${idx + 1}</td>
+                        <td>${typeBadge}</td>
+                        <td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHtml(q.text)}">${escapeHtml(q.text)}</td>
+                        <td style="font-weight:bold;">${q.points || 10}P</td>
+                        <td style="font-weight:bold;color:#34d399;">${ansLabel}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Butonları göster
+        document.getElementById('btnImportToEditor').style.display = 'inline-block';
+        document.getElementById('btnImportSaveDirect').style.display = examImportMode === 'appendToEditor' ? 'none' : 'inline-block';
+    }
+
+    /**
+     * İçe aktarılan sınavı doğrudan kaydeder ve yayına alır
+     */
+    async function saveImportedExamDirectly() {
+        if (!currentImportedExamData || !currentImportedExamData.questions || currentImportedExamData.questions.length === 0) {
+            alert('Lütfen önce geçerli bir Excel dosyası yükleyiniz.');
+            return;
+        }
+
+        const title = (document.getElementById('importExamTitle')?.value || '').trim();
+        if (!title) {
+            alert('Lütfen bir sınav başlığı giriniz.');
+            document.getElementById('importExamTitle')?.focus();
+            return;
+        }
+
+        const dur = parseInt(document.getElementById('importExamDuration')?.value) || 40;
+        const pin = (document.getElementById('importExamPin')?.value || '123').trim();
+        const targetClass = document.getElementById('importExamTargetClass')?.value || 'all';
+
+        const examData = {
+            title: title,
+            instructions: currentImportedExamData.meta.instructions || `1. Sınav süresi ${dur} dakikadır.\n2. Yanlış cevaplar doğru cevapları etkilemez.`,
+            targetClassId: targetClass,
+            durationMinutes: dur,
+            entryPin: pin,
+            allowNavigation: currentImportedExamData.meta.allowNavigation !== false,
+            showResultsImmediately: currentImportedExamData.meta.showResultsImmediately || false,
+            shuffleQuestions: currentImportedExamData.meta.shuffleQuestions || false,
+            allowRetake: false,
+            bonusModuleId: '',
+            bonusPoints: 0,
+            status: 'active',
+            questions: currentImportedExamData.questions
+        };
+
+        const res = lmsStorage.saveExam(examData);
+        if (!res.success) {
+            alert('Sınav kaydedilirken hata oluştu: ' + res.message);
+            return;
+        }
+
+        // Buluta da eşitle
+        if (lmsStorage.syncExamToFirebase) {
+            lmsStorage.syncExamToFirebase(res.exam.id).catch(() => {});
+        }
+
+        closeModal('examImportModal');
+        updateExamKPIs();
+        filterAndRenderExamsList();
+
+        alert(`✓ Harika! "${title}" başlıklı sınav (${examData.questions.length} soru) Excel'den başarıyla sisteme yüklendi ve yayına alındı!`);
+    }
+
+    /**
+     * İçe aktarılan sınavı veya soruları Sınav Düzenleme Sihirbazına aktarır
+     */
+    function applyImportedExamToEditor() {
+        if (!currentImportedExamData || !currentImportedExamData.questions || currentImportedExamData.questions.length === 0) {
+            alert('Lütfen önce geçerli bir Excel dosyası yükleyiniz.');
+            return;
+        }
+
+        if (examImportMode === 'appendToEditor') {
+            // Mevcut sınavın altına ekle
+            currentEditorQuestions = currentEditorQuestions.concat(currentImportedExamData.questions);
+            closeModal('examImportModal');
+            renderEditorQuestions();
+            alert(`✓ ${currentImportedExamData.questions.length} soru mevcut sınava başarıyla eklendi!`);
+            return;
+        }
+
+        // Yeni sınav olarak düzenleyiciye aktar
+        const title = (document.getElementById('importExamTitle')?.value || currentImportedExamData.meta.title || '').trim();
+        const dur = parseInt(document.getElementById('importExamDuration')?.value) || currentImportedExamData.meta.durationMinutes || 40;
+        const pin = (document.getElementById('importExamPin')?.value || currentImportedExamData.meta.entryPin || '123').trim();
+        const targetClass = document.getElementById('importExamTargetClass')?.value || currentImportedExamData.meta.targetClassId || 'all';
+
+        // Düzenleyici formunu aç ve alanları doldur
+        openExamEditorModal();
+
+        const edTitle = document.getElementById('editorExamTitle');
+        if (edTitle) edTitle.value = title;
+
+        const edDur = document.getElementById('editorExamDuration');
+        if (edDur) edDur.value = dur;
+
+        const edPin = document.getElementById('editorExamPin');
+        if (edPin) edPin.value = pin;
+
+        const edTarget = document.getElementById('editorExamTargetClass');
+        if (edTarget) edTarget.value = targetClass;
+
+        const edInst = document.getElementById('editorExamInstructions');
+        if (edInst && currentImportedExamData.meta.instructions) {
+            edInst.value = currentImportedExamData.meta.instructions;
+        }
+
+        const edNav = document.getElementById('editorExamAllowNav');
+        if (edNav) edNav.value = currentImportedExamData.meta.allowNavigation ? 'true' : 'false';
+
+        const edRes = document.getElementById('editorExamShowResults');
+        if (edRes) edRes.value = currentImportedExamData.meta.showResultsImmediately ? 'true' : 'false';
+
+        const edRand = document.getElementById('editorExamRandomize');
+        if (edRand) edRand.value = currentImportedExamData.meta.shuffleQuestions ? 'true' : 'false';
+
+        currentEditorQuestions = currentImportedExamData.questions;
+        renderEditorQuestions();
+
+        closeModal('examImportModal');
+    }
+
 </script>
 </body>
 </html>
