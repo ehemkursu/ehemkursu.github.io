@@ -229,7 +229,6 @@
                                 <th style="width:40px;">#</th>
                                 <th>Sınav Adı</th>
                                 <th>Tarih</th>
-                                <th>Harcanan Süre</th>
                                 <th>Puan</th>
                                 <th>Durum</th>
                                 <th style="text-align:right;">İşlem</th>
@@ -2287,7 +2286,7 @@
             if (subs.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" style="text-align:center;padding:26px;color:var(--text-muted);">
+                        <td colspan="6" style="text-align:center;padding:26px;color:var(--text-muted);">
                             Henüz katıldığınız bir sınav bulunmamaktadır. Yukarıdaki aktif sınavlardan birine başlayabilirsiniz.
                         </td>
                     </tr>
@@ -2296,7 +2295,6 @@
                 tbody.innerHTML = subs.map((s, idx) => {
                     const ex = lmsStorage.getExamById(s.examId) || {};
                     const isScoreVisible = ex.showResultsImmediately || s.reviewedByAdmin;
-                    const mins = Math.floor((s.timeSpentSeconds || 0) / 60);
 
                     return `
                         <tr>
@@ -2305,7 +2303,6 @@
                             <td style="font-size:12px;color:var(--text-muted);">
                                 ${new Date(s.submittedAt || Date.now()).toLocaleDateString('tr-TR')} ${new Date(s.submittedAt || Date.now()).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                             </td>
-                            <td>${mins} dk</td>
                             <td>
                                 ${isScoreVisible ? `
                                     <strong style="color:${s.finalScore >= 50 ? '#34d399' : '#f87171'};font-size:15px;">${s.finalScore} / 100</strong>
@@ -2692,7 +2689,11 @@
 
             return {
                 questionId: q.id,
+                questionText: q.text || '',
                 type: q.type,
+                options: q.options || [],
+                image: q.image || '',
+                hint: q.hint || '',
                 studentAnswer: myAns,
                 correctAnswer: q.correctAnswer || '',
                 sampleAnswer: q.sampleAnswer || '',
@@ -2702,14 +2703,19 @@
             };
         });
 
+        const studentClassId = student.classId || '';
+        const studentClassName = (typeof lmsStorage !== 'undefined' && lmsStorage.getClassName) 
+            ? lmsStorage.getClassName(studentClassId) 
+            : (student.className || studentClassId);
+
         const submissionPayload = {
             examId: activeRunnerExam.id,
             examTitle: activeRunnerExam.title,
             studentId: student.id,
             studentName: student.fullName,
             studentUsername: student.username,
-            classId: student.classId,
-            className: student.className || student.classId,
+            classId: studentClassId,
+            className: studentClassName,
             answers: runnerAnswers,
             questionResults: questionResults,
             timeSpentSeconds: timeSpent,
@@ -2780,18 +2786,150 @@
         if (!sub) return;
         currentViewingStudentSubmission = sub;
         const exam = lmsStorage.getExamById(sub.examId) || {};
+        const student = (typeof lmsStorage !== 'undefined' && lmsStorage.getUserById) ? lmsStorage.getUserById(sub.studentId) : null;
 
+        // 1. Öğrencinin profilinde ayarlı olan sınıfı çöz
+        const rawClass = sub.className || sub.classId || (student ? (student.className || student.classId) : '');
+        const resolvedClass = (typeof lmsStorage !== 'undefined' && lmsStorage.getClassName)
+            ? (lmsStorage.getClassName(rawClass) || (student ? lmsStorage.getClassName(student.classId) : rawClass))
+            : rawClass;
+
+        // 2. Başlık ve Meta
         const metaEl = document.getElementById('studentSheetModalMeta');
-        if (metaEl) metaEl.textContent = 'Evrak No: ' + sub.id + ' • ' + (sub.studentName || '');
+        if (metaEl) metaEl.textContent = (sub.studentName || '') + ' • ' + (sub.examTitle || 'Sınav Sonuç Evrakı');
 
         const area = document.getElementById('studentSubmissionSheetArea');
         if (!area) return;
 
         const results = Array.isArray(sub.questionResults) ? sub.questionResults : [];
+        const examQuestions = (exam && Array.isArray(exam.questions)) ? exam.questions : [];
         const isScoreVisible = exam.showResultsImmediately || sub.reviewedByAdmin;
-        const mins = Math.floor((sub.timeSpentSeconds || 0) / 60);
+
+        // 3. Soru ve Cevap Dökümünü Sınav Kağıdı Formatında 2 Sütunlu Olarak Hazırla
+        const qCardsHtml = results.map((r, idx) => {
+            const origQ = examQuestions.find(q => q && q.id === r.questionId) || examQuestions[idx] || {};
+            const qText = r.questionText || origQ.text || ('Soru ' + (idx + 1));
+            const qType = r.type || origQ.type || 'multiple_choice';
+            const qPoints = r.maxPoints || origQ.points || 10;
+            const qImage = r.image || origQ.image || '';
+            const qOptions = (Array.isArray(r.options) && r.options.length) ? r.options : (origQ.options || []);
+            const studentAns = (r.studentAnswer || '').trim();
+            const correctAns = (r.correctAnswer || origQ.correctAnswer || '').trim();
+            const sampleAns = r.sampleAnswer || origQ.sampleAnswer || '';
+            const isCorrect = r.isCorrect;
+            const earnedPts = (typeof r.earnedPoints === 'number') ? r.earnedPoints : (isCorrect ? qPoints : 0);
+
+            let answerContentHtml = '';
+
+            if (qType === 'multiple_choice') {
+                const renderedOptions = qOptions.map(opt => {
+                    const optLetter = (opt.id || '').toUpperCase();
+                    const isChosen = (studentAns.toUpperCase() === optLetter);
+                    const isRight = (correctAns.toUpperCase() === optLetter);
+
+                    let optStyle = 'display:flex;align-items:flex-start;gap:6px;padding:4px 8px;border-radius:4px;font-size:11.5px;margin-bottom:3px;';
+                    let badge = '';
+
+                    if (isChosen && isRight && isScoreVisible) {
+                        optStyle += 'background:#ecfdf5;border:1px solid #10b981;font-weight:600;color:#065f46;';
+                        badge = '<span style="margin-left:auto;font-size:10px;color:#059669;font-weight:bold;white-space:nowrap;">✓ Cevabınız</span>';
+                    } else if (isChosen && !isRight && isScoreVisible) {
+                        optStyle += 'background:#fef2f2;border:1px solid #ef4444;color:#991b1b;';
+                        badge = '<span style="margin-left:auto;font-size:10px;color:#dc2626;font-weight:bold;white-space:nowrap;">✕ Cevabınız</span>';
+                    } else if (isChosen && !isScoreVisible) {
+                        optStyle += 'background:#eff6ff;border:1px solid #3b82f6;font-weight:600;color:#1e40af;';
+                        badge = '<span style="margin-left:auto;font-size:10px;color:#2563eb;font-weight:bold;white-space:nowrap;">● Cevabınız</span>';
+                    } else if (isRight && isScoreVisible) {
+                        optStyle += 'background:#f0fdf4;border:1px dashed #10b981;color:#166534;font-weight:600;';
+                        badge = '<span style="margin-left:auto;font-size:10px;color:#059669;font-weight:bold;white-space:nowrap;">✓ Doğru</span>';
+                    } else {
+                        optStyle += 'background:#fff;border:1px solid #e2e8f0;color:#334155;';
+                    }
+
+                    return `
+                        <div style="${optStyle}">
+                            <span style="font-weight:bold;width:18px;flex-shrink:0;">${optLetter})</span>
+                            <span style="flex:1;">${escapeHtml(opt.text || '')}</span>
+                            ${badge}
+                        </div>
+                    `;
+                }).join('');
+
+                answerContentHtml = `<div style="margin-top:6px;">${renderedOptions}</div>`;
+            } else if (qType === 'true_false') {
+                const isD = (studentAns.toUpperCase() === 'D');
+                const isY = (studentAns.toUpperCase() === 'Y');
+                const corD = (correctAns.toUpperCase() === 'D');
+                const corY = (correctAns.toUpperCase() === 'Y');
+
+                answerContentHtml = `
+                    <div style="margin-top:6px;display:flex;gap:8px;">
+                        <div style="flex:1;padding:5px 8px;border-radius:4px;font-size:11.5px;font-weight:bold;display:flex;align-items:center;justify-content:space-between;${isD ? (isScoreVisible ? (corD ? 'background:#ecfdf5;border:1px solid #10b981;color:#065f46;' : 'background:#fef2f2;border:1px solid #ef4444;color:#991b1b;') : 'background:#eff6ff;border:1px solid #3b82f6;color:#1e40af;') : (isScoreVisible && corD ? 'background:#f0fdf4;border:1px dashed #10b981;color:#166534;' : 'background:#fff;border:1px solid #e2e8f0;color:#64748b;')}">
+                            <span>DOĞRU</span>
+                            ${isD ? `<span style="font-size:10px;">${isScoreVisible ? (corD ? '✓ (Cevabınız)' : '✕ (Cevabınız)') : '● (Cevabınız)'}</span>` : (isScoreVisible && corD ? '<span style="font-size:10px;color:#059669;">✓ (Doğru)</span>' : '')}
+                        </div>
+                        <div style="flex:1;padding:5px 8px;border-radius:4px;font-size:11.5px;font-weight:bold;display:flex;align-items:center;justify-content:space-between;${isY ? (isScoreVisible ? (corY ? 'background:#ecfdf5;border:1px solid #10b981;color:#065f46;' : 'background:#fef2f2;border:1px solid #ef4444;color:#991b1b;') : 'background:#eff6ff;border:1px solid #3b82f6;color:#1e40af;') : (isScoreVisible && corY ? 'background:#f0fdf4;border:1px dashed #10b981;color:#166534;' : 'background:#fff;border:1px solid #e2e8f0;color:#64748b;')}">
+                            <span>YANLIŞ</span>
+                            ${isY ? `<span style="font-size:10px;">${isScoreVisible ? (corY ? '✓ (Cevabınız)' : '✕ (Cevabınız)') : '● (Cevabınız)'}</span>` : (isScoreVisible && corY ? '<span style="font-size:10px;color:#059669;">✓ (Doğru)</span>' : '')}
+                        </div>
+                    </div>
+                `;
+            } else {
+                answerContentHtml = `
+                    <div style="margin-top:6px;background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:8px;font-size:11.5px;">
+                        <div style="font-weight:bold;color:#475569;margin-bottom:3px;font-size:10.5px;">Kursiyer Yanıtı:</div>
+                        <div style="color:#0f172a;white-space:pre-wrap;font-style:italic;">${escapeHtml(studentAns || '(Yanıt verilmedi)')}</div>
+                    </div>
+                    ${(sampleAns && isScoreVisible) ? `
+                        <div style="margin-top:4px;background:#fffbeb;border:1px dashed #fde68a;border-radius:4px;padding:6px;font-size:11px;color:#92400e;">
+                            <strong>Öğretmen Referans Notu:</strong> ${escapeHtml(sampleAns)}
+                        </div>
+                    ` : ''}
+                `;
+            }
+
+            return `
+                <div class="exam-q-card" style="background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:10px 12px;font-size:12px;break-inside:avoid;page-break-inside:avoid;display:flex;flex-direction:column;justify-content:space-between;">
+                    <div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin-bottom:6px;">
+                            <span style="font-weight:bold;color:#1e293b;">Soru ${idx + 1} <span style="font-weight:normal;color:#64748b;font-size:11px;">(${qPoints}P)</span></span>
+                            ${isScoreVisible ? `
+                                <span style="font-weight:bold;font-size:11px;color:${earnedPts > 0 ? '#059669' : '#dc2626'};">
+                                    Puan: ${earnedPts} / ${qPoints}
+                                </span>
+                            ` : '<span style="font-size:10.5px;color:#d97706;font-style:italic;">İncelemede</span>'}
+                        </div>
+
+                        <div style="color:#0f172a;font-weight:500;line-height:1.4;margin-bottom:4px;">
+                            ${escapeHtml(qText)}
+                        </div>
+
+                        ${qImage ? `
+                            <div style="text-align:center;margin:4px 0;">
+                                <img src="${qImage}" style="max-height:90px;max-width:100%;object-fit:contain;border:1px solid #cbd5e1;border-radius:4px;">
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    ${answerContentHtml}
+                </div>
+            `;
+        }).join('');
 
         area.innerHTML = `
+            <style>
+                .exam-q-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 12px;
+                }
+                @media (max-width: 650px) {
+                    .exam-q-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+            </style>
+
             <div style="text-align:center;border-bottom:2px double #1f2937;padding-bottom:12px;margin-bottom:16px;">
                 <div style="font-size:13px;font-weight:bold;letter-spacing:1px;">T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ MÜDÜRLÜĞÜ</div>
                 <div style="font-size:17px;font-weight:bold;margin:4px 0;">BİLGİSAYAR İŞLETMENLİĞİ KURSU DEĞERLENDİRME SINAV EVRAKI</div>
@@ -2800,20 +2938,14 @@
 
             <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px;">
                 <tr>
-                    <td style="border:1px solid #9ca3af;padding:6px 10px;font-weight:bold;background:#f3f4f6;width:22%;">Kursiyer Adı Soyadı:</td>
-                    <td style="border:1px solid #9ca3af;padding:6px 10px;width:28%;">${escapeHtml(sub.studentName)}</td>
-                    <td style="border:1px solid #9ca3af;padding:6px 10px;font-weight:bold;background:#f3f4f6;width:22%;">Sınav Tarihi:</td>
-                    <td style="border:1px solid #9ca3af;padding:6px 10px;width:28%;">${new Date(sub.submittedAt||Date.now()).toLocaleDateString('tr-TR')}</td>
+                    <td style="border:1px solid #9ca3af;padding:6px 10px;font-weight:bold;background:#f3f4f6;width:20%;">Kursiyer Adı Soyadı:</td>
+                    <td style="border:1px solid #9ca3af;padding:6px 10px;width:30%;">${escapeHtml(sub.studentName)}</td>
+                    <td style="border:1px solid #9ca3af;padding:6px 10px;font-weight:bold;background:#f3f4f6;width:20%;">Sınav Tarihi:</td>
+                    <td style="border:1px solid #9ca3af;padding:6px 10px;width:30%;">${new Date(sub.submittedAt||Date.now()).toLocaleDateString('tr-TR')}</td>
                 </tr>
                 <tr>
                     <td style="border:1px solid #9ca3af;padding:6px 10px;font-weight:bold;background:#f3f4f6;">Kayıtlı Sınıfı:</td>
-                    <td style="border:1px solid #9ca3af;padding:6px 10px;">${escapeHtml(sub.className || sub.classId)}</td>
-                    <td style="border:1px solid #9ca3af;padding:6px 10px;font-weight:bold;background:#f3f4f6;">Harcanan Süre:</td>
-                    <td style="border:1px solid #9ca3af;padding:6px 10px;">${mins} dakika</td>
-                </tr>
-                <tr>
-                    <td style="border:1px solid #9ca3af;padding:6px 10px;font-weight:bold;background:#f3f4f6;">Evrak Takip No:</td>
-                    <td style="border:1px solid #9ca3af;padding:6px 10px;font-family:monospace;">${sub.id}</td>
+                    <td style="border:1px solid #9ca3af;padding:6px 10px;font-weight:600;">${escapeHtml(resolvedClass)}</td>
                     <td style="border:1px solid #9ca3af;padding:6px 10px;font-weight:bold;background:#f3f4f6;">NİHAİ BAŞARI PUANI:</td>
                     <td style="border:1px solid #9ca3af;padding:6px 10px;font-weight:bold;font-size:16px;color:${isScoreVisible ? '#059669' : '#d97706'};">
                         ${isScoreVisible ? (sub.finalScore + ' / 100') : '⏳ Öğretmen İncelemesinde'}
@@ -2828,30 +2960,12 @@
             ` : ''}
 
             <h4 style="font-size:14px;border-bottom:1px solid #cbd5e1;padding-bottom:4px;margin:16px 0 10px;">SORU VE CEVAP DÖKÜMÜ:</h4>
-            <div style="display:flex;flex-direction:column;gap:10px;">
-                ${results.map((r, idx) => `
-                    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px;font-size:13px;">
-                        <div style="display:flex;justify-content:space-between;font-weight:bold;margin-bottom:4px;">
-                            <span>Soru ${idx + 1} (${r.maxPoints || 10}P)</span>
-                            ${isScoreVisible ? `
-                                <span style="color:${r.earnedPoints > 0 ? '#059669' : '#dc2626'};">
-                                    Alınan Puan: ${r.earnedPoints || 0} / ${r.maxPoints || 10}
-                                </span>
-                            ` : ''}
-                        </div>
-                        <div style="margin-bottom:4px;">
-                            <strong>Verilen Cevap:</strong> ${escapeHtml(r.studentAnswer || '(Boş)')}
-                        </div>
-                        ${(isScoreVisible && r.type !== 'open_ended') ? `
-                            <div style="color:#059669;">
-                                <strong>Doğru Cevap:</strong> ${escapeHtml(r.correctAnswer || '')}
-                            </div>
-                        ` : ''}
-                    </div>
-                `).join('')}
+            
+            <div class="exam-q-grid">
+                ${qCardsHtml}
             </div>
 
-            <div style="margin-top:30px;display:flex;justify-content:space-between;font-size:13px;">
+            <div class="exam-signatures" style="margin-top:30px;display:flex;justify-content:space-between;font-size:13px;break-inside:avoid;page-break-inside:avoid;">
                 <div>Kursiyer İmzası<br><br>.............................</div>
                 <div>Kurs Öğretmeni<br><br>.............................</div>
             </div>
@@ -2877,13 +2991,41 @@
                 <meta charset="utf-8">
                 <title>Sınav Evrakı</title>
                 <style>
-                    body { font-family: 'Times New Roman', serif; padding: 25px; color: #111; }
-                    @media print { .no-print { display: none; } }
+                    @page {
+                        size: A4 portrait;
+                        margin: 12mm 10mm;
+                    }
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Times New Roman", serif;
+                        padding: 15px;
+                        color: #111;
+                        font-size: 11pt;
+                        line-height: 1.35;
+                    }
+                    .no-print { display: none !important; }
+                    .exam-q-grid {
+                        display: grid !important;
+                        grid-template-columns: 1fr 1fr !important;
+                        gap: 10px !important;
+                    }
+                    .exam-q-card {
+                        break-inside: avoid !important;
+                        page-break-inside: avoid !important;
+                        border: 1px solid #cbd5e1 !important;
+                        background: #fff !important;
+                        padding: 8px 10px !important;
+                        border-radius: 4px !important;
+                    }
+                    .exam-signatures {
+                        break-inside: avoid !important;
+                        page-break-inside: avoid !important;
+                        margin-top: 25px !important;
+                    }
                 </style>
             </head>
             <body>
                 <div class="no-print" style="margin-bottom:15px;">
-                    <button onclick="window.print()" style="padding:8px 16px;cursor:pointer;font-weight:bold;">🖨️ Yazdır / PDF İndir</button>
+                    <button onclick="window.print()" style="padding:8px 18px;cursor:pointer;font-weight:bold;background:#2563eb;color:#fff;border:none;border-radius:4px;">🖨️ Yazdır / PDF İndir</button>
                 </div>
                 ${area.innerHTML}
             </body>

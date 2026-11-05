@@ -2658,6 +2658,13 @@ class StorageService {
 
     // ==================== SINIF YÖNETİMİ ====================
 
+    getClassName(classId) {
+        if (!classId) return '-';
+        const classes = this.getAllClasses();
+        const found = classes.find(c => c && (c.id === classId || c.name === classId));
+        return found ? found.name : classId;
+    }
+
     getAllClasses() {
         try {
             const raw = localStorage.getItem(STORAGE_KEYS.CLASSES);
@@ -4023,7 +4030,7 @@ class StorageService {
             studentName: submission.studentName || (student ? student.fullName : 'Kursiyer'),
             studentUsername: submission.studentUsername || (student ? student.username : ''),
             classId: submission.classId || (student ? student.classId : ''),
-            className: submission.className || '',
+            className: this.getClassName(submission.classId || (student ? student.classId : '')) || submission.className || '',
             answers: submission.answers || {},
             questionResults: Array.isArray(submission.questionResults) ? submission.questionResults : [],
             timeSpentSeconds: parseInt(submission.timeSpentSeconds) || 0,
