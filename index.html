@@ -701,6 +701,20 @@
                 if (student) {
                     renderAnnouncementsBanner(student.id);
                     updateStudentUnreadBadge(student.id);
+                    if (typeof renderStudentExamsSection === 'function') {
+                        renderStudentExamsSection();
+                    }
+                }
+            });
+
+            // Admin sınav sildiğinde kursiyer ekranında anında kaldır
+            window.addEventListener('ehem:exam-deleted', () => {
+                if (typeof lmsStorage !== 'undefined') {
+                    lmsStorage._examsCache = null;
+                    lmsStorage._examSubmissionsCache = null;
+                }
+                if (typeof renderStudentExamsSection === 'function') {
+                    renderStudentExamsSection();
                 }
             });
 
@@ -751,6 +765,15 @@
                         if (listPane && listPane.style.display !== 'none') {
                             renderStudentMessagesList();
                         }
+                    }
+                }
+                if (e.key === 'ehem_exams_v2' || e.key === 'ehem_exam_submissions_v2' || e.key === 'ehem_deleted_exams_v2') {
+                    if (typeof lmsStorage !== 'undefined') {
+                        lmsStorage._examsCache = null;
+                        lmsStorage._examSubmissionsCache = null;
+                    }
+                    if (typeof renderStudentExamsSection === 'function') {
+                        renderStudentExamsSection();
                     }
                 }
             });

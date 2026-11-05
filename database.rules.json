@@ -26,6 +26,9 @@
     "exam_submissions_v2": {
       ".indexOn": ["examId", "studentId", "submittedAt", "status"]
     },
+    "deleted_exams_v2": {
+      ".indexOn": [".value"]
+    },
     "_system_ping": {
       ".indexOn": ["ts"]
     }

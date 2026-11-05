@@ -27,7 +27,8 @@ const STORAGE_KEYS = {
     MESSAGES: 'ehem_messages_v1',
     DELETED_USERS: 'ehem_deleted_users_v1',
     EXAMS: 'ehem_exams_v2',
-    EXAM_SUBMISSIONS: 'ehem_exam_submissions_v2'
+    EXAM_SUBMISSIONS: 'ehem_exam_submissions_v2',
+    DELETED_EXAMS: 'ehem_deleted_exams_v2'
 };
 
 const DEFAULT_ADMIN = {
@@ -1143,57 +1144,7 @@ const INITIAL_USERS = [
   }
 ];
 
-const INITIAL_EXAMS = [
-  {
-    "id": "exam_demo_bilgisayar_1",
-    "title": "Bilgisayar İşletmenliği Genel Değerlendirme Sınavı",
-    "instructions": "1. Sınav süresi 30 dakikadır.\n2. Yanlış cevaplar doğru cevapları etkilemez.\n3. Sınavı tamamladığınızda sonuçlar ve detaylı evrak anında üretilecektir.",
-    "targetClassId": "",
-    "durationMinutes": 30,
-    "entryPin": "123",
-    "allowNavigation": true,
-    "showResultsImmediately": true,
-    "shuffleQuestions": false,
-    "allowRetake": false,
-    "bonusModuleId": "1",
-    "bonusPoints": 5,
-    "status": "active",
-    "createdAt": "2026-11-01T21:15:40.964Z",
-    "createdBy": "admin",
-    "questions": [
-      {
-        "id": "q1",
-        "type": "mc",
-        "text": "Bilgisayarda verilerin kalıcı olarak saklandığı ana depolama birimi aşağıdakilerden hangisidir?",
-        "points": 35,
-        "options": [
-          "RAM Bellek",
-          "Sabit Disk (Hard Disk / SSD)",
-          "İşlemci (CPU)",
-          "Ekran Kartı (GPU)"
-        ],
-        "correctOption": 1,
-        "hint": "Elektrik kesilse dahi verileri saklayan kalıcı manyetik veya flash depolama donanımıdır."
-      },
-      {
-        "id": "q2",
-        "type": "tf",
-        "text": "Klavye, bilgisayara kullanıcı tarafından veri ve komut girilmesini sağlayan bir 'Giriş Birimi'dir.",
-        "points": 35,
-        "correctTf": true,
-        "hint": "Giriş ve çıkış birimlerinin farkını düşününüz."
-      },
-      {
-        "id": "q3",
-        "type": "open",
-        "text": "İşletim sisteminin bilgisayardaki temel görevlerinden 2 tanesini kısaca açıklayınız.",
-        "points": 30,
-        "referenceAnswer": "Donanım ile yazılım arasındaki iletişimi koordine etmek, dosya ve dizin yapısını yönetmek, bellek ve işlemci kaynaklarını programlar arasında paylaştırmak.",
-        "hint": "Windows başladığında arka planda yönettiği temel donanım ve yazılım süreçlerini düşününüz."
-      }
-    ]
-  }
-];
+const INITIAL_EXAMS = [];
 
 class StorageService {
     constructor() {
@@ -1206,13 +1157,15 @@ class StorageService {
             try { localStorage.removeItem(k); } catch(e) {}
         });
 
-        // Sınavlar veritabanı boşsa varsayılan sınavla başlat
+        // Sınavlar veritabanını başlat ve silinmiş sınavları yerelden temizle
         try {
             const rawExams = localStorage.getItem(STORAGE_KEYS.EXAMS);
-            if (!rawExams || rawExams === "[]") {
-                localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify(INITIAL_EXAMS));
-                this._examsCache = INITIAL_EXAMS;
+            if (rawExams === null && !localStorage.getItem('ehem_exams_init_flag')) {
+                localStorage.setItem(STORAGE_KEYS.EXAMS, JSON.stringify([]));
+                localStorage.setItem('ehem_exams_init_flag', 'true');
             }
+            // Başlangıçta silinen sınavları ve yetim evrakları temizle
+            this.purgeOrphanedSubmissions();
         } catch (e) {}
 
         // Sınıflar yoksa başlat, eksik olanları ekle
@@ -3677,25 +3630,71 @@ class StorageService {
 
     // ==================== YENİ SINAV SİSTEMİ (V2) ====================
 
+    recordDeletedExam(examId) {
+        if (!examId) return;
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.DELETED_EXAMS);
+            const set = new Set(raw ? JSON.parse(raw) : []);
+            set.add(examId);
+            localStorage.setItem(STORAGE_KEYS.DELETED_EXAMS, JSON.stringify(Array.from(set)));
+        } catch(e) {}
+    }
+
+    getDeletedExamIds() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.DELETED_EXAMS);
+            return new Set(raw ? JSON.parse(raw) : []);
+        } catch(e) {
+            return new Set();
+        }
+    }
+
+    purgeOrphanedSubmissions() {
+        try {
+            const subs = this.getAllExamSubmissions();
+            const deleted = this.getDeletedExamIds();
+            const existingIds = new Set((this._examsCache || []).map(e => e && e.id).filter(Boolean));
+            // localStorage'dan da oku
+            try {
+                const rawE = localStorage.getItem(STORAGE_KEYS.EXAMS);
+                if (rawE) {
+                    const parsedE = JSON.parse(rawE);
+                    if (Array.isArray(parsedE)) {
+                        parsedE.forEach(e => { if (e && e.id) existingIds.add(e.id); });
+                    }
+                }
+            } catch(e) {}
+
+            const cleanSubs = subs.filter(s => {
+                if (!s || !s.examId) return false;
+                if (deleted.has(s.examId)) return false;
+                if (existingIds.size > 0 && !existingIds.has(s.examId)) return false;
+                return true;
+            });
+
+            if (cleanSubs.length !== subs.length) {
+                this.saveAllExamSubmissions(cleanSubs);
+            }
+        } catch(e) {}
+    }
+
     getAllExams() {
-        if (this._examsCache && Array.isArray(this._examsCache) && this._examsCache.length > 0) {
-            return this._examsCache;
+        const deleted = this.getDeletedExamIds();
+        if (this._examsCache && Array.isArray(this._examsCache)) {
+            return this._examsCache.filter(e => e && e.id && !deleted.has(e.id));
         }
         try {
             const raw = localStorage.getItem(STORAGE_KEYS.EXAMS);
             const exams = raw ? JSON.parse(raw) : [];
             if (Array.isArray(exams)) {
-                this._examsCache = exams;
-                return exams;
+                const filtered = exams.filter(e => e && e.id && !deleted.has(e.id));
+                this._examsCache = filtered;
+                return filtered;
             }
         } catch (e) {
             console.warn('[Storage] Sınavlar okunurken hata:', e);
         }
-        if (typeof INITIAL_EXAMS !== "undefined" && Array.isArray(INITIAL_EXAMS) && INITIAL_EXAMS.length > 0) {
-            this._examsCache = INITIAL_EXAMS;
-            return INITIAL_EXAMS;
-        }
-        return this._examsCache || [];
+        return [];
     }
 
     getExamById(examId) {
@@ -3777,16 +3776,30 @@ class StorageService {
 
     deleteExam(examId) {
         if (!examId) return { success: false };
+
+        // 1. Silinen sınavlar listesine (tombstone) kalıcı kaydet
+        this.recordDeletedExam(examId);
+
+        // 2. Sınavlar listesinden çıkar
         let exams = this.getAllExams();
         const initialCount = exams.length;
         exams = exams.filter(e => e && e.id !== examId);
         this.saveAllExams(exams);
-        this.deleteExamFromFirebase(examId);
 
+        // 3. Bu sınava ait tüm kursiyer evraklarını sil
         let subs = this.getAllExamSubmissions();
+        const deletedSubs = subs.filter(s => s && s.examId === examId);
         const keptSubs = subs.filter(s => s && s.examId !== examId);
         if (keptSubs.length !== subs.length) {
             this.saveAllExamSubmissions(keptSubs);
+        }
+
+        // 4. Buluttan da sınavı, silinme kaydını ve evrakları kalıcı olarak sil
+        this.deleteExamFromFirebase(examId, deletedSubs);
+
+        // 5. Açık olan diğer sekmelere / kursiyer ekranına bildirim gönder
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('ehem:exam-deleted', { detail: { examId } }));
         }
 
         return { success: true, count: initialCount - exams.length };
@@ -3829,30 +3842,107 @@ class StorageService {
         }
     }
 
-    async deleteExamFromFirebase(examId) {
+    async deleteExamFromFirebase(examId, deletedSubs = []) {
         if (!examId) return;
         try {
+            // Silinen sınav kaydını buluta ekle (diğer tüm cihazlar haberdar olsun)
+            await this.fetchFirebase(`/deleted_exams_v2/${examId}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: examId, deletedAt: new Date().toISOString() })
+            });
+
+            // Sınavın kendisini sil
             await this.fetchFirebase(`/exams_v2/${examId}.json`, { method: 'DELETE' });
-        } catch (e) {}
+
+            // Bu sınava ait evrakları da buluttan sil
+            if (Array.isArray(deletedSubs) && deletedSubs.length > 0) {
+                for (const sub of deletedSubs) {
+                    if (sub && sub.id) {
+                        await this.fetchFirebase(`/exam_submissions_v2/${sub.id}.json`, { method: 'DELETE' });
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('[Storage] deleteExamFromFirebase hatası:', e);
+        }
     }
 
     async pullExamsFromFirebase() {
         try {
+            // 1. Buluttan silinmiş sınavlar listesini (deleted_exams_v2) çek
+            let cloudDeletedSet = new Set();
+            try {
+                const delRes = await this.fetchFirebase('/deleted_exams_v2.json');
+                if (delRes && delRes.ok) {
+                    const delRaw = await delRes.json();
+                    if (delRaw && typeof delRaw === 'object') {
+                        Object.keys(delRaw).forEach(id => {
+                            cloudDeletedSet.add(id);
+                            this.recordDeletedExam(id);
+                        });
+                    }
+                }
+            } catch(e) {}
+
+            const localDeleted = this.getDeletedExamIds();
+            const allDeleted = new Set([...cloudDeletedSet, ...localDeleted]);
+
+            // 2. Buluttan sınavları çek
             const res = await this.fetchFirebase('/exams_v2.json');
             if (res && res.ok) {
                 const raw = await res.json();
-                if (raw) {
+                if (raw !== null && typeof raw === 'object') {
                     const cloudExams = Array.isArray(raw) ? raw.filter(Boolean) : Object.values(raw).filter(Boolean);
-                    const localExams = this.getAllExams();
-                    const examMap = new Map();
-                    localExams.forEach(le => { if (le && le.id) examMap.set(le.id, le); });
-                    cloudExams.forEach(ce => { if (ce && ce.id) examMap.set(ce.id, ce); });
-                    const merged = Array.from(examMap.values());
-                    this.saveAllExams(merged);
-                    return merged;
+                    const validCloudExams = cloudExams.filter(e => e && e.id && !allDeleted.has(e.id));
+
+                    const isStudent = (typeof window !== 'undefined' && 
+                        (window.location.pathname.includes('index.html') || !window.location.pathname.includes('admin.html')));
+
+                    let nextExams;
+                    if (isStudent) {
+                        // Kursiyer ekranında SADECE buluttaki güncel sınavlar yer almalıdır!
+                        // Adminin sildiği sınavlar kursiyer cihazından derhal kaldırılır.
+                        nextExams = validCloudExams;
+                    } else {
+                        // Admin ekranında: silinmiş olanları temizle, buluttan gelenlerle birleştir
+                        const localExams = this.getAllExams().filter(e => e && e.id && !allDeleted.has(e.id));
+                        const examMap = new Map();
+                        validCloudExams.forEach(ce => examMap.set(ce.id, ce));
+                        localExams.forEach(le => {
+                            if (!examMap.has(le.id) && !allDeleted.has(le.id)) {
+                                examMap.set(le.id, le);
+                            }
+                        });
+                        nextExams = Array.from(examMap.values());
+                    }
+
+                    this.saveAllExams(nextExams);
+                    this.purgeOrphanedSubmissions();
+                    return nextExams;
+                } else if (raw === null) {
+                    // Bulutta hiç sınav kalmamış
+                    const isStudent = (typeof window !== 'undefined' && 
+                        (window.location.pathname.includes('index.html') || !window.location.pathname.includes('admin.html')));
+                    if (isStudent) {
+                        this.saveAllExams([]);
+                        this.purgeOrphanedSubmissions();
+                        return [];
+                    }
                 }
             }
         } catch (e) {}
+
+        // Buluta erişilemese dahi yerel silinenleri temizle
+        const deletedIds = this.getDeletedExamIds();
+        if (deletedIds.size > 0) {
+            let current = this.getAllExams().filter(e => e && !deletedIds.has(e.id));
+            if (current.length !== this.getAllExams().length) {
+                this.saveAllExams(current);
+            }
+        }
+        this.purgeOrphanedSubmissions();
+
         return this.getAllExams();
     }
 
@@ -3882,7 +3972,17 @@ class StorageService {
     getExamSubmissionsForStudent(studentId) {
         if (!studentId) return [];
         const subs = this.getAllExamSubmissions();
-        return subs.filter(s => s && String(s.studentId) === String(studentId));
+        const deleted = this.getDeletedExamIds();
+        const existingExamIds = new Set(this.getAllExams().map(e => e && e.id).filter(Boolean));
+
+        // Eğer bir sınav silinmişse veya sistemde artık mevcut değilse, kursiyere o evrakı GÖSTERME
+        return subs.filter(s => {
+            if (!s || String(s.studentId) !== String(studentId)) return false;
+            if (!s.examId) return false;
+            if (deleted.has(s.examId)) return false;
+            if (!existingExamIds.has(s.examId)) return false;
+            return true;
+        });
     }
 
     getExamSubmissionById(subId) {
@@ -4056,6 +4156,19 @@ class StorageService {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(subMap)
             });
+
+            // Silinmiş sınavlar tablosunu da buluta aktar
+            const deleted = this.getDeletedExamIds();
+            if (deleted.size > 0) {
+                const delMap = {};
+                deleted.forEach(id => { delMap[id] = { id, deletedAt: new Date().toISOString() }; });
+                await this.fetchFirebase('/deleted_exams_v2.json', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(delMap)
+                });
+            }
+
             return { success: r1.ok && r2.ok, examCount: exams.length, submissionCount: subs.length };
         } catch(e) {
             return { success: false, message: e.message };
