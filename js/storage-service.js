@@ -28,7 +28,14 @@ const STORAGE_KEYS = {
     DELETED_USERS: 'ehem_deleted_users_v1',
     EXAMS: 'ehem_exams_v2',
     EXAM_SUBMISSIONS: 'ehem_exam_submissions_v2',
-    DELETED_EXAMS: 'ehem_deleted_exams_v2'
+    DELETED_EXAMS: 'ehem_deleted_exams_v2',
+    EXAM_HEADER_SETTINGS: 'ehem_exam_header_settings_v1'
+};
+
+const DEFAULT_EXAM_HEADER_SETTINGS = {
+    institutionName: 'T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ MÜDÜRLÜĞÜ',
+    documentTitle: 'BİLGİSAYAR İŞLETMENLİĞİ KURSU DEĞERLENDİRME SINAV EVRAKI',
+    instructorName: 'Alim Hoca'
 };
 
 const DEFAULT_ADMIN = {
@@ -3637,6 +3644,67 @@ class StorageService {
 
     // ==================== YENİ SINAV SİSTEMİ (V2) ====================
 
+    getExamHeaderSettings() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.EXAM_HEADER_SETTINGS);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === 'object') {
+                    return {
+                        institutionName: parsed.institutionName || DEFAULT_EXAM_HEADER_SETTINGS.institutionName,
+                        documentTitle: parsed.documentTitle || DEFAULT_EXAM_HEADER_SETTINGS.documentTitle,
+                        instructorName: parsed.instructorName !== undefined ? parsed.instructorName : DEFAULT_EXAM_HEADER_SETTINGS.instructorName
+                    };
+                }
+            }
+        } catch (e) {}
+        return Object.assign({}, DEFAULT_EXAM_HEADER_SETTINGS);
+    }
+
+    saveExamHeaderSettings(settings) {
+        if (!settings) return this.getExamHeaderSettings();
+        const current = this.getExamHeaderSettings();
+        const updated = {
+            institutionName: (settings.institutionName !== undefined ? String(settings.institutionName).trim() : current.institutionName) || DEFAULT_EXAM_HEADER_SETTINGS.institutionName,
+            documentTitle: (settings.documentTitle !== undefined ? String(settings.documentTitle).trim() : current.documentTitle) || DEFAULT_EXAM_HEADER_SETTINGS.documentTitle,
+            instructorName: (settings.instructorName !== undefined ? String(settings.instructorName).trim() : current.instructorName),
+            updatedAt: new Date().toISOString()
+        };
+
+        try {
+            localStorage.setItem(STORAGE_KEYS.EXAM_HEADER_SETTINGS, JSON.stringify(updated));
+        } catch (e) {}
+
+        if (this.isFirebaseEnabled()) {
+            this.fetchFirebase('/exam_header_settings_v1.json', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updated)
+            }).catch(() => {});
+        }
+
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('ehem:exam-header-updated', { detail: updated }));
+        }
+
+        return updated;
+    }
+
+    async pullExamHeaderSettingsFromFirebase() {
+        if (!this.isFirebaseEnabled()) return this.getExamHeaderSettings();
+        try {
+            const res = await this.fetchFirebase('/exam_header_settings_v1.json');
+            if (res.ok) {
+                const cloudSettings = await res.json();
+                if (cloudSettings && typeof cloudSettings === 'object' && cloudSettings.institutionName) {
+                    localStorage.setItem(STORAGE_KEYS.EXAM_HEADER_SETTINGS, JSON.stringify(cloudSettings));
+                    return cloudSettings;
+                }
+            }
+        } catch (e) {}
+        return this.getExamHeaderSettings();
+    }
+
     recordDeletedExam(examId) {
         if (!examId) return;
         try {
@@ -3894,6 +3962,7 @@ class StorageService {
 
             const localDeleted = this.getDeletedExamIds();
             const allDeleted = new Set([...cloudDeletedSet, ...localDeleted]);
+            try { await this.pullExamHeaderSettingsFromFirebase(); } catch(e) {}
 
             // 2. Buluttan sınavları çek
             const res = await this.fetchFirebase('/exams_v2.json');
@@ -4175,6 +4244,14 @@ class StorageService {
                     body: JSON.stringify(delMap)
                 });
             }
+
+            // Sınav evrakı üst bilgi ayarlarını da buluta aktar
+            const headerSettings = this.getExamHeaderSettings();
+            await this.fetchFirebase('/exam_header_settings_v1.json', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(headerSettings)
+            }).catch(() => {});
 
             return { success: r1.ok && r2.ok, examCount: exams.length, submissionCount: subs.length };
         } catch(e) {

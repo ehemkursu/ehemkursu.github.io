@@ -29,6 +29,9 @@
     "deleted_exams_v2": {
       ".indexOn": [".value"]
     },
+    "exam_header_settings_v1": {
+      ".indexOn": [".value"]
+    },
     "_system_ping": {
       ".indexOn": ["ts"]
     }

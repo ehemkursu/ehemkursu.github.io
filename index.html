@@ -2804,6 +2804,13 @@
         const results = Array.isArray(sub.questionResults) ? sub.questionResults : [];
         const examQuestions = (exam && Array.isArray(exam.questions)) ? exam.questions : [];
         const isScoreVisible = exam.showResultsImmediately || sub.reviewedByAdmin;
+        const headerSettings = (typeof lmsStorage !== 'undefined' && lmsStorage.getExamHeaderSettings)
+            ? lmsStorage.getExamHeaderSettings()
+            : {
+                institutionName: 'T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ MÜDÜRLÜĞÜ',
+                documentTitle: 'BİLGİSAYAR İŞLETMENLİĞİ KURSU DEĞERLENDİRME SINAV EVRAKI',
+                instructorName: 'Alim Hoca'
+            };
 
         // 3. Soru ve Cevap Dökümünü Sınav Kağıdı Formatında 2 Sütunlu Olarak Hazırla
         const qCardsHtml = results.map((r, idx) => {
@@ -2931,8 +2938,8 @@
             </style>
 
             <div style="text-align:center;border-bottom:2px double #1f2937;padding-bottom:12px;margin-bottom:16px;">
-                <div style="font-size:13px;font-weight:bold;letter-spacing:1px;">T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ MÜDÜRLÜĞÜ</div>
-                <div style="font-size:17px;font-weight:bold;margin:4px 0;">BİLGİSAYAR İŞLETMENLİĞİ KURSU DEĞERLENDİRME SINAV EVRAKI</div>
+                <div style="font-size:13px;font-weight:bold;letter-spacing:1px;color:#111827;">${escapeHtml(headerSettings.institutionName)}</div>
+                <div style="font-size:17px;font-weight:bold;margin:4px 0;color:#0f172a;">${escapeHtml(headerSettings.documentTitle)}</div>
                 <div style="font-size:13px;font-style:italic;color:#4b5563;">${escapeHtml(sub.examTitle || 'Sınav')}</div>
             </div>
 
@@ -2967,7 +2974,7 @@
 
             <div class="exam-signatures" style="margin-top:30px;display:flex;justify-content:space-between;font-size:13px;break-inside:avoid;page-break-inside:avoid;">
                 <div>Kursiyer İmzası<br><br>.............................</div>
-                <div>Kurs Öğretmeni<br><br>.............................</div>
+                <div>Kurs Öğretmeni${headerSettings.instructorName ? `<br><strong style="display:inline-block;margin-top:4px;color:#1e293b;">${escapeHtml(headerSettings.instructorName)}</strong>` : ''}<br><br>.............................</div>
             </div>
         `;
 
