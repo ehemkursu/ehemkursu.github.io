@@ -2773,7 +2773,7 @@ class StorageService {
                 theme: localStorage.getItem('ehem_theme') || 'forest-green',
                 allowMenuThemeSwitch: false,   // "Menü içinde tema ve tasarım değiştirme seçeneği"
                 menuLayout: 'compact',     // 'two-column' | 'card-grid' | 'compact'
-                menuStyle: 'classic-retro',  // 'theme-adaptive' | 'classic-retro' | 'minimal'
+                menuStyle: 'theme-adaptive',  // 'theme-adaptive' | 'classic-retro' | 'minimal'
                 switcherPosition: 'both'      // 'bottom' | 'navbar' | 'both'
             };
             return raw ? { ...def, ...JSON.parse(raw) } : def;
@@ -2782,7 +2782,7 @@ class StorageService {
                 theme: localStorage.getItem('ehem_theme') || 'forest-green',
                 allowMenuThemeSwitch: false,
                 menuLayout: 'compact',
-                menuStyle: 'classic-retro',
+                menuStyle: 'theme-adaptive',
                 switcherPosition: 'both'
             };
         }

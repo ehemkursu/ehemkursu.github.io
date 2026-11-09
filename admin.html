@@ -48,7 +48,7 @@
     <div class="auth-card">
         <div class="auth-header">
             <div class="auth-logo-badge" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">🔒</div>
-            <h2 style="font-size:24px;color:white;margin-bottom:6px;">Yönetici Girişi</h2>
+            <h2 style="font-size:24px;color:var(--text-primary);margin-bottom:6px;">Yönetici Girişi</h2>
             <p style="font-size:13px;color:var(--text-secondary);">Kursiyerleri yönetmek için giriş yapınız</p>
         </div>
         <div id="adminLoginAlert" class="alert-message alert-error"></div>
@@ -70,7 +70,7 @@
 <main id="adminDashboardSection" class="main-content" style="display:none;">
     <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;">
         <div>
-            <h1 style="font-size:26px;color:white;margin-bottom:4px;">Yönetim Merkezi</h1>
+            <h1 style="font-size:26px;color:var(--text-primary);margin-bottom:4px;">Yönetim Merkezi</h1>
             <p style="font-size:14px;color:var(--text-secondary);">Kursiyerleri, sınıfları ve ders menüsünü buradan yönetin.</p>
         </div>
     </div>
@@ -157,7 +157,7 @@
     <div id="tabClasses" style="display:none;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
             <div>
-                <h2 style="color:white;font-size:20px;margin-bottom:4px;">Sınıf Yönetimi</h2>
+                <h2 style="color:var(--text-primary);font-size:20px;margin-bottom:4px;">Sınıf Yönetimi</h2>
                 <p style="color:var(--text-secondary);font-size:13px;">Her sınıf için toplu işlem yapabilirsiniz: taşı, ilerlet, sıfırla veya sil.</p>
             </div>
             <button class="btn btn-primary" onclick="openAddClassModal()">➕ Yeni Sınıf Ekle</button>
@@ -165,7 +165,7 @@
         <div id="classesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;"></div>
         <div id="classesEmpty" style="display:none;text-align:center;padding:60px 20px;color:var(--text-muted);">
             <div style="font-size:52px;margin-bottom:14px;">🏫</div>
-            <p style="font-size:16px;color:white;margin-bottom:8px;">Henüz sınıf oluşturulmadı.</p>
+            <p style="font-size:16px;color:var(--text-primary);margin-bottom:8px;">Henüz sınıf oluşturulmadı.</p>
             <p style="font-size:13px;">Kursiyerleri gruplamak için sınıf ekleyin.</p>
         </div>
     </div>
@@ -174,7 +174,7 @@
     <div id="tabAnnouncements" style="display:none;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:12px;">
             <div>
-                <h2 style="color:white;font-size:20px;margin-bottom:4px;">Duyuru Yönetimi</h2>
+                <h2 style="color:var(--text-primary);font-size:20px;margin-bottom:4px;">Duyuru Yönetimi</h2>
                 <p style="color:var(--text-secondary);font-size:13px;">Tüm kursiyerlere veya belirli sınıflara duyuru gönderin.</p>
             </div>
             <button class="btn btn-primary" onclick="openAnnouncementModal()">📢 Yeni Duyuru Yaz</button>
@@ -190,7 +190,7 @@
     <div id="tabMessages" style="display:none;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
             <div>
-                <h2 style="color:white;font-size:20px;margin-bottom:4px;display:flex;align-items:center;gap:8px;">
+                <h2 style="color:var(--text-primary);font-size:20px;margin-bottom:4px;display:flex;align-items:center;gap:8px;">
                     <span>💬</span> Kursiyer Mesajları &amp; Soru-Cevap
                 </h2>
                 <p style="color:var(--text-secondary);font-size:13px;">Tüm kursiyerlere, bir sınıfa veya tek bir kursiyere mesaj gönderin; gelen soruları yanıtlayın.</p>
@@ -254,7 +254,7 @@
     <div id="tabMenu" style="display:none;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px;">
             <div>
-                <h2 style="color:white;font-size:20px;margin-bottom:4px;">Menü Yönetimi</h2>
+                <h2 style="color:var(--text-primary);font-size:20px;margin-bottom:4px;">Menü Yönetimi</h2>
                 <p style="color:var(--text-secondary);font-size:13px;">Ders listesini düzenleyin. Sol/Sağ menü konumunu bölüm bazında belirleyin.</p>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -278,7 +278,7 @@
     <!-- ===== SEKME: AYARLAR ===== -->
     <div id="tabSettings" style="display:none;">
         <div style="max-width:760px;">
-            <h2 style="color:white;font-size:20px;margin-bottom:24px;">Sistem Ayarları</h2>
+            <h2 style="color:var(--text-primary);font-size:20px;margin-bottom:24px;">Sistem Ayarları</h2>
 
             <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:24px;margin-bottom:24px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px;">
@@ -290,116 +290,116 @@
                 </div>
 
                 <div class="theme-grid">
-                    <!-- Tema 1: Gece Mavisi -->
+                    <!-- Tema 1: Safir Mavi -->
                     <div class="theme-card" id="theme-card-night-blue" onclick="applyTheme('night-blue')">
-                        <div class="theme-preview" style="background:#0b0f19;">
-                            <div class="theme-preview-bar" style="background:rgba(11,15,25,0.9);">
-                                <div class="theme-preview-dot"></div><div class="theme-preview-dot"></div><div class="theme-preview-dot"></div>
-                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#3b82f6,#6366f1);border-radius:4px;margin-left:4px;opacity:0.8;"></div>
+                        <div class="theme-preview" style="background:#f0f5fc;">
+                            <div class="theme-preview-bar" style="background:#ffffff;border-bottom:1px solid #dbeafe;">
+                                <div class="theme-preview-dot" style="background:rgba(37,99,235,0.4);"></div><div class="theme-preview-dot" style="background:rgba(37,99,235,0.4);"></div><div class="theme-preview-dot" style="background:rgba(37,99,235,0.4);"></div>
+                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#2563eb,#4f46e5);border-radius:4px;margin-left:4px;opacity:0.9;"></div>
                             </div>
                             <div class="theme-preview-body">
-                                <div class="theme-preview-sidebar"></div>
+                                <div class="theme-preview-sidebar" style="background:rgba(37,99,235,0.12);"></div>
                                 <div class="theme-preview-main">
-                                    <div class="theme-preview-row" style="background:rgba(99,102,241,0.3);"></div>
-                                    <div class="theme-preview-row accent" style="background:#3b82f6;opacity:0.7;"></div>
+                                    <div class="theme-preview-row" style="background:rgba(37,99,235,0.2);"></div>
+                                    <div class="theme-preview-row accent" style="background:#2563eb;opacity:0.85;"></div>
                                 </div>
                             </div>
-                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#3b82f6,#6366f1);">Mavi</div>
+                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#2563eb,#4f46e5);">Safir Mavi</div>
                         </div>
-                        <div class="theme-info"><span class="theme-name">🌌 Gece Mavisi</span><div class="theme-check" id="theme-check-night-blue">✓</div></div>
+                        <div class="theme-info"><span class="theme-name">🌌 Safir Mavi</span><div class="theme-check" id="theme-check-night-blue">✓</div></div>
                     </div>
 
-                    <!-- Tema 2: Orman Yeşili -->
+                    <!-- Tema 2: Zümrüt & Nane Yeşili -->
                     <div class="theme-card" id="theme-card-forest-green" onclick="applyTheme('forest-green')">
-                        <div class="theme-preview" style="background:#071510;">
-                            <div class="theme-preview-bar" style="background:rgba(7,21,16,0.9);">
-                                <div class="theme-preview-dot"></div><div class="theme-preview-dot"></div><div class="theme-preview-dot"></div>
-                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#10b981,#22d3ee);border-radius:4px;margin-left:4px;opacity:0.8;"></div>
+                        <div class="theme-preview" style="background:#f0fdf4;">
+                            <div class="theme-preview-bar" style="background:#ffffff;border-bottom:1px solid #dcfce7;">
+                                <div class="theme-preview-dot" style="background:rgba(16,185,129,0.4);"></div><div class="theme-preview-dot" style="background:rgba(16,185,129,0.4);"></div><div class="theme-preview-dot" style="background:rgba(16,185,129,0.4);"></div>
+                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#059669,#10b981);border-radius:4px;margin-left:4px;opacity:0.9;"></div>
                             </div>
                             <div class="theme-preview-body">
                                 <div class="theme-preview-sidebar" style="background:rgba(16,185,129,0.15);"></div>
                                 <div class="theme-preview-main">
-                                    <div class="theme-preview-row" style="background:rgba(16,185,129,0.25);"></div>
-                                    <div class="theme-preview-row accent" style="background:#10b981;opacity:0.7;"></div>
+                                    <div class="theme-preview-row" style="background:rgba(16,185,129,0.2);"></div>
+                                    <div class="theme-preview-row accent" style="background:#059669;opacity:0.85;"></div>
                                 </div>
                             </div>
-                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#10b981,#22d3ee);">Yeşil</div>
+                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#059669,#10b981);">Zümrüt Yeşil</div>
                         </div>
-                        <div class="theme-info"><span class="theme-name">🌲 Orman Yeşili</span><div class="theme-check" id="theme-check-forest-green">✓</div></div>
+                        <div class="theme-info"><span class="theme-name">🌲 Zümrüt &amp; Nane</span><div class="theme-check" id="theme-check-forest-green">✓</div></div>
                     </div>
 
-                    <!-- Tema 3: Mor Gün Batımı -->
+                    <!-- Tema 3: Canlı Lavanta -->
                     <div class="theme-card" id="theme-card-purple-sunset" onclick="applyTheme('purple-sunset')">
-                        <div class="theme-preview" style="background:#0f0714;">
-                            <div class="theme-preview-bar" style="background:rgba(15,7,20,0.9);">
-                                <div class="theme-preview-dot"></div><div class="theme-preview-dot"></div><div class="theme-preview-dot"></div>
-                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#a855f7,#ec4899);border-radius:4px;margin-left:4px;opacity:0.8;"></div>
+                        <div class="theme-preview" style="background:#faf5ff;">
+                            <div class="theme-preview-bar" style="background:#ffffff;border-bottom:1px solid #f3e8ff;">
+                                <div class="theme-preview-dot" style="background:rgba(147,51,234,0.4);"></div><div class="theme-preview-dot" style="background:rgba(147,51,234,0.4);"></div><div class="theme-preview-dot" style="background:rgba(147,51,234,0.4);"></div>
+                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#9333ea,#c026d3);border-radius:4px;margin-left:4px;opacity:0.9;"></div>
                             </div>
                             <div class="theme-preview-body">
-                                <div class="theme-preview-sidebar" style="background:rgba(168,85,247,0.15);"></div>
+                                <div class="theme-preview-sidebar" style="background:rgba(147,51,234,0.15);"></div>
                                 <div class="theme-preview-main">
-                                    <div class="theme-preview-row" style="background:rgba(168,85,247,0.25);"></div>
-                                    <div class="theme-preview-row accent" style="background:#a855f7;opacity:0.7;"></div>
+                                    <div class="theme-preview-row" style="background:rgba(147,51,234,0.2);"></div>
+                                    <div class="theme-preview-row accent" style="background:#9333ea;opacity:0.85;"></div>
                                 </div>
                             </div>
-                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#a855f7,#ec4899);">Mor</div>
+                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#9333ea,#c026d3);">Lavanta</div>
                         </div>
-                        <div class="theme-info"><span class="theme-name">🌅 Mor Gün Batımı</span><div class="theme-check" id="theme-check-purple-sunset">✓</div></div>
+                        <div class="theme-info"><span class="theme-name">🌅 Canlı Lavanta</span><div class="theme-check" id="theme-check-purple-sunset">✓</div></div>
                     </div>
 
-                    <!-- Tema 4: Kehribar Ateşi -->
+                    <!-- Tema 4: Güneş & Kehribar -->
                     <div class="theme-card" id="theme-card-amber-gold" onclick="applyTheme('amber-gold')">
-                        <div class="theme-preview" style="background:#130e06;">
-                            <div class="theme-preview-bar" style="background:rgba(19,14,6,0.9);">
-                                <div class="theme-preview-dot"></div><div class="theme-preview-dot"></div><div class="theme-preview-dot"></div>
-                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#f59e0b,#ea580c);border-radius:4px;margin-left:4px;opacity:0.8;"></div>
+                        <div class="theme-preview" style="background:#fffdf5;">
+                            <div class="theme-preview-bar" style="background:#ffffff;border-bottom:1px solid #fef3c7;">
+                                <div class="theme-preview-dot" style="background:rgba(217,119,6,0.4);"></div><div class="theme-preview-dot" style="background:rgba(217,119,6,0.4);"></div><div class="theme-preview-dot" style="background:rgba(217,119,6,0.4);"></div>
+                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#d97706,#ea580c);border-radius:4px;margin-left:4px;opacity:0.9;"></div>
                             </div>
                             <div class="theme-preview-body">
-                                <div class="theme-preview-sidebar" style="background:rgba(245,158,11,0.15);"></div>
+                                <div class="theme-preview-sidebar" style="background:rgba(217,119,6,0.15);"></div>
                                 <div class="theme-preview-main">
-                                    <div class="theme-preview-row" style="background:rgba(245,158,11,0.25);"></div>
-                                    <div class="theme-preview-row accent" style="background:#f59e0b;opacity:0.7;"></div>
+                                    <div class="theme-preview-row" style="background:rgba(217,119,6,0.2);"></div>
+                                    <div class="theme-preview-row accent" style="background:#d97706;opacity:0.85;"></div>
                                 </div>
                             </div>
-                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#f59e0b,#ea580c);">Kehribar</div>
+                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#d97706,#ea580c);">Kehribar</div>
                         </div>
-                        <div class="theme-info"><span class="theme-name">⚡ Kehribar Ateşi</span><div class="theme-check" id="theme-check-amber-gold">✓</div></div>
+                        <div class="theme-info"><span class="theme-name">⚡ Güneş &amp; Kehribar</span><div class="theme-check" id="theme-check-amber-gold">✓</div></div>
                     </div>
 
-                    <!-- Tema 5: Okyanus Turkuaz -->
+                    <!-- Tema 5: Karayip Turkuaz -->
                     <div class="theme-card" id="theme-card-ocean-teal" onclick="applyTheme('ocean-teal')">
-                        <div class="theme-preview" style="background:#05161d;">
-                            <div class="theme-preview-bar" style="background:rgba(5,22,29,0.9);">
-                                <div class="theme-preview-dot"></div><div class="theme-preview-dot"></div><div class="theme-preview-dot"></div>
-                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#06b6d4,#0284c7);border-radius:4px;margin-left:4px;opacity:0.8;"></div>
+                        <div class="theme-preview" style="background:#f0fdfa;">
+                            <div class="theme-preview-bar" style="background:#ffffff;border-bottom:1px solid #ccfbf1;">
+                                <div class="theme-preview-dot" style="background:rgba(13,148,136,0.4);"></div><div class="theme-preview-dot" style="background:rgba(13,148,136,0.4);"></div><div class="theme-preview-dot" style="background:rgba(13,148,136,0.4);"></div>
+                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#0d9488,#0284c7);border-radius:4px;margin-left:4px;opacity:0.9;"></div>
                             </div>
                             <div class="theme-preview-body">
-                                <div class="theme-preview-sidebar" style="background:rgba(6,182,212,0.15);"></div>
+                                <div class="theme-preview-sidebar" style="background:rgba(13,148,136,0.15);"></div>
                                 <div class="theme-preview-main">
-                                    <div class="theme-preview-row" style="background:rgba(6,182,212,0.25);"></div>
-                                    <div class="theme-preview-row accent" style="background:#06b6d4;opacity:0.7;"></div>
+                                    <div class="theme-preview-row" style="background:rgba(13,148,136,0.2);"></div>
+                                    <div class="theme-preview-row accent" style="background:#0d9488;opacity:0.85;"></div>
                                 </div>
                             </div>
-                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#06b6d4,#0284c7);">Turkuaz</div>
+                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#0d9488,#0284c7);">Turkuaz</div>
                         </div>
-                        <div class="theme-info"><span class="theme-name">🌊 Okyanus Turkuaz</span><div class="theme-check" id="theme-check-ocean-teal">✓</div></div>
+                        <div class="theme-info"><span class="theme-name">🌊 Karayip Turkuaz</span><div class="theme-check" id="theme-check-ocean-teal">✓</div></div>
                     </div>
 
                     <!-- Tema 6: Modern Aydınlık -->
                     <div class="theme-card" id="theme-card-clean-light" onclick="applyTheme('clean-light')">
-                        <div class="theme-preview" style="background:#f1f5f9;">
-                            <div class="theme-preview-bar" style="background:rgba(255,255,255,0.9);">
-                                <div class="theme-preview-dot" style="background:rgba(0,0,0,0.2);"></div><div class="theme-preview-dot" style="background:rgba(0,0,0,0.2);"></div><div class="theme-preview-dot" style="background:rgba(0,0,0,0.2);"></div>
-                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#2563eb,#4f46e5);border-radius:4px;margin-left:4px;opacity:0.8;"></div>
+                        <div class="theme-preview" style="background:#f8fafc;">
+                            <div class="theme-preview-bar" style="background:#ffffff;border-bottom:1px solid #e2e8f0;">
+                                <div class="theme-preview-dot" style="background:rgba(0,0,0,0.15);"></div><div class="theme-preview-dot" style="background:rgba(0,0,0,0.15);"></div><div class="theme-preview-dot" style="background:rgba(0,0,0,0.15);"></div>
+                                <div style="height:8px;flex:1;background:linear-gradient(90deg,#2563eb,#4f46e5);border-radius:4px;margin-left:4px;opacity:0.9;"></div>
                             </div>
                             <div class="theme-preview-body">
                                 <div class="theme-preview-sidebar" style="background:rgba(37,99,235,0.1);"></div>
                                 <div class="theme-preview-main">
                                     <div class="theme-preview-row" style="background:rgba(0,0,0,0.08);"></div>
-                                    <div class="theme-preview-row accent" style="background:#2563eb;opacity:0.7;"></div>
+                                    <div class="theme-preview-row accent" style="background:#2563eb;opacity:0.85;"></div>
                                 </div>
                             </div>
-                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#2563eb,#4f46e5);">Aydınlık</div>
+                            <div class="theme-preview-badge" style="background:linear-gradient(135deg,#2563eb,#4f46e5);">Platin</div>
                         </div>
                         <div class="theme-info"><span class="theme-name">☀️ Modern Aydınlık</span><div class="theme-check" id="theme-check-clean-light">✓</div></div>
                     </div>
@@ -408,7 +408,7 @@
                 <!-- ==================== MENÜ İÇİ TEMA & TASARIM SEÇENEKLERİ ==================== -->
                 <div style="margin-top:28px;padding-top:22px;border-top:1px solid var(--border-color);">
                     <div style="margin-bottom:16px;">
-                        <h4 style="color:white;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                        <h4 style="color:var(--text-primary);font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:4px;">
                             <span>📱</span> Menü İçi Tema &amp; Tasarım Değiştirme Seçenekleri
                         </h4>
                         <p style="font-size:12px;color:var(--text-secondary);">Kursiyer portalı menüsündeki tema ve tasarım değiştirici kontrolünü buradan yapılandırın.</p>
@@ -599,7 +599,7 @@
                 </div>
             </div>
             <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:20px;">
-                <h4 style="color:white;font-size:15px;margin-bottom:10px;">💾 Veri Yedekleme</h4>
+                <h4 style="color:var(--text-primary);font-size:15px;margin-bottom:10px;">💾 Veri Yedekleme</h4>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <button class="btn btn-success btn-sm" onclick="lmsStorage.exportBackupJSON()">📥 Yedek İndir (JSON)</button>
                     <label class="btn btn-ghost btn-sm" style="margin:0;cursor:pointer;">
@@ -615,7 +615,7 @@
         <div id="tabExams" class="tab-content" style="display:none;">
             <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
                 <div>
-                    <h2 style="color:white;font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:8px;">
+                    <h2 style="color:var(--text-primary);font-size:22px;margin:0 0 4px;display:flex;align-items:center;gap:8px;">
                         <span>📝</span> Sınav & Değerlendirme Yönetim Merkezi
                     </h2>
                     <p style="color:var(--text-muted);font-size:13px;margin:0;">
@@ -792,7 +792,7 @@
     <div class="modal-content" style="max-width:880px;max-height:92vh;overflow-y:auto;border:1px solid #3b82f6;">
         <div class="modal-header" style="position:sticky;top:0;background:var(--bg-card);z-index:10;padding-bottom:12px;border-bottom:1px solid var(--border-color);">
             <div>
-                <h3 id="examEditorModalTitle" style="color:white;font-size:19px;margin:0;">📝 Yeni Sınav Hazırla</h3>
+                <h3 id="examEditorModalTitle" style="color:var(--text-primary);font-size:19px;margin:0;">📝 Yeni Sınav Hazırla</h3>
                 <span style="font-size:12px;color:var(--text-muted);">Sınav kurallarını belirleyin, çoktan seçmeli, doğru-yanlış ve açık uçlu sorular ekleyin.</span>
             </div>
             <button class="modal-close" onclick="closeModal('examEditorModal')">&times;</button>
@@ -951,7 +951,7 @@
     <div class="modal-content" style="max-width:860px;max-height:92vh;overflow-y:auto;border:1px solid #10b981;">
         <div class="modal-header" style="position:sticky;top:0;background:var(--bg-card);z-index:10;padding-bottom:12px;border-bottom:1px solid var(--border-color);">
             <div>
-                <h3 style="color:white;font-size:18px;margin:0;">📄 Kursiyer Sınav Evrakı & Değerlendirme</h3>
+                <h3 style="color:var(--text-primary);font-size:18px;margin:0;">📄 Kursiyer Sınav Evrakı & Değerlendirme</h3>
                 <span id="gradingModalMeta" style="font-size:12px;color:var(--text-muted);">Evrak No: SUB-12345</span>
             </div>
             <button class="modal-close" onclick="closeModal('examGradingModal')">&times;</button>
@@ -1028,7 +1028,7 @@
     <div class="modal-content" style="max-width:620px;">
         <div class="modal-header">
             <div>
-                <h3 style="color:white;font-size:18px;margin:0;">🏛️ Sınav Evrakı Üst Bilgi Ayarları</h3>
+                <h3 style="color:var(--text-primary);font-size:18px;margin:0;">🏛️ Sınav Evrakı Üst Bilgi Ayarları</h3>
                 <span style="font-size:12px;color:var(--text-muted);">Sınav evraklarının üstünde çıkan resmi kurum ve kurs başlığını belirleyin</span>
             </div>
             <button class="modal-close" onclick="closeModal('examHeaderSettingsModal')">&times;</button>
@@ -1071,7 +1071,7 @@
 <div id="examPreviewModal" class="modal-overlay" onclick="if(event.target===this)closeModal('examPreviewModal')">
     <div class="modal-content" style="max-width:760px;max-height:90vh;overflow-y:auto;">
         <div class="modal-header">
-            <h3 id="previewModalTitle" style="color:white;font-size:18px;margin:0;">👁️ Sınav Önizleme (Öğretmen Test Modu)</h3>
+            <h3 id="previewModalTitle" style="color:var(--text-primary);font-size:18px;margin:0;">👁️ Sınav Önizleme (Öğretmen Test Modu)</h3>
             <button class="modal-close" onclick="closeModal('examPreviewModal')">&times;</button>
         </div>
         <div id="previewModalContent" style="padding:16px 0;">
@@ -1088,7 +1088,7 @@
     <div class="modal-content" style="max-width:760px;max-height:92vh;overflow-y:auto;border:1px solid #3b82f6;">
         <div class="modal-header" style="position:sticky;top:0;background:var(--bg-card);z-index:10;padding-bottom:12px;border-bottom:1px solid var(--border-color);">
             <div>
-                <h3 style="color:white;font-size:18px;margin:0;display:flex;align-items:center;gap:8px;">
+                <h3 style="color:var(--text-primary);font-size:18px;margin:0;display:flex;align-items:center;gap:8px;">
                     <span>📥</span> Excel ile Sınav & Soru Yükleme
                 </h3>
                 <span style="font-size:12px;color:var(--text-muted);">Örnek Excel şablonunu doldurarak sınav ve sorularınızı sisteme tek tıkla aktarın.</span>
@@ -1116,7 +1116,7 @@
             </label>
             <div class="excel-drop-zone" id="examDropZone" onclick="document.getElementById('examImportFileInput').click()" style="border:2px dashed rgba(59,130,246,0.45);border-radius:10px;padding:32px 20px;text-align:center;cursor:pointer;background:rgba(255,255,255,0.02);transition:all 0.2s ease;">
                 <div style="font-size:40px;margin-bottom:8px;">📊</div>
-                <strong style="color:white;font-size:14px;display:block;margin-bottom:4px;">Excel Dosyasını Buraya Sürükleyin veya Dosya Seçmek İçin Tıklayın</strong>
+                <strong style="color:var(--text-primary);font-size:14px;display:block;margin-bottom:4px;">Excel Dosyasını Buraya Sürükleyin veya Dosya Seçmek İçin Tıklayın</strong>
                 <span style="font-size:12px;color:var(--text-muted);">Desteklenen formatlar: .xlsx, .xls</span>
                 <input type="file" id="examImportFileInput" accept=".xlsx,.xls" style="display:none;" onchange="handleExamFileSelect(event)">
             </div>
@@ -1196,7 +1196,7 @@
 <div id="userFormModal" class="modal-overlay">
     <div class="modal-content" style="max-width:540px;">
         <div class="modal-header">
-            <h3 id="userFormTitle" style="color:white;font-size:18px;">Yeni Kursiyer Ekle</h3>
+            <h3 id="userFormTitle" style="color:var(--text-primary);font-size:18px;">Yeni Kursiyer Ekle</h3>
             <button class="modal-close" onclick="closeModal('userFormModal')">&times;</button>
         </div>
         <div id="userFormAlert" class="alert-message alert-error"></div>
@@ -1266,7 +1266,7 @@
 <div id="bulkAddModal" class="modal-overlay">
     <div class="modal-content" style="max-width:640px;">
         <div class="modal-header">
-            <h3 style="color:white;font-size:18px;">Toplu Kursiyer Ekle</h3>
+            <h3 style="color:var(--text-primary);font-size:18px;">Toplu Kursiyer Ekle</h3>
             <button class="modal-close" onclick="closeModal('bulkAddModal')">&times;</button>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:18px;">
@@ -1316,7 +1316,7 @@
     <div class="modal-content" style="max-width:780px;">
         <div class="modal-header">
             <div>
-                <h3 id="matrixStudentName" style="color:white;font-size:18px;">Kursiyer İlerleme Detayı</h3>
+                <h3 id="matrixStudentName" style="color:var(--text-primary);font-size:18px;">Kursiyer İlerleme Detayı</h3>
                 <p id="matrixStudentSub" style="font-size:12px;color:var(--text-secondary);"></p>
             </div>
             <button class="modal-close" onclick="closeModal('progressDetailModal')">&times;</button>
@@ -1339,7 +1339,7 @@
 <div id="classFormModal" class="modal-overlay">
     <div class="modal-content" style="max-width:460px;">
         <div class="modal-header">
-            <h3 id="classFormTitle" style="color:white;font-size:18px;">Yeni Sınıf Ekle</h3>
+            <h3 id="classFormTitle" style="color:var(--text-primary);font-size:18px;">Yeni Sınıf Ekle</h3>
             <button class="modal-close" onclick="closeModal('classFormModal')">&times;</button>
         </div>
         <div id="classFormAlert" class="alert-message alert-error"></div>
@@ -1360,7 +1360,7 @@
     <div class="modal-content" style="max-width:560px;">
         <div class="modal-header">
             <div>
-                <h3 id="bulkClassTitle" style="color:white;font-size:18px;">Toplu İşlem</h3>
+                <h3 id="bulkClassTitle" style="color:var(--text-primary);font-size:18px;">Toplu İşlem</h3>
                 <p id="bulkClassInfo" style="font-size:12px;color:var(--text-secondary);margin-top:2px;"></p>
             </div>
             <button class="modal-close" onclick="closeModal('classBulkModal')">&times;</button>
@@ -1410,7 +1410,7 @@
 <div id="moduleFormModal" class="modal-overlay">
     <div class="modal-content" style="max-width:580px;">
         <div class="modal-header">
-            <h3 id="moduleFormTitle" style="color:white;font-size:18px;">Yeni Bölüm Ekle</h3>
+            <h3 id="moduleFormTitle" style="color:var(--text-primary);font-size:18px;">Yeni Bölüm Ekle</h3>
             <button class="modal-close" onclick="closeModal('moduleFormModal')">&times;</button>
         </div>
         <div id="moduleFormAlert" class="alert-message alert-error"></div>
@@ -1448,7 +1448,7 @@
 <div id="announcementFormModal" class="modal-overlay">
     <div class="modal-content" style="max-width:580px;">
         <div class="modal-header">
-            <h3 style="color:white;font-size:18px;">📢 Yeni Duyuru</h3>
+            <h3 style="color:var(--text-primary);font-size:18px;">📢 Yeni Duyuru</h3>
             <button class="modal-close" onclick="closeModal('announcementFormModal')">&times;</button>
         </div>
         <form onsubmit="handleSaveAnnouncement(event)">
@@ -1496,7 +1496,7 @@
     <div class="modal-content" style="max-width:740px;width:95%;max-height:88vh;display:flex;flex-direction:column;">
         <div class="modal-header" style="flex-shrink:0;">
             <div>
-                <h3 style="color:white;font-size:18px;display:flex;align-items:center;gap:8px;">
+                <h3 style="color:var(--text-primary);font-size:18px;display:flex;align-items:center;gap:8px;">
                     <span>📢</span> <span id="readersAnnTitle">Duyuru Okuma Durumu</span>
                 </h3>
                 <p id="readersAnnSub" style="font-size:12px;color:var(--text-secondary);margin-top:3px;"></p>
@@ -1542,7 +1542,7 @@
 <div id="adminDirectMessageModal" class="modal-overlay">
     <div class="modal-content" style="max-width:560px;">
         <div class="modal-header">
-            <h3 style="color:white;font-size:18px;display:flex;align-items:center;gap:8px;">
+            <h3 style="color:var(--text-primary);font-size:18px;display:flex;align-items:center;gap:8px;">
                 <span>✉️</span> Yeni Mesaj Gönder
             </h3>
             <button class="modal-close" onclick="closeModal('adminDirectMessageModal')">&times;</button>
@@ -1631,7 +1631,7 @@
 <div id="adminPasswordModal" class="modal-overlay">
     <div class="modal-content" style="max-width:460px;">
         <div class="modal-header">
-            <h3 style="color:white;font-size:18px;display:flex;align-items:center;gap:8px;">
+            <h3 style="color:var(--text-primary);font-size:18px;display:flex;align-items:center;gap:8px;">
                 <span>🔑</span> Yönetici Şifresini Değiştir
             </h3>
             <button class="modal-close" onclick="closeModal('adminPasswordModal')">&times;</button>
@@ -2816,7 +2816,7 @@
             const tr = document.createElement('tr');
             tr.innerHTML = '<td style="font-weight:700;color:#60a5fa;">'+mod.id+'</td>'
                 + '<td style="font-size:20px;">'+(mod.icon||'📄')+'</td>'
-                + '<td style="color:white;font-weight:600;">'+mod.title+'</td>'
+                + '<td style="color:var(--text-primary);font-weight:600;">'+mod.title+'</td>'
                 + '<td><span style="background:rgba(255,255,255,0.07);border-radius:12px;padding:2px 10px;font-size:12px;color:var(--text-secondary);">'+(mod.category||'—')+'</span></td>'
                 + '<td><span style="font-size:12px;font-weight:600;color:'+posColor+';">'+pos+'</span></td>'
                 + '<td><code style="font-size:11px;color:#86efac;">'+mod.path+'</code></td>'
@@ -2921,7 +2921,7 @@
                 + '<div style="flex:1;min-width:0;">'
                 + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">'
                 + '<span style="font-size:18px;">'+tm.icon+'</span>'
-                + '<span style="font-size:15px;font-weight:700;color:white;">'+ann.title+'</span>'
+                + '<span style="font-size:15px;font-weight:700;color:var(--text-primary);">'+ann.title+'</span>'
                 + (expired ? '<span style="font-size:11px;background:rgba(0,0,0,0.3);color:#f87171;padding:2px 8px;border-radius:20px;">Süresi Doldu</span>' : '')
                 + resentBadge
                 + '</div>'
@@ -3121,7 +3121,7 @@
             listContainer.innerHTML = `
                 <div style="text-align:center;padding:40px 10px;color:var(--text-muted);">
                     <div style="font-size:32px;margin-bottom:8px;">${isReadTab ? '🔍' : '🎉'}</div>
-                    <div style="font-size:14px;font-weight:600;color:white;">
+                    <div style="font-size:14px;font-weight:600;color:var(--text-primary);">
                         ${q ? 'Aramaya uygun kursiyer bulunamadı.' : (isReadTab ? 'Henüz bu duyuruyu okuyan kursiyer yok.' : 'Tebrikler! Tüm hedef kursiyerler bu duyuruyu okudu.')}
                     </div>
                 </div>
@@ -3153,7 +3153,7 @@
                             ${avatarHtml}
                         </div>
                         <div style="min-width:0;flex:1;">
-                            <div style="font-size:13.5px;font-weight:700;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            <div style="font-size:13.5px;font-weight:700;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                                 ${student.fullName}
                             </div>
                             <div style="font-size:11px;color:var(--text-muted);display:flex;align-items:center;gap:8px;margin-top:2px;">
@@ -3468,7 +3468,7 @@
                 + '<div class="user-avatar" style="width:36px;height:36px;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;">' + msgSenderAvatar + '</div>'
                 + '<div>'
                 + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
-                + '<span style="font-weight:700;color:white;font-size:15px;">' + msg.userName + '</span>'
+                + '<span style="font-weight:700;color:var(--text-primary);font-size:15px;">' + msg.userName + '</span>'
                 + (msg.userUsername && msg.userUsername !== 'tüm' ? '<code style="color:#93c5fd;font-size:12px;">@' + msg.userUsername + '</code>' : '')
                 + unreadDot
                 + originBadge
@@ -3482,7 +3482,7 @@
                 + '<button class="btn btn-danger btn-sm" onclick="deleteAdminMessage(\'' + msg.id + '\')" title="Mesajı Sil" style="padding:4px 9px;">🗑️</button>'
                 + '</div></div>'
                 + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">'
-                + '<h3 style="color:white;font-size:16px;font-weight:700;margin:0;">' + msg.subject + '</h3>'
+                + '<h3 style="color:var(--text-primary);font-size:16px;font-weight:700;margin:0;">' + msg.subject + '</h3>'
                 + refBadge
                 + '</div>'
                 + '<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:10px;padding:14px;color:var(--text-primary);font-size:13.5px;line-height:1.6;margin-bottom:12px;white-space:pre-wrap;">'
@@ -3649,11 +3649,11 @@
 
     // ==================== AYARLAR ====================
     const ADMIN_THEME_NAMES = {
-        'night-blue':    '🌌 Gece Mavisi',
-        'forest-green':  '🌲 Orman Yeşili',
-        'purple-sunset': '🌅 Mor Gün Batımı',
-        'amber-gold':    '⚡ Kehribar Ateşi',
-        'ocean-teal':    '🌊 Okyanus Turkuaz',
+        'night-blue':    '🌌 Safir Mavi',
+        'forest-green':  '🌲 Zümrüt & Nane Yeşili',
+        'purple-sunset': '🌅 Canlı Lavanta',
+        'amber-gold':    '⚡ Güneş & Kehribar',
+        'ocean-teal':    '🌊 Karayip Turkuaz',
         'clean-light':   '☀️ Modern Aydınlık'
     };
     const ALL_ADMIN_THEMES = Object.keys(ADMIN_THEME_NAMES);
@@ -4162,7 +4162,7 @@
                 <tr>
                     <td style="color:var(--text-muted);font-weight:700;">${idx + 1}</td>
                     <td>
-                        <strong style="color:white;font-size:14px;">${escapeHtml(ex.title)}</strong>
+                        <strong style="color:var(--text-primary);font-size:14px;">${escapeHtml(ex.title)}</strong>
                         <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
                             Oluşturulma: ${new Date(ex.createdAt || Date.now()).toLocaleDateString('tr-TR')}
                             ${ex.bonusPoints > 0 ? `<span style="color:#fbbf24;margin-left:6px;">🎁 +${ex.bonusPoints}P Bonus</span>` : ''}
@@ -4369,7 +4369,7 @@
                 <div class="question-editor-card" id="qCard_${q.id}" style="background:var(--bg-card);border:1px solid var(--border-color);border-left:5px solid ${typeColor};border-radius:8px;padding:16px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                         <div style="display:flex;align-items:center;gap:10px;">
-                            <span style="font-weight:800;color:white;font-size:14px;">SORU ${idx + 1}</span>
+                            <span style="font-weight:800;color:var(--text-primary);font-size:14px;">SORU ${idx + 1}</span>
                             <span class="badge" style="background:rgba(255,255,255,0.06);color:${typeColor};font-size:11.5px;padding:2px 8px;border-radius:4px;">
                                 ${typeLabel}
                             </span>
@@ -4425,7 +4425,7 @@
             const opts = q.options || [];
             return `
                 <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:6px;border:1px solid var(--border-color);">
-                    <div style="font-size:12px;font-weight:700;color:white;margin-bottom:8px;">Şıklar ve Doğru Cevap (Doğru olan şıkkı işaretleyiniz):</div>
+                    <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">Şıklar ve Doğru Cevap (Doğru olan şıkkı işaretleyiniz):</div>
                     <div style="display:flex;flex-direction:column;gap:8px;">
                         ${opts.map((opt, oIdx) => `
                             <div style="display:flex;align-items:center;gap:8px;">
@@ -4442,7 +4442,7 @@
         } else if (q.type === 'true_false') {
             return `
                 <div style="background:rgba(255,255,255,0.02);padding:10px;border-radius:6px;border:1px solid var(--border-color);">
-                    <div style="font-size:12px;font-weight:700;color:white;margin-bottom:8px;">Doğru Cevabı Seçiniz:</div>
+                    <div style="font-size:12px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">Doğru Cevabı Seçiniz:</div>
                     <div style="display:flex;gap:20px;">
                         <label style="display:flex;align-items:center;gap:6px;cursor:pointer;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);padding:8px 16px;border-radius:6px;">
                             <input type="radio" name="tf_${q.id}" value="D" ${q.correctAnswer === 'D' ? 'checked' : ''} onchange="updateQCorrectAnswer('${q.id}', 'D')">
@@ -4686,12 +4686,12 @@
                 <tr>
                     <td style="color:var(--text-muted);font-weight:700;">${idx + 1}</td>
                     <td>
-                        <strong style="color:white;font-size:13.5px;">${escapeHtml(s.studentName || 'Kursiyer')}</strong>
+                        <strong style="color:var(--text-primary);font-size:13.5px;">${escapeHtml(s.studentName || 'Kursiyer')}</strong>
                         <div style="font-size:11px;color:var(--text-muted);">@${escapeHtml(s.studentUsername || '')}</div>
                     </td>
                     <td><span class="badge" style="background:rgba(255,255,255,0.06);">${escapeHtml(lmsStorage.getClassName(s.classId || s.className) || '-')}</span></td>
                     <td>
-                        <div style="font-size:13px;color:white;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        <div style="font-size:13px;color:var(--text-primary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                             ${escapeHtml(s.examTitle || 'Sınav')}
                         </div>
                     </td>
@@ -4757,7 +4757,7 @@
         body.innerHTML = `
             <!-- KURSİYER ÖZET BİLGİ KARTI -->
             <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border-color);border-radius:8px;padding:14px;margin-bottom:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
-                <div><strong>Kursiyer:</strong> <span style="color:white;">${escapeHtml(sub.studentName)}</span></div>
+                <div><strong>Kursiyer:</strong> <span style="color:var(--text-primary);">${escapeHtml(sub.studentName)}</span></div>
                 <div><strong>Sınıf:</strong> <span style="color:#34d399;font-weight:bold;">${escapeHtml(resolvedClassName)}</span></div>
                 <div><strong>Sınav:</strong> <span style="color:#60a5fa;">${escapeHtml(sub.examTitle)}</span></div>
                 <div><strong>Test Notu:</strong> <span style="color:#60a5fa;font-weight:bold;">${sub.autoScore || 0} Puan</span></div>
@@ -4778,7 +4778,7 @@
                     return `
                         <div style="background:rgba(0,0,0,0.25);border:1px solid ${isOpen ? '#f59e0b' : (r.isCorrect ? '#10b981' : '#ef4444')};border-radius:8px;padding:14px;">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                                <span style="font-weight:bold;color:white;font-size:13px;">Soru ${idx + 1} (${r.maxPoints || 10} Puan)</span>
+                                <span style="font-weight:bold;color:var(--text-primary);font-size:13px;">Soru ${idx + 1} (${r.maxPoints || 10} Puan)</span>
                                 <span style="font-size:12px;font-weight:bold;color:${isOpen ? '#fbbf24' : (r.isCorrect ? '#34d399' : '#f87171')};">
                                     ${isOpen ? '✍️ Açık Uçlu Soru' : (r.isCorrect ? '✓ DOĞRU (' + r.earnedPoints + ' Puan)' : '✕ YANLIŞ (0 Puan)')}
                                 </span>
@@ -4792,7 +4792,7 @@
                             <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:6px;font-size:13px;">
                                 <div style="margin-bottom:4px;">
                                     <strong style="color:var(--text-muted);">Kursiyerin Yanıtı:</strong>
-                                    <span style="color:white;font-weight:600;margin-left:6px;">${escapeHtml(r.studentAnswer || '(Boş Bırakıldı)')}</span>
+                                    <span style="color:var(--text-primary);font-weight:600;margin-left:6px;">${escapeHtml(r.studentAnswer || '(Boş Bırakıldı)')}</span>
                                 </div>
 
                                 ${!isOpen ? `
@@ -4804,7 +4804,7 @@
                                     <div style="margin-top:6px;border-top:1px dashed var(--border-color);padding-top:6px;">
                                         <div style="color:#fbbf24;font-size:12px;margin-bottom:4px;"><strong>Öğretmen Referans Cevabı:</strong> ${escapeHtml(originalQ.sampleAnswer || '(Belirtilmemiş)')}</div>
                                         <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap;">
-                                            <span style="font-size:12px;color:white;font-weight:bold;">Bu Soru İçin Verilen Puan:</span>
+                                            <span style="font-size:12px;color:var(--text-primary);font-weight:bold;">Bu Soru İçin Verilen Puan:</span>
                                             <input type="number" id="manualQScore_${r.questionId}" value="${r.earnedPoints || 0}" min="0" max="${r.maxPoints || 20}" style="width:70px;padding:4px 8px;font-weight:bold;color:#34d399;background:var(--bg-main);border:1px solid #34d399;border-radius:4px;" onchange="updateGradingQuestionScore('${r.questionId}', this.value, ${r.maxPoints || 20})">
                                             <button type="button" class="btn btn-success btn-sm" onclick="setGradingScorePreset('${r.questionId}', ${r.maxPoints || 20}, ${r.maxPoints || 20})">✓ Tam Puan (${r.maxPoints})</button>
                                             <button type="button" class="btn btn-ghost btn-sm" onclick="setGradingScorePreset('${r.questionId}', Math.round((${r.maxPoints || 20})/2), ${r.maxPoints || 20})" style="color:#fbbf24;">½ Yarım Puan (${Math.round((r.maxPoints||20)/2)})</button>

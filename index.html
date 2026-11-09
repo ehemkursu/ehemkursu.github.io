@@ -53,7 +53,7 @@
         <div class="auth-card">
             <div class="auth-header">
                 <div class="auth-logo-badge">🎓</div>
-                <h2 style="font-size: 24px; color: white; margin-bottom: 6px;">Kurs Portalı Girişi</h2>
+                <h2 style="font-size: 24px; color:var(--text-primary); margin-bottom: 6px;">Kurs Portalı Girişi</h2>
                 <p style="font-size: 13px; color: var(--text-secondary);">Eğitim içeriklerine erişmek için giriş yapınız</p>
             </div>
 
@@ -192,7 +192,7 @@
             <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:20px 24px;margin-bottom:20px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
                     <div>
-                        <h2 style="color:white;font-size:20px;margin:0 0 4px;display:flex;align-items:center;gap:8px;">
+                        <h2 style="color:var(--text-primary);font-size:20px;margin:0 0 4px;display:flex;align-items:center;gap:8px;">
                             <span>📝</span> Kursiyer Sınav Salonu & Değerlendirme
                         </h2>
                         <p style="color:var(--text-muted);font-size:13px;margin:0;">
@@ -209,7 +209,7 @@
 
             <!-- AKTİF SINAVLAR KARTLARI -->
             <div style="margin-bottom:24px;">
-                <h3 style="color:white;font-size:16px;margin:0 0 12px;display:flex;align-items:center;gap:8px;">
+                <h3 style="color:var(--text-primary);font-size:16px;margin:0 0 12px;display:flex;align-items:center;gap:8px;">
                     <span>🟢</span> Yayındaki Aktif Sınavlar
                 </h3>
                 <div id="portalActiveExamsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
@@ -219,7 +219,7 @@
 
             <!-- GEÇMİŞ SINAV EVRAKLARIM & NOTLARIM -->
             <div>
-                <h3 style="color:white;font-size:16px;margin:0 0 12px;display:flex;align-items:center;gap:8px;">
+                <h3 style="color:var(--text-primary);font-size:16px;margin:0 0 12px;display:flex;align-items:center;gap:8px;">
                     <span>📜</span> Tamamladığım Sınav Evrakları & Notlarım
                 </h3>
                 <div class="table-card" style="padding:0;overflow-x:auto;">
@@ -265,28 +265,28 @@
                     <p class="theme-switcher-hint">Arayüz renklerini değiştirin. Tercihiniz anında uygulanır ve kaydedilir.</p>
                     <div class="theme-pill-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;">
                         <button class="theme-pill" id="pill-night-blue" onclick="portalApplyTheme('night-blue')">
-                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#3b82f6,#6366f1);"></span>
-                            🌌 Gece Mavisi
+                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#2563eb,#4f46e5);"></span>
+                            🌌 Safir Mavi
                             <span class="theme-pill-check" id="pillcheck-night-blue">✓</span>
                         </button>
                         <button class="theme-pill" id="pill-forest-green" onclick="portalApplyTheme('forest-green')">
-                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#10b981,#22d3ee);"></span>
-                            🌲 Orman Yeşili
+                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#059669,#10b981);"></span>
+                            🌲 Zümrüt &amp; Nane
                             <span class="theme-pill-check" id="pillcheck-forest-green">✓</span>
                         </button>
                         <button class="theme-pill" id="pill-purple-sunset" onclick="portalApplyTheme('purple-sunset')">
-                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#a855f7,#ec4899);"></span>
-                            🌅 Mor Gün Batımı
+                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#9333ea,#c026d3);"></span>
+                            🌅 Canlı Lavanta
                             <span class="theme-pill-check" id="pillcheck-purple-sunset">✓</span>
                         </button>
                         <button class="theme-pill" id="pill-amber-gold" onclick="portalApplyTheme('amber-gold')">
-                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#f59e0b,#ea580c);"></span>
-                            ⚡ Kehribar Ateşi
+                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#d97706,#ea580c);"></span>
+                            ⚡ Güneş &amp; Kehribar
                             <span class="theme-pill-check" id="pillcheck-amber-gold">✓</span>
                         </button>
                         <button class="theme-pill" id="pill-ocean-teal" onclick="portalApplyTheme('ocean-teal')">
-                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#06b6d4,#0284c7);"></span>
-                            🌊 Okyanus Turkuaz
+                            <span class="theme-pill-dot" style="background:linear-gradient(135deg,#0d9488,#0284c7);"></span>
+                            🌊 Karayip Turkuaz
                             <span class="theme-pill-check" id="pillcheck-ocean-teal">✓</span>
                         </button>
                         <button class="theme-pill" id="pill-clean-light" onclick="portalApplyTheme('clean-light')">
@@ -385,7 +385,7 @@
         <div class="modal-content" style="max-width: 680px;">
             <div class="modal-header">
                 <div>
-                    <h3 style="color: white; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                    <h3 style="color:var(--text-primary); font-size: 18px; display: flex; align-items: center; gap: 8px;">
                         <span>💬</span> Öğretmene Mesaj Gönder / Soru Sor
                     </h3>
                     <p style="font-size: 12px; color: var(--text-secondary); margin-top: 3px;">
@@ -459,7 +459,7 @@
     <div id="studentProfileModal" class="modal-overlay" onclick="if(event.target===this)closeStudentProfileModal()">
         <div class="modal-content" style="max-width: 520px;">
             <div class="modal-header">
-                <h3 style="color: white; font-size: 18px; display: flex; align-items: center; gap: 8px;">
+                <h3 style="color:var(--text-primary); font-size: 18px; display: flex; align-items: center; gap: 8px;">
                     <span>👤</span> Profil Bilgilerim
                 </h3>
                 <button class="modal-close" onclick="closeStudentProfileModal()">&times;</button>
@@ -569,11 +569,11 @@
 
         // ==================== PORTAL TEMA & TASARIM SEÇİCİ ====================
         const THEME_NAMES = {
-            'night-blue':    '🌌 Gece Mavisi',
-            'forest-green':  '🌲 Orman Yeşili',
-            'purple-sunset': '🌅 Mor Gün Batımı',
-            'amber-gold':    '⚡ Kehribar Ateşi',
-            'ocean-teal':    '🌊 Okyanus Turkuaz',
+            'night-blue':    '🌌 Safir Mavi',
+            'forest-green':  '🌲 Zümrüt & Nane Yeşili',
+            'purple-sunset': '🌅 Canlı Lavanta',
+            'amber-gold':    '⚡ Güneş & Kehribar',
+            'ocean-teal':    '🌊 Karayip Turkuaz',
             'clean-light':   '☀️ Modern Aydınlık'
         };
         const ALL_THEMES = Object.keys(THEME_NAMES);
@@ -1175,7 +1175,7 @@
                         <span style="font-size:22px;flex-shrink:0;margin-top:2px;">${tm.icon}</span>
                         <div style="flex:1;">
                             <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;flex-wrap:wrap;">
-                                <span style="font-weight:700;color:white;font-size:15px;">${ann.title}</span>
+                                <span style="font-weight:700;color:var(--text-primary);font-size:15px;">${ann.title}</span>
                                 ${dateStr ? `<span style="font-size:11px;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.25);padding:2px 8px;border-radius:10px;">📅 ${dateStr}</span>` : ''}
                             </div>
                             <div style="font-size:13px;color:${tm.color};line-height:1.6;">${ann.message.replace(/\n/g,'<br>')}</div>
@@ -1609,7 +1609,7 @@
                 card.innerHTML = `
                     <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px;">
                         <div>
-                            <div style="font-weight: 700; color: white; font-size: 15px; margin-bottom: 4px;">
+                            <div style="font-weight: 700; color: var(--text-primary); font-size: 15px; margin-bottom: 4px;">
                                 ${msg.subject}
                             </div>
                             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
@@ -1900,7 +1900,7 @@
             <!-- 1. GİRİŞ ŞİFRESİ (PIN) KAPISI -->
             <div id="runnerPinGate" style="display:none;text-align:center;padding:30px 10px;">
                 <div style="font-size:48px;margin-bottom:12px;">🔐</div>
-                <h2 style="color:white;font-size:22px;margin:0 0 8px;">Sınava Giriş Şifresi</h2>
+                <h2 style="color:var(--text-primary);font-size:22px;margin:0 0 8px;">Sınava Giriş Şifresi</h2>
                 <p style="color:var(--text-muted);font-size:13.5px;max-width:440px;margin:0 auto 20px;">
                     Öğretmeninizin bu sınav için belirlediği giriş şifresini yazınız:
                 </p>
@@ -1920,7 +1920,7 @@
             <div id="runnerIntroView" style="display:none;">
                 <div style="text-align:center;margin-bottom:20px;border-bottom:1px solid var(--border-color);padding-bottom:16px;">
                     <div style="font-size:12px;color:var(--text-muted);font-weight:bold;letter-spacing:1px;">T.C. MİLLİ EĞİTİM BAKANLIĞI EDREMİT HALK EĞİTİMİ MERKEZİ</div>
-                    <h1 id="runnerIntroTitle" style="color:white;font-size:24px;margin:6px 0 4px;">Sınav Başlığı</h1>
+                    <h1 id="runnerIntroTitle" style="color:var(--text-primary);font-size:24px;margin:6px 0 4px;">Sınav Başlığı</h1>
                     <div id="runnerIntroStudentBadge" class="badge" style="background:rgba(59,130,246,0.15);color:#60a5fa;font-size:12px;">👤 Kursiyer: Ali Veli</div>
                 </div>
 
@@ -1934,11 +1934,11 @@
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px;text-align:center;">
                     <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:8px;">
                         <span style="font-size:11px;color:var(--text-muted);display:block;">TOPLAM SORU</span>
-                        <strong id="runnerIntroTotalQ" style="color:white;font-size:18px;">0</strong>
+                        <strong id="runnerIntroTotalQ" style="color:var(--text-primary);font-size:18px;">0</strong>
                     </div>
                     <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:8px;">
                         <span style="font-size:11px;color:var(--text-muted);display:block;">SINAV SÜRESİ</span>
-                        <strong id="runnerIntroDuration" style="color:white;font-size:18px;">40 Dk</strong>
+                        <strong id="runnerIntroDuration" style="color:var(--text-primary);font-size:18px;">40 Dk</strong>
                     </div>
                     <div style="background:rgba(0,0,0,0.2);padding:10px;border-radius:8px;">
                         <span style="font-size:11px;color:var(--text-muted);display:block;">GEZİNME KURALI</span>
@@ -1963,9 +1963,9 @@
                 <!-- ÜST BAR: BAŞLIK, SAYAÇ, ÇIKIŞ -->
                 <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border-color);padding-bottom:12px;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
                     <div>
-                        <strong id="runnerLiveExamTitle" style="color:white;font-size:15px;">Sınav Başlığı</strong>
+                        <strong id="runnerLiveExamTitle" style="color:var(--text-primary);font-size:15px;">Sınav Başlığı</strong>
                         <div style="font-size:12px;color:var(--text-muted);">
-                            Soru <span id="runnerCurQDisplay" style="color:white;font-weight:bold;">1</span> / <span id="runnerTotalQDisplay">10</span>
+                            Soru <span id="runnerCurQDisplay" style="color:var(--text-primary);font-weight:bold;">1</span> / <span id="runnerTotalQDisplay">10</span>
                         </div>
                     </div>
                     <div style="display:flex;align-items:center;gap:12px;">
@@ -1997,7 +1997,7 @@
                     </div>
 
                     <!-- SORU METNİ -->
-                    <div id="runnerQuestionText" style="color:white;font-size:15px;line-height:1.6;margin-bottom:14px;white-space:pre-line;">
+                    <div id="runnerQuestionText" style="color:var(--text-primary);font-size:15px;line-height:1.6;margin-bottom:14px;white-space:pre-line;">
                         Soru metni yükleniyor...
                     </div>
 
@@ -2050,7 +2050,7 @@
             <!-- 4. SINAV BİTİŞ & SONUÇ EKRANI -->
             <div id="runnerResultView" style="display:none;text-align:center;padding:24px 10px;">
                 <div style="font-size:52px;margin-bottom:12px;" id="runnerResultIcon">🎉</div>
-                <h2 id="runnerResultHeading" style="color:white;font-size:24px;margin:0 0 8px;">Sınavınız Başarıyla Tamamlandı!</h2>
+                <h2 id="runnerResultHeading" style="color:var(--text-primary);font-size:24px;margin:0 0 8px;">Sınavınız Başarıyla Tamamlandı!</h2>
                 <p id="runnerResultSubtext" style="color:var(--text-muted);font-size:14px;max-width:540px;margin:0 auto 20px;line-height:1.6;">
                     Sınav evrakınız güvenle sistemimize depolandı ve öğretmeninize ulaştırıldı.
                 </p>
@@ -2079,7 +2079,7 @@
         <div class="modal-content" style="max-width:860px;max-height:92vh;overflow-y:auto;">
             <div class="modal-header">
                 <div>
-                    <h3 style="color:white;font-size:18px;margin:0;">📄 Sınav Evrakım & Not Çizelgem</h3>
+                    <h3 style="color:var(--text-primary);font-size:18px;margin:0;">📄 Sınav Evrakım & Not Çizelgem</h3>
                     <span style="font-size:12px;color:var(--text-muted);" id="studentSheetModalMeta">Evrak No: SUB-12345</span>
                 </div>
                 <button class="modal-close" onclick="closeStudentExamSheetModal()">&times;</button>
@@ -2191,7 +2191,7 @@
                             </span>
                             <span style="font-size:12px;color:#94a3b8;">⏱️ ${targetExam.durationMinutes || 40} Dakika</span>
                         </div>
-                        <h3 style="color:white;font-size:16px;margin:4px 0 2px;font-weight:800;">${escapeHtml(targetExam.title)}</h3>
+                        <h3 style="color:var(--text-primary);font-size:16px;margin:4px 0 2px;font-weight:800;">${escapeHtml(targetExam.title)}</h3>
                         <p style="margin:0;font-size:12.5px;color:var(--text-secondary);">
                             Öğretmeniniz tarafından değerlendirme sınavı tanımlanmıştır. Sınavınızı olup evrakınızı oluşturabilirsiniz.
                         </p>
@@ -2241,7 +2241,7 @@
                                     </span>
                                     <span style="font-size:12px;color:var(--text-muted);">${qCount} Soru • ${ex.totalPoints || 100}P</span>
                                 </div>
-                                <h3 style="color:white;font-size:16px;margin:0 0 6px;">${escapeHtml(ex.title)}</h3>
+                                <h3 style="color:var(--text-primary);font-size:16px;margin:0 0 6px;">${escapeHtml(ex.title)}</h3>
                                 <p style="font-size:12.5px;color:var(--text-secondary);margin-bottom:14px;line-height:1.5;">
                                     ${escapeHtml(ex.instructions || 'Değerlendirme sınavı')}
                                     ${ex.bonusPoints > 0 ? `<span style="color:#fbbf24;display:block;margin-top:4px;">🎁 Modül Bonusu: +${ex.bonusPoints} Puan</span>` : ''}
@@ -2253,7 +2253,7 @@
                                     <div style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.3);border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
                                         <span style="font-size:12px;color:#34d399;font-weight:700;">✓ Tamamlandı</span>
                                         ${(ex.showResultsImmediately || mySub.reviewedByAdmin) ? `
-                                            <strong style="color:white;font-size:14px;">Puan: ${mySub.finalScore}</strong>
+                                            <strong style="color:var(--text-primary);font-size:14px;">Puan: ${mySub.finalScore}</strong>
                                         ` : `
                                             <span style="font-size:11px;color:#fbbf24;">İnceleme Bekliyor</span>
                                         `}
@@ -2299,7 +2299,7 @@
                     return `
                         <tr>
                             <td style="color:var(--text-muted);font-weight:700;">${idx + 1}</td>
-                            <td><strong style="color:white;">${escapeHtml(s.examTitle || 'Sınav')}</strong></td>
+                            <td><strong style="color:var(--text-primary);">${escapeHtml(s.examTitle || 'Sınav')}</strong></td>
                             <td style="font-size:12px;color:var(--text-muted);">
                                 ${new Date(s.submittedAt || Date.now()).toLocaleDateString('tr-TR')} ${new Date(s.submittedAt || Date.now()).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                             </td>
