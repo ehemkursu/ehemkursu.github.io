@@ -1,39 +1,63 @@
 {
   "rules": {
-    ".read": true,
-    ".write": true,
     "kursiyerler": {
+      ".read": true,
+      ".write": true,
       ".indexOn": ["username", "classId"]
     },
     "classes": {
+      ".read": true,
+      ".write": true,
       ".indexOn": ["name"]
     },
     "announcements": {
+      ".read": true,
+      ".write": true,
       ".indexOn": ["createdAt"]
     },
     "messages": {
+      ".read": true,
+      ".write": true,
       ".indexOn": ["recipientId", "senderId", "createdAt"]
     },
-    "deleted_users": {
-      ".indexOn": [".value"]
-    },
     "custom_modules": {
+      ".read": true,
+      ".write": true,
       ".indexOn": ["id"]
     },
     "exams_v2": {
+      ".read": true,
+      ".write": true,
       ".indexOn": ["createdAt", "targetClassId", "status"]
     },
     "exam_submissions_v2": {
+      ".read": true,
+      ".write": true,
       ".indexOn": ["examId", "studentId", "submittedAt", "status"]
     },
+    "deleted_users": {
+      ".read": true,
+      ".write": true
+    },
+    "deleted_submissions_v2": {
+      ".read": true,
+      ".write": true
+    },
     "deleted_exams_v2": {
-      ".indexOn": [".value"]
+      ".read": true,
+      ".write": true
     },
     "exam_header_settings_v1": {
-      ".indexOn": [".value"]
+      ".read": true,
+      ".write": true
+    },
+    "theme_settings": {
+      ".read": true,
+      ".write": true
     },
     "_system_ping": {
-      ".indexOn": ["ts"]
+      ".read": true,
+      ".write": true
     }
   }
 }
