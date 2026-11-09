@@ -29,6 +29,7 @@ const STORAGE_KEYS = {
     EXAMS: 'ehem_exams_v2',
     EXAM_SUBMISSIONS: 'ehem_exam_submissions_v2',
     DELETED_EXAMS: 'ehem_deleted_exams_v2',
+    DELETED_SUBMISSIONS: 'ehem_deleted_submissions_v2',
     EXAM_HEADER_SETTINGS: 'ehem_exam_header_settings_v1'
 };
 
@@ -2088,6 +2089,11 @@ class StorageService {
         }
     }
 
+    isFirebaseEnabled() {
+        const cfg = this.getFirebaseConfig();
+        return !!(cfg && cfg.enabled && cfg.databaseURL);
+    }
+
     saveFirebaseConfig(cfg) {
         localStorage.setItem(STORAGE_KEYS.FIREBASE_CONFIG, JSON.stringify(cfg));
         this.firebaseConfig = cfg;
@@ -3661,7 +3667,7 @@ class StorageService {
         return Object.assign({}, DEFAULT_EXAM_HEADER_SETTINGS);
     }
 
-    saveExamHeaderSettings(settings) {
+    async saveExamHeaderSettings(settings) {
         if (!settings) return this.getExamHeaderSettings();
         const current = this.getExamHeaderSettings();
         const updated = {
@@ -3676,11 +3682,15 @@ class StorageService {
         } catch (e) {}
 
         if (this.isFirebaseEnabled()) {
-            this.fetchFirebase('/exam_header_settings_v1.json', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updated)
-            }).catch(() => {});
+            try {
+                await this.fetchFirebase('/exam_header_settings_v1.json', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updated)
+                });
+            } catch (err) {
+                console.warn('[Storage] Firebase exam_header_settings_v1 kaydetme hatasi:', err);
+            }
         }
 
         if (typeof window !== 'undefined') {
@@ -3694,9 +3704,21 @@ class StorageService {
         if (!this.isFirebaseEnabled()) return this.getExamHeaderSettings();
         try {
             const res = await this.fetchFirebase('/exam_header_settings_v1.json');
-            if (res.ok) {
+            if (res && res.ok) {
                 const cloudSettings = await res.json();
                 if (cloudSettings && typeof cloudSettings === 'object' && cloudSettings.institutionName) {
+                    const localSettings = this.getExamHeaderSettings();
+                    const localTs = localSettings.updatedAt ? new Date(localSettings.updatedAt).getTime() : 0;
+                    const cloudTs = cloudSettings.updatedAt ? new Date(cloudSettings.updatedAt).getTime() : 0;
+                    // Eğer yerel ayarlar buluttan daha yeniyse, yereli koru ve bulutu güncelle
+                    if (localTs > cloudTs) {
+                        await this.fetchFirebase('/exam_header_settings_v1.json', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(localSettings)
+                        }).catch(() => {});
+                        return localSettings;
+                    }
                     localStorage.setItem(STORAGE_KEYS.EXAM_HEADER_SETTINGS, JSON.stringify(cloudSettings));
                     return cloudSettings;
                 }
@@ -3724,10 +3746,38 @@ class StorageService {
         }
     }
 
+    recordDeletedSubmission(subId) {
+        if (!subId) return;
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.DELETED_SUBMISSIONS);
+            const set = new Set(raw ? JSON.parse(raw) : []);
+            set.add(subId);
+            localStorage.setItem(STORAGE_KEYS.DELETED_SUBMISSIONS, JSON.stringify(Array.from(set)));
+        } catch(e) {}
+
+        if (this.isFirebaseEnabled()) {
+            this.fetchFirebase(`/deleted_submissions_v2/${subId}.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: subId, deletedAt: new Date().toISOString() })
+            }).catch(() => {});
+        }
+    }
+
+    getDeletedSubmissionIds() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.DELETED_SUBMISSIONS);
+            return new Set(raw ? JSON.parse(raw) : []);
+        } catch(e) {
+            return new Set();
+        }
+    }
+
     purgeOrphanedSubmissions() {
         try {
             const subs = this.getAllExamSubmissions();
-            const deleted = this.getDeletedExamIds();
+            const deletedExams = this.getDeletedExamIds();
+            const deletedSubs = this.getDeletedSubmissionIds();
             const existingIds = new Set((this._examsCache || []).map(e => e && e.id).filter(Boolean));
             // localStorage'dan da oku
             try {
@@ -3741,8 +3791,9 @@ class StorageService {
             } catch(e) {}
 
             const cleanSubs = subs.filter(s => {
-                if (!s || !s.examId) return false;
-                if (deleted.has(s.examId)) return false;
+                if (!s || !s.examId || !s.id) return false;
+                if (deletedSubs.has(s.id)) return false;
+                if (deletedExams.has(s.examId)) return false;
                 if (existingIds.size > 0 && !existingIds.has(s.examId)) return false;
                 return true;
             });
@@ -4025,18 +4076,26 @@ class StorageService {
     // ==================== SINAV EVRAKLARI & SONUÇLAR (V2) ====================
 
     getAllExamSubmissions() {
+        const deletedSubIds = this.getDeletedSubmissionIds();
+        const deletedExamIds = this.getDeletedExamIds();
+        const filterValid = (arr) => {
+            if (!Array.isArray(arr)) return [];
+            return arr.filter(s => s && s.id && !deletedSubIds.has(s.id) && !deletedExamIds.has(s.examId));
+        };
+
         if (this._examSubmissionsCache && Array.isArray(this._examSubmissionsCache) && this._examSubmissionsCache.length > 0) {
-            return this._examSubmissionsCache;
+            return filterValid(this._examSubmissionsCache);
         }
         try {
             const raw = localStorage.getItem(STORAGE_KEYS.EXAM_SUBMISSIONS);
             const subs = raw ? JSON.parse(raw) : [];
             if (Array.isArray(subs)) {
-                this._examSubmissionsCache = subs;
-                return subs;
+                const filtered = filterValid(subs);
+                this._examSubmissionsCache = filtered;
+                return filtered;
             }
         } catch(e) {}
-        return this._examSubmissionsCache || [];
+        return filterValid(this._examSubmissionsCache || []);
     }
 
     getExamSubmissionsByExamId(examId) {
@@ -4049,12 +4108,14 @@ class StorageService {
         if (!studentId) return [];
         const subs = this.getAllExamSubmissions();
         const deleted = this.getDeletedExamIds();
+        const deletedSubs = this.getDeletedSubmissionIds();
         const existingExamIds = new Set(this.getAllExams().map(e => e && e.id).filter(Boolean));
 
-        // Eğer bir sınav silinmişse veya sistemde artık mevcut değilse, kursiyere o evrakı GÖSTERME
+        // Eğer bir sınav veya evrak silinmişse veya sistemde artık mevcut değilse, kursiyere o evrakı GÖSTERME
         return subs.filter(s => {
             if (!s || String(s.studentId) !== String(studentId)) return false;
             if (!s.examId) return false;
+            if (deletedSubs.has(s.id)) return false;
             if (deleted.has(s.examId)) return false;
             if (!existingExamIds.has(s.examId)) return false;
             return true;
@@ -4152,14 +4213,97 @@ class StorageService {
         return { success: true, submission: current };
     }
 
-    deleteExamSubmission(subId) {
-        if (!subId) return { success: false };
+    async deleteExamSubmission(subId) {
+        if (!subId) return { success: false, count: 0 };
         let subs = this.getAllExamSubmissions();
         const initialCount = subs.length;
         subs = subs.filter(s => s && s.id !== subId);
         this.saveAllExamSubmissions(subs);
-        this.deleteSubmissionFromFirebase(subId);
+        this.recordDeletedSubmission(subId);
+        await this.deleteSubmissionFromFirebase(subId);
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('ehem:submission-deleted', { detail: { id: subId } }));
+        }
         return { success: true, count: initialCount - subs.length };
+    }
+
+    async deleteExamSubmissionsByClass(classIdOrName, examId = 'all') {
+        if (!classIdOrName) return { success: false, count: 0 };
+        const subs = this.getAllExamSubmissions();
+        const deletedIds = [];
+        const kept = [];
+
+        subs.forEach(s => {
+            if (!s) return;
+            const sClass = s.classId || s.className || '';
+            const sResolved = this.getClassName(sClass) || sClass;
+            const targetResolved = this.getClassName(classIdOrName) || classIdOrName;
+
+            const st = this.getUserById(s.studentId);
+            const stClass = st ? (st.classId || st.className || '') : '';
+            const stResolved = this.getClassName(stClass) || stClass;
+
+            const matchClass = (classIdOrName === 'all') ||
+                               (sClass === classIdOrName) || 
+                               (s.className === classIdOrName) ||
+                               (sResolved.toLowerCase() === targetResolved.toLowerCase()) ||
+                               (stClass === classIdOrName) ||
+                               (stResolved.toLowerCase() === targetResolved.toLowerCase());
+
+            const matchExam = (examId === 'all') || (s.examId === examId);
+
+            if (matchClass && matchExam) {
+                deletedIds.push(s.id);
+            } else {
+                kept.push(s);
+            }
+        });
+
+        if (deletedIds.length > 0) {
+            this.saveAllExamSubmissions(kept);
+            for (const id of deletedIds) {
+                this.recordDeletedSubmission(id);
+                await this.deleteSubmissionFromFirebase(id);
+            }
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('ehem:submissions-bulk-deleted', { detail: { count: deletedIds.length } }));
+            }
+        }
+
+        return { success: true, count: deletedIds.length };
+    }
+
+    async deleteExamSubmissionsForUser(studentId, examId = 'all') {
+        if (!studentId) return { success: false, count: 0 };
+        const subs = this.getAllExamSubmissions();
+        const deletedIds = [];
+        const kept = [];
+
+        subs.forEach(s => {
+            if (!s) return;
+            const matchStudent = (String(s.studentId) === String(studentId)) || 
+                                 (s.studentUsername && s.studentUsername.toLowerCase() === String(studentId).toLowerCase());
+            const matchExam = (examId === 'all') || (s.examId === examId);
+
+            if (matchStudent && matchExam) {
+                deletedIds.push(s.id);
+            } else {
+                kept.push(s);
+            }
+        });
+
+        if (deletedIds.length > 0) {
+            this.saveAllExamSubmissions(kept);
+            for (const id of deletedIds) {
+                this.recordDeletedSubmission(id);
+                await this.deleteSubmissionFromFirebase(id);
+            }
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('ehem:submissions-bulk-deleted', { detail: { count: deletedIds.length } }));
+            }
+        }
+
+        return { success: true, count: deletedIds.length };
     }
 
     saveAllExamSubmissions(subs) {
@@ -4194,19 +4338,65 @@ class StorageService {
 
     async pullSubmissionsFromFirebase() {
         try {
+            // 1. Buluttan silinmiş evraklar listesini (deleted_submissions_v2) çek
+            let cloudDeletedSet = new Set();
+            try {
+                const delRes = await this.fetchFirebase('/deleted_submissions_v2.json');
+                if (delRes && delRes.ok) {
+                    const delRaw = await delRes.json();
+                    if (delRaw && typeof delRaw === 'object') {
+                        Object.keys(delRaw).forEach(id => {
+                            cloudDeletedSet.add(id);
+                            this.recordDeletedSubmission(id);
+                        });
+                    }
+                }
+            } catch(e) {}
+
+            const localDeleted = this.getDeletedSubmissionIds();
+            const allDeletedSubs = new Set([...cloudDeletedSet, ...localDeleted]);
+
+            // Sınavın kendisi silinmişse de evrakları silinmiş say
+            const deletedExams = this.getDeletedExamIds();
+
+            // 2. Buluttan evrakları çek
             const res = await this.fetchFirebase('/exam_submissions_v2.json');
             if (res && res.ok) {
                 const raw = await res.json();
-                if (raw) {
+                if (raw !== null && typeof raw === 'object') {
                     const cloudSubs = Array.isArray(raw) ? raw.filter(Boolean) : Object.values(raw).filter(Boolean);
-                    const localSubs = this.getAllExamSubmissions();
-                    const subMap = new Map();
-                    localSubs.forEach(ls => { if (ls && ls.id) subMap.set(ls.id, ls); });
-                    cloudSubs.forEach(cs => { if (cs && cs.id) subMap.set(cs.id, cs); });
-                    const merged = Array.from(subMap.values());
-                    merged.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
-                    this.saveAllExamSubmissions(merged);
-                    return merged;
+                    const validCloudSubs = cloudSubs.filter(s => s && s.id && !allDeletedSubs.has(s.id) && !deletedExams.has(s.examId));
+
+                    const isStudent = (typeof window !== 'undefined' && 
+                        (window.location.pathname.includes('index.html') || !window.location.pathname.includes('admin.html')));
+
+                    let nextSubs;
+                    if (isStudent) {
+                        // Kursiyer ekranında SADECE bulutta var olan geçerli evraklar yer alır
+                        nextSubs = validCloudSubs;
+                    } else {
+                        // Admin ekranında: silinmiş olanları temizle, buluttan gelenlerle birleştir
+                        const localSubs = this.getAllExamSubmissions().filter(s => s && s.id && !allDeletedSubs.has(s.id) && !deletedExams.has(s.examId));
+                        const subMap = new Map();
+                        validCloudSubs.forEach(cs => subMap.set(cs.id, cs));
+                        localSubs.forEach(ls => {
+                            if (!subMap.has(ls.id) && !allDeletedSubs.has(ls.id) && !deletedExams.has(ls.examId)) {
+                                subMap.set(ls.id, ls);
+                            }
+                        });
+                        nextSubs = Array.from(subMap.values());
+                    }
+
+                    nextSubs.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+                    this.saveAllExamSubmissions(nextSubs);
+                    return nextSubs;
+                } else if (raw === null) {
+                    const isStudent = (typeof window !== 'undefined' && 
+                        (window.location.pathname.includes('index.html') || !window.location.pathname.includes('admin.html')));
+                    if (isStudent) {
+                        this.saveAllExamSubmissions([]);
+                        return [];
+                    }
                 }
             }
         } catch (e) {}
@@ -4243,6 +4433,18 @@ class StorageService {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(delMap)
                 });
+            }
+
+            // Silinmiş evraklar tablosunu da buluta aktar
+            const deletedSubs = this.getDeletedSubmissionIds();
+            if (deletedSubs.size > 0) {
+                const delSubMap = {};
+                deletedSubs.forEach(id => { delSubMap[id] = { id, deletedAt: new Date().toISOString() }; });
+                await this.fetchFirebase('/deleted_submissions_v2.json', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(delSubMap)
+                }).catch(() => {});
             }
 
             // Sınav evrakı üst bilgi ayarlarını da buluta aktar

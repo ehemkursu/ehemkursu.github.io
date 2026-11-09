@@ -546,7 +546,7 @@
                             Sınav sonuç evraklarının en üstünde yer alan resmi kurum, bakanlık ve kurs başlığını buradan belirleyebilirsiniz.
                         </p>
                     </div>
-                    <button class="btn btn-primary btn-sm" onclick="saveExamHeaderSettingsFromTab()">💾 Başlıkları Kaydet</button>
+                    <button type="button" id="btnSaveExamHeaderTab" class="btn btn-primary btn-sm" onclick="saveExamHeaderSettingsFromTab(this)" style="font-weight:700;">💾 Başlıkları Kaydet</button>
                 </div>
 
                 <div style="display:grid;grid-template-columns:1fr;gap:12px;max-width:680px;margin-bottom:14px;">
@@ -745,9 +745,12 @@
                         </select>
                         <input type="text" id="subSearchInput" class="form-control" placeholder="🔍 Kursiyer adı veya kullanıcı adı..." oninput="filterAndRenderSubmissionsTable()" style="max-width:240px;font-size:13px;">
                     </div>
-                    <div style="display:flex;gap:8px;">
-                        <button class="btn btn-ghost btn-sm" onclick="exportExamSubmissionsExcel()">📊 Seçili Listeyi Excel'e Aktar</button>
-                        <button class="btn btn-ghost btn-sm" onclick="printExamSubmissionsReport()">🖨️ Not Çizelgesi Yazdır</button>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="exportExamSubmissionsExcel()">📊 Seçili Listeyi Excel'e Aktar</button>
+                        <button type="button" class="btn btn-ghost btn-sm" onclick="printExamSubmissionsReport()">🖨️ Not Çizelgesi Yazdır</button>
+                        <button type="button" class="btn btn-danger btn-sm" onclick="openDeleteClassSubmissionsModal()" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;font-weight:600;" title="Belirli bir sınıfın sınav evraklarını topluca siler">
+                            🗑️ Sınıfın Evraklarını Sil
+                        </button>
                     </div>
                 </div>
 
@@ -958,12 +961,64 @@
             <!-- JS ile dinamik içerik basılır -->
         </div>
 
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:16px;border-top:1px solid var(--border-color);padding-top:14px;">
-            <button type="button" class="btn btn-ghost" onclick="closeModal('examGradingModal')">Kapat</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:16px;border-top:1px solid var(--border-color);padding-top:14px;flex-wrap:wrap;">
+            <div style="display:flex;gap:10px;">
+                <button type="button" class="btn btn-ghost" onclick="closeModal('examGradingModal')">Kapat</button>
+                <button type="button" class="btn btn-danger" onclick="handleDeleteCurrentGradingSubmission()" style="background:rgba(239,68,68,0.15);border:1px solid #ef4444;color:#f87171;font-weight:600;">🗑️ Bu Evrakı Sil</button>
+            </div>
             <div style="display:flex;gap:10px;">
                 <button type="button" class="btn btn-ghost" onclick="printCurrentExamSheet()">🖨️ Evrakı Yazdır / PDF İndir</button>
                 <button type="button" class="btn btn-success" onclick="saveGradingDecision()" style="font-weight:700;">💾 Değerlendirmeyi Kaydet ve Onayla</button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: SINIF BAZLI SINAV EVRAKLARINI TOPLU SİL -->
+<div id="deleteClassSubmissionsModal" class="modal-overlay" onclick="if(event.target===this)closeModal('deleteClassSubmissionsModal')">
+    <div class="modal-content" style="max-width:540px;border:1px solid #ef4444;">
+        <div class="modal-header" style="border-bottom:1px solid var(--border-color);padding-bottom:12px;">
+            <div>
+                <h3 style="color:#f87171;font-size:17px;margin:0;display:flex;align-items:center;gap:8px;">
+                    <span>🗑️</span> Sınıf Bazlı Sınav Evraklarını Toplu Sil
+                </h3>
+                <span style="font-size:12px;color:var(--text-muted);">Seçilen sınıfa ait tüm kursiyerlerin sınav evraklarını ve notlarını kalıcı olarak siler</span>
+            </div>
+            <button class="modal-close" onclick="closeModal('deleteClassSubmissionsModal')">&times;</button>
+        </div>
+
+        <div style="padding:16px 0;">
+            <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label" style="font-weight:700;">Hedef Sınıfı Seçin:</label>
+                <select id="deleteModalClassSelect" class="form-control" onchange="updateDeleteClassModalPreview()">
+                    <!-- JS ile doldurulur -->
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:14px;">
+                <label class="form-label" style="font-weight:700;">Sınav Kapsamı:</label>
+                <select id="deleteModalExamSelect" class="form-control" onchange="updateDeleteClassModalPreview()">
+                    <option value="all">Tüm Sınavlar (Bu sınıfa ait tüm sınav evrakları)</option>
+                    <!-- JS ile doldurulur -->
+                </select>
+            </div>
+
+            <!-- Önizleme ve Uyarı Kartı -->
+            <div id="deleteClassPreviewCard" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:12px;margin-top:14px;color:#fca5a5;font-size:13px;">
+                <div style="font-weight:bold;margin-bottom:4px;display:flex;align-items:center;gap:6px;">
+                    <span>⚠️</span> Silinecek Evrak Sayısı: <span id="deleteModalMatchCount" style="color:white;font-size:15px;font-weight:bold;margin-left:4px;">0</span>
+                </div>
+                <div style="font-size:12px;color:#cbd5e1;line-height:1.4;">
+                    Bu işlem onaylandığında, yukarıdaki kritere uyan sınav sonuçları yönetici panelinden ve ilgili kursiyerlerin panellerinden tamamen silinecektir.
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:10px;border-top:1px solid var(--border-color);padding-top:12px;">
+            <button type="button" class="btn btn-ghost" onclick="closeModal('deleteClassSubmissionsModal')">İptal</button>
+            <button type="button" class="btn btn-danger" id="btnConfirmDeleteClassSubmissions" onclick="executeDeleteClassSubmissions()" style="background:#dc2626;color:white;font-weight:700;">
+                🗑️ Seçili Sınıfın Evraklarını Kalıcı Olarak Sil
+            </button>
         </div>
     </div>
 </div>
@@ -1007,7 +1062,7 @@
 
         <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px;border-top:1px solid var(--border-color);padding-top:12px;">
             <button type="button" class="btn btn-ghost" onclick="closeModal('examHeaderSettingsModal')">İptal</button>
-            <button type="button" class="btn btn-primary" onclick="saveExamHeaderSettingsFromModal()" style="font-weight:700;">💾 Başlıkları Kaydet</button>
+            <button type="button" class="btn btn-primary" onclick="saveExamHeaderSettingsFromModal(this)" style="font-weight:700;">💾 Başlıkları Kaydet</button>
         </div>
     </div>
 </div>
@@ -3606,11 +3661,21 @@
     let _selectedMenuLayout = 'two-column';
     let _selectedMenuStyle = 'theme-adaptive';
 
-    function loadSettingsTab() {
+    function loadSettingsTab(force = false) {
+        // Eğer kullanıcı ayarlar sekmesindeki bir alanda aktif olarak yazı yazıyorsa, arkaplan senkronizasyonu bu alanları ezmemelidir
+        const active = document.activeElement;
+        const tabSettingsEl = document.getElementById('tabSettings');
+        if (!force && tabSettingsEl && tabSettingsEl.contains(active) && ['INPUT', 'TEXTAREA', 'SELECT'].includes(active.tagName)) {
+            return;
+        }
+
         const cfg = lmsStorage.getFirebaseConfig();
-        document.getElementById('fbEnabled').checked    = !!cfg.enabled;
-        document.getElementById('fbDatabaseURL').value  = cfg.databaseURL || '';
-        document.getElementById('fbApiKey').value       = cfg.apiKey || '';
+        const fbEn = document.getElementById('fbEnabled');
+        const fbUrl = document.getElementById('fbDatabaseURL');
+        const fbKey = document.getElementById('fbApiKey');
+        if (fbEn && (force || active !== fbEn)) fbEn.checked = !!cfg.enabled;
+        if (fbUrl && (force || active !== fbUrl)) fbUrl.value = cfg.databaseURL || '';
+        if (fbKey && (force || active !== fbKey)) fbKey.value = cfg.apiKey || '';
 
         const ts = lmsStorage.getThemeSettings();
         const currentTheme = ts.theme || lmsStorage.getTheme();
@@ -3619,11 +3684,11 @@
 
         // Checkbox: Kursiyer Menüsünde Tema Seçici
         const allowSwitch = document.getElementById('settingAllowMenuThemeSwitch');
-        if (allowSwitch) allowSwitch.checked = (ts.allowMenuThemeSwitch !== false);
+        if (allowSwitch && (force || active !== allowSwitch)) allowSwitch.checked = (ts.allowMenuThemeSwitch !== false);
 
         // Dropdown: Konum
         const posEl = document.getElementById('settingMenuThemePosition');
-        if (posEl) posEl.value = ts.switcherPosition || 'both';
+        if (posEl && (force || active !== posEl)) posEl.value = ts.switcherPosition || 'both';
 
         // Tema kartlarını güncelle
         updateThemeCardsUI(currentTheme);
@@ -3637,14 +3702,14 @@
         const tabInst = document.getElementById('settingTabInstitutionName');
         const tabDoc = document.getElementById('settingTabDocumentTitle');
         const tabIns = document.getElementById('settingTabInstructorName');
-        if (tabInst) tabInst.value = eh.institutionName || '';
-        if (tabDoc) tabDoc.value = eh.documentTitle || '';
-        if (tabIns) tabIns.value = eh.instructorName || '';
+        if (tabInst && (force || active !== tabInst)) tabInst.value = eh.institutionName || '';
+        if (tabDoc && (force || active !== tabDoc)) tabDoc.value = eh.documentTitle || '';
+        if (tabIns && (force || active !== tabIns)) tabIns.value = eh.instructorName || '';
         updateExamHeaderLivePreview('tab');
 
         const adminCreds = lmsStorage.getAdminCreds();
         const settingsUserEl = document.getElementById('settingsAdminUser');
-        if (settingsUserEl) settingsUserEl.value = adminCreds.username || 'admin';
+        if (settingsUserEl && (force || active !== settingsUserEl)) settingsUserEl.value = adminCreds.username || 'admin';
     }
 
     function updateThemeCardsUI(activeTheme) {
@@ -4540,6 +4605,7 @@
     }
 
     function populateExamFilterDropdowns() {
+        populateExamClassDropdowns();
         const sel = document.getElementById('subExamFilterSelect');
         if (!sel || typeof lmsStorage === 'undefined') return;
         const exams = lmsStorage.getAllExams();
@@ -4575,7 +4641,20 @@
         const filtered = subs.filter(s => {
             if (!s) return false;
             if (examFilter !== 'all' && s.examId !== examFilter) return false;
-            if (classFilter !== 'all' && s.classId !== classFilter) return false;
+            if (classFilter !== 'all') {
+                const sClass = s.classId || s.className || '';
+                const sResolved = lmsStorage.getClassName(sClass) || sClass;
+                const targetResolved = lmsStorage.getClassName(classFilter) || classFilter;
+                const st = lmsStorage.getUserById(s.studentId);
+                const stClass = st ? (st.classId || st.className || '') : '';
+                const stResolved = lmsStorage.getClassName(stClass) || stClass;
+
+                const match = (sClass === classFilter) || (s.className === classFilter) ||
+                              (sResolved.toLowerCase() === targetResolved.toLowerCase()) ||
+                              (stClass === classFilter) ||
+                              (stResolved.toLowerCase() === targetResolved.toLowerCase());
+                if (!match) return false;
+            }
             if (search) {
                 const name = (s.studentName || '').toLowerCase();
                 const uname = (s.studentUsername || '').toLowerCase();
@@ -4641,9 +4720,14 @@
                         </span>
                     </td>
                     <td style="text-align:right;">
-                        <button class="btn btn-primary btn-sm" onclick="openGradingModal('${s.id}')">
-                            📄 İncele & Notlandır
-                        </button>
+                        <div style="display:inline-flex;gap:6px;align-items:center;">
+                            <button class="btn btn-primary btn-sm" onclick="openGradingModal('${s.id}')" title="Evrakı incele ve notlandır">
+                                📄 İncele & Notlandır
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="handleDeleteSingleExamSubmission('${s.id}')" title="Bu kursiyerin sınav evrakını sil" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#f87171;padding:6px 10px;">
+                                🗑️ Sil
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -5172,41 +5256,241 @@
         if (elDoc) elDoc.textContent = docVal;
     }
 
-    function saveExamHeaderSettingsFromModal() {
-        const institutionName = document.getElementById('modalInstitutionName')?.value || '';
-        const documentTitle = document.getElementById('modalDocumentTitle')?.value || '';
-        const instructorName = document.getElementById('modalInstructorName')?.value || '';
-        lmsStorage.saveExamHeaderSettings({ institutionName, documentTitle, instructorName });
-        closeModal('examHeaderSettingsModal');
+    async function saveExamHeaderSettingsFromModal(btn) {
+        const institutionName = (document.getElementById('modalInstitutionName')?.value || '').trim();
+        const documentTitle = (document.getElementById('modalDocumentTitle')?.value || '').trim();
+        const instructorName = (document.getElementById('modalInstructorName')?.value || '').trim();
 
-        // Ayarlar sekmesindeki alanları da eşitle
-        const tabInst = document.getElementById('settingTabInstitutionName');
-        const tabDoc = document.getElementById('settingTabDocumentTitle');
-        const tabIns = document.getElementById('settingTabInstructorName');
-        if (tabInst) tabInst.value = institutionName;
-        if (tabDoc) tabDoc.value = documentTitle;
-        if (tabIns) tabIns.value = instructorName;
-        updateExamHeaderLivePreview('tab');
+        if (!institutionName || !documentTitle) {
+            alert('Lütfen en azından Kurum Üst Başlığı ve Sınav Evrak Başlığı alanlarını doldurunuz.');
+            return;
+        }
 
-        alert('✓ Sınav evrakı üst bilgileri başarıyla kaydedildi ve tüm sisteme uygulandı!');
+        const saveBtn = btn || document.querySelector("#examHeaderSettingsModal button[onclick*='saveExamHeaderSettingsFromModal']");
+        const origText = saveBtn ? saveBtn.innerHTML : '';
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '⏳ Kaydediliyor...';
+        }
+
+        try {
+            await lmsStorage.saveExamHeaderSettings({ institutionName, documentTitle, instructorName });
+            closeModal('examHeaderSettingsModal');
+
+            // Ayarlar sekmesindeki alanları da eşitle
+            const tabInst = document.getElementById('settingTabInstitutionName');
+            const tabDoc = document.getElementById('settingTabDocumentTitle');
+            const tabIns = document.getElementById('settingTabInstructorName');
+            if (tabInst) tabInst.value = institutionName;
+            if (tabDoc) tabDoc.value = documentTitle;
+            if (tabIns) tabIns.value = instructorName;
+            updateExamHeaderLivePreview('tab');
+            updateExamHeaderLivePreview('modal');
+
+            alert('✓ Sınav evrakı resmi üst bilgileri başarıyla kaydedildi ve tüm sisteme uygulandı!');
+        } catch (e) {
+            alert('Ayarlar kaydedilirken hata oluştu: ' + (e.message || e));
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = origText || '💾 Başlıkları Kaydet';
+            }
+        }
     }
 
-    function saveExamHeaderSettingsFromTab() {
-        const institutionName = document.getElementById('settingTabInstitutionName')?.value || '';
-        const documentTitle = document.getElementById('settingTabDocumentTitle')?.value || '';
-        const instructorName = document.getElementById('settingTabInstructorName')?.value || '';
-        lmsStorage.saveExamHeaderSettings({ institutionName, documentTitle, instructorName });
+    async function saveExamHeaderSettingsFromTab(btn) {
+        const institutionName = (document.getElementById('settingTabInstitutionName')?.value || '').trim();
+        const documentTitle = (document.getElementById('settingTabDocumentTitle')?.value || '').trim();
+        const instructorName = (document.getElementById('settingTabInstructorName')?.value || '').trim();
 
-        // Modal alanlarını da eşitle
-        const inpInst = document.getElementById('modalInstitutionName');
-        const inpDoc = document.getElementById('modalDocumentTitle');
-        const inpIns = document.getElementById('modalInstructorName');
-        if (inpInst) inpInst.value = institutionName;
-        if (inpDoc) inpDoc.value = documentTitle;
-        if (inpIns) inpIns.value = instructorName;
-        updateExamHeaderLivePreview('modal');
+        if (!institutionName || !documentTitle) {
+            alert('Lütfen en azından Kurum Üst Başlığı ve Sınav Evrak Başlığı alanlarını doldurunuz.');
+            return;
+        }
 
-        alert('✓ Sınav evrakı üst bilgileri başarıyla kaydedildi ve tüm sisteme uygulandı!');
+        const saveBtn = btn || document.getElementById('btnSaveExamHeaderTab') || document.querySelector("button[onclick*='saveExamHeaderSettingsFromTab']");
+        const origText = saveBtn ? saveBtn.innerHTML : '';
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '⏳ Kaydediliyor...';
+        }
+
+        try {
+            await lmsStorage.saveExamHeaderSettings({ institutionName, documentTitle, instructorName });
+
+            // Modal alanlarını da eşitle
+            const inpInst = document.getElementById('modalInstitutionName');
+            const inpDoc = document.getElementById('modalDocumentTitle');
+            const inpIns = document.getElementById('modalInstructorName');
+            if (inpInst) inpInst.value = institutionName;
+            if (inpDoc) inpDoc.value = documentTitle;
+            if (inpIns) inpIns.value = instructorName;
+            updateExamHeaderLivePreview('modal');
+            updateExamHeaderLivePreview('tab');
+
+            alert('✓ Sınav evrakı resmi üst bilgileri başarıyla kaydedildi ve bulut veritabanına aktarıldı!');
+        } catch (e) {
+            alert('Ayarlar kaydedilirken hata oluştu: ' + (e.message || e));
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = origText || '💾 Başlıkları Kaydet';
+            }
+        }
+    }
+
+    async function handleDeleteSingleExamSubmission(subId) {
+        if (!subId || typeof lmsStorage === 'undefined') return;
+        const sub = lmsStorage.getExamSubmissionById(subId);
+        const name = sub ? sub.studentName : 'Kursiyer';
+        const title = sub ? sub.examTitle : 'Sınav';
+
+        const ok = confirm(`"${name}" adlı kursiyere ait "${title}" sınav evrakını kalıcı olarak silmek istediğinizden emin misiniz?\n\nBu işlem evrakı hem yönetici panelinden hem de kursiyerin ekranından tamamen silecektir.`);
+        if (!ok) return;
+
+        const res = await lmsStorage.deleteExamSubmission(subId);
+        if (res && res.success) {
+            updateExamKPIs();
+            filterAndRenderSubmissionsTable();
+            alert('✓ Sınav evrakı başarıyla silindi ve tüm sistemden kaldırıldı.');
+        } else {
+            alert('Evrak silinirken bir hata oluştu.');
+        }
+    }
+
+    async function handleDeleteCurrentGradingSubmission() {
+        if (!currentGradingSubmission || !currentGradingSubmission.id) return;
+        const subId = currentGradingSubmission.id;
+        const name = currentGradingSubmission.studentName || 'Kursiyer';
+        const title = currentGradingSubmission.examTitle || 'Sınav';
+
+        const ok = confirm(`"${name}" adlı kursiyere ait "${title}" sınav evrakını kalıcı olarak silmek istediğinizden emin misiniz?\n\nBu işlem evrakı hem yönetici panelinden hem de kursiyerin ekranından tamamen silecektir.`);
+        if (!ok) return;
+
+        closeModal('examGradingModal');
+        const res = await lmsStorage.deleteExamSubmission(subId);
+        if (res && res.success) {
+            currentGradingSubmission = null;
+            updateExamKPIs();
+            filterAndRenderSubmissionsTable();
+            alert('✓ Sınav evrakı başarıyla silindi.');
+        }
+    }
+
+    function openDeleteClassSubmissionsModal() {
+        if (typeof lmsStorage === 'undefined') return;
+        const classSelect = document.getElementById('deleteModalClassSelect');
+        const examSelect = document.getElementById('deleteModalExamSelect');
+        if (!classSelect || !examSelect) return;
+
+        const classes = lmsStorage.getAllClasses();
+        let classOpts = '<option value="">-- Lütfen Sınıf Seçiniz --</option>';
+        classes.forEach(c => {
+            classOpts += `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`;
+        });
+        classSelect.innerHTML = classOpts;
+
+        const exams = lmsStorage.getAllExams();
+        let examOpts = '<option value="all">Tüm Sınavlar (Bu sınıfa ait tüm sınav evrakları)</option>';
+        exams.forEach(e => {
+            examOpts += `<option value="${escapeHtml(e.id)}">${escapeHtml(e.title)}</option>`;
+        });
+        examSelect.innerHTML = examOpts;
+
+        // Mevcut filtrelerde seçili olan sınıf varsa onu varsayılan yap
+        const currentClassFilter = document.getElementById('subClassFilterSelect')?.value || 'all';
+        if (currentClassFilter !== 'all') {
+            classSelect.value = currentClassFilter;
+        }
+        const currentExamFilter = document.getElementById('subExamFilterSelect')?.value || 'all';
+        if (currentExamFilter !== 'all') {
+            examSelect.value = currentExamFilter;
+        }
+
+        updateDeleteClassModalPreview();
+        openModal('deleteClassSubmissionsModal');
+    }
+
+    function updateDeleteClassModalPreview() {
+        if (typeof lmsStorage === 'undefined') return;
+        const targetClass = document.getElementById('deleteModalClassSelect')?.value || '';
+        const targetExam = document.getElementById('deleteModalExamSelect')?.value || 'all';
+        const countEl = document.getElementById('deleteModalMatchCount');
+        const btn = document.getElementById('btnConfirmDeleteClassSubmissions');
+
+        if (!targetClass) {
+            if (countEl) countEl.textContent = '0 (Önce sınıf seçin)';
+            if (btn) btn.disabled = true;
+            return;
+        }
+
+        const subs = lmsStorage.getAllExamSubmissions();
+        const targetResolved = lmsStorage.getClassName(targetClass) || targetClass;
+
+        const matching = subs.filter(s => {
+            if (!s) return false;
+            const sClass = s.classId || s.className || '';
+            const sResolved = lmsStorage.getClassName(sClass) || sClass;
+            const st = lmsStorage.getUserById(s.studentId);
+            const stClass = st ? (st.classId || st.className || '') : '';
+            const stResolved = lmsStorage.getClassName(stClass) || stClass;
+
+            const matchClass = (sClass === targetClass) || (s.className === targetClass) ||
+                               (sResolved.toLowerCase() === targetResolved.toLowerCase()) ||
+                               (stClass === targetClass) ||
+                               (stResolved.toLowerCase() === targetResolved.toLowerCase());
+
+            const matchExam = (targetExam === 'all') || (s.examId === targetExam);
+            return matchClass && matchExam;
+        });
+
+        if (countEl) countEl.textContent = matching.length;
+        if (btn) btn.disabled = (matching.length === 0);
+    }
+
+    async function executeDeleteClassSubmissions() {
+        if (typeof lmsStorage === 'undefined') return;
+        const targetClass = document.getElementById('deleteModalClassSelect')?.value;
+        const targetExam = document.getElementById('deleteModalExamSelect')?.value || 'all';
+        if (!targetClass) {
+            alert('Lütfen silme yapılacak sınıfı seçiniz.');
+            return;
+        }
+
+        const className = lmsStorage.getClassName(targetClass) || targetClass;
+        const examName = targetExam === 'all' ? 'Tüm Sınavlar' : (lmsStorage.getExamById(targetExam)?.title || 'Seçili Sınav');
+        const countText = document.getElementById('deleteModalMatchCount')?.textContent || '0';
+        const count = parseInt(countText) || 0;
+
+        if (count === 0) {
+            alert('Bu kritere uyan sınav evrakı bulunamadı.');
+            return;
+        }
+
+        const ok = confirm(`"${className}" sınıfına ait (${examName}) toplam ${count} adet sınav evrakı kalıcı olarak silinecektir.\n\n⚠️ Bu işlem geri alınamaz ve sınav evrakları kursiyerlerin panelinden de tamamen kaldırılacaktır.\n\nSilmek istediğinizden emin misiniz?`);
+        if (!ok) return;
+
+        const btn = document.getElementById('btnConfirmDeleteClassSubmissions');
+        const origText = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Evraklar Siliniyor...';
+        }
+
+        try {
+            const res = await lmsStorage.deleteExamSubmissionsByClass(targetClass, targetExam);
+            closeModal('deleteClassSubmissionsModal');
+            updateExamKPIs();
+            filterAndRenderSubmissionsTable();
+            alert(`✓ "${className}" sınıfına ait toplam ${res.count} adet sınav evrakı başarıyla silindi ve bulutla senkronize edildi.`);
+        } catch (err) {
+            alert('Evraklar silinirken hata oluştu: ' + (err.message || err));
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origText || '🗑️ Seçili Sınıfın Evraklarını Kalıcı Olarak Sil';
+            }
+        }
     }
 
     function previewExamModal(examId) {
